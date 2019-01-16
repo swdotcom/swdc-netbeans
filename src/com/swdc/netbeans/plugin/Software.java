@@ -45,12 +45,12 @@ public class Software extends ModuleInstall implements Runnable {
 
     @Override
     public void run() {
-        // INFO [Software]: Software.com: Loaded vUnknown on platform: null
-        LOG.log(Level.INFO, "Software.com: Loaded v{0}", softwareUtil.getPluginVersion());
-        
         keystrokeMgr = KeystrokeManager.getInstance();
         softwareUtil = SoftwareUtil.getInstance();
         repoManager = RepoManager.getInstance();
+        
+        // INFO [Software]: Software.com: Loaded vUnknown on platform: null
+        LOG.log(Level.INFO, "Software.com: Loaded v{0}", softwareUtil.getPluginVersion());
         
         // setup the document change event listeners
         setupEventListeners();
@@ -130,6 +130,10 @@ public class Software extends ModuleInstall implements Runnable {
         if (keystrokeData != null) {
             String projectDir = keystrokeData.getProject().getDirectory();
             repoManager.getHistoricalCommits(projectDir);
+        } else {
+            // try again in 2 minutes
+            final Runnable handler = () -> processHistoricalCommits();
+            scheduler.schedule(handler, (ONE_MINUTE_SECONDS * 2), TimeUnit.SECONDS);
         }
     }
     
@@ -139,6 +143,10 @@ public class Software extends ModuleInstall implements Runnable {
         if (keystrokeData != null) {
             String projectDir = keystrokeData.getProject().getDirectory();
             repoManager.processRepoMembersInfo(projectDir);
+        } else {
+            // try again in 2 minutes
+            final Runnable handler = () -> processRepoMembers();
+            scheduler.schedule(handler, (ONE_MINUTE_SECONDS * 2), TimeUnit.SECONDS);
         }
     }
 
