@@ -1,7 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (c) 2019 by Software.com
+ * All rights reserved
  */
 package com.swdc.netbeans.plugin.http;
 
@@ -9,7 +8,6 @@ import com.google.gson.JsonObject;
 
 /**
  *
- * @author xavierluiz
  */
 public class SoftwareResponse {
     private boolean ok = false;
