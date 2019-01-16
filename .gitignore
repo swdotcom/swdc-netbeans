@@ -1,0 +1,12 @@
+.DS_Store
+*.class
+
+# Package Files #
+*.war
+*.ear
+
+.metadata
+bin/
+build/
+release/
+private/
