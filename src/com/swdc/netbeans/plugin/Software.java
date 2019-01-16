@@ -8,6 +8,7 @@ package com.swdc.netbeans.plugin;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
+import com.swdc.netbeans.plugin.managers.RepoManager;
 import com.swdc.netbeans.plugin.models.KeystrokeData;
 import com.swdc.netbeans.plugin.managers.SessionManager;
 import java.beans.PropertyChangeEvent;
@@ -34,15 +35,22 @@ public class Software extends ModuleInstall implements Runnable {
     public static final Logger LOG = Logger.getLogger("Software");
     
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private KeystrokeManager keystrokeMgr = KeystrokeManager.getInstance();
-    private static SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
+    
+    private KeystrokeManager keystrokeMgr;
+    private SoftwareUtil softwareUtil;
+    private RepoManager repoManager;
     
     private final int ONE_MINUTE_SECONDS = 60;
+    private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
 
     @Override
     public void run() {
         // INFO [Software]: Software.com: Loaded vUnknown on platform: null
         LOG.log(Level.INFO, "Software.com: Loaded v{0}", softwareUtil.getPluginVersion());
+        
+        keystrokeMgr = KeystrokeManager.getInstance();
+        softwareUtil = SoftwareUtil.getInstance();
+        repoManager = RepoManager.getInstance();
         
         // setup the document change event listeners
         setupEventListeners();
@@ -79,14 +87,28 @@ public class Software extends ModuleInstall implements Runnable {
     
     private void setupScheduledPluginDataProcessor() {
         final Runnable handler = () -> processKeystrokes();
-        ScheduledFuture<?> scheduledFixture = scheduler.scheduleAtFixedRate(
+        scheduler.scheduleAtFixedRate(
                 handler, ONE_MINUTE_SECONDS, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
     }
     
     private void setupScheduledKpmMetricsProcessor() {
         final Runnable handler = () -> SessionManager.fetchDailyKpmSessionInfo();
-        ScheduledFuture<?> scheduledFixture = scheduler.scheduleAtFixedRate(
+        scheduler.scheduleAtFixedRate(
                 handler, 10, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
+    }
+    
+    private void setupRepoCommitsProcessor() {
+        final Runnable handler = () -> processHistoricalCommits();
+        int interval = ONE_HOUR_SECONDS + 20;
+        scheduler.scheduleAtFixedRate(
+                handler, 45, interval, TimeUnit.SECONDS);
+    }
+    
+    private void setupRepoMembersProcessor() {
+        final Runnable handler = () -> processRepoMembers();
+        int interval = ONE_HOUR_SECONDS + 10;
+        scheduler.scheduleAtFixedRate(
+                handler, 35, interval, TimeUnit.SECONDS);
     }
     
     private void bootstrapStatus() {
@@ -100,6 +122,24 @@ public class Software extends ModuleInstall implements Runnable {
                 LOG.log(Level.WARNING, "Software.com: error boostraping user plugin status, error: {0}", e.getMessage());
             }
         }).start();
+    }
+    
+    private void processHistoricalCommits() {
+        KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
+        // if we have keystroke data, we'll have the project info
+        if (keystrokeData != null) {
+            String projectDir = keystrokeData.getProject().getDirectory();
+            repoManager.getHistoricalCommits(projectDir);
+        }
+    }
+    
+    private void processRepoMembers() {
+        KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
+        // if we have keystroke data, we'll have the project info
+        if (keystrokeData != null) {
+            String projectDir = keystrokeData.getProject().getDirectory();
+            repoManager.processRepoMembersInfo(projectDir);
+        }
     }
 
     private void processKeystrokes() {
