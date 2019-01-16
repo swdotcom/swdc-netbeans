@@ -61,6 +61,10 @@ public class Software extends ModuleInstall implements Runnable {
         // setup the kpm metrics info fetch (every minute)
         setupScheduledKpmMetricsProcessor();
         
+        setupRepoCommitsProcessor();
+        
+        setupRepoMembersProcessor();
+        
         // check the user auth status and send any offline data
         bootstrapStatus();
     }
@@ -127,7 +131,7 @@ public class Software extends ModuleInstall implements Runnable {
     private void processHistoricalCommits() {
         KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
         // if we have keystroke data, we'll have the project info
-        if (keystrokeData != null) {
+        if (keystrokeData != null && keystrokeData.getProject() != null) {
             String projectDir = keystrokeData.getProject().getDirectory();
             repoManager.getHistoricalCommits(projectDir);
         } else {
@@ -140,7 +144,7 @@ public class Software extends ModuleInstall implements Runnable {
     private void processRepoMembers() {
         KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
         // if we have keystroke data, we'll have the project info
-        if (keystrokeData != null) {
+        if (keystrokeData != null && keystrokeData.getProject() != null) {
             String projectDir = keystrokeData.getProject().getDirectory();
             repoManager.processRepoMembersInfo(projectDir);
         } else {

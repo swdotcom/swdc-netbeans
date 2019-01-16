@@ -246,8 +246,6 @@ public class RepoManager {
     }
 
     public void processRepoMembersInfo(final String projectDir) {
-        getLatestCommit(projectDir);
-
         JsonObject resource = softwareUtil.getResourceInfo(projectDir);
         if (resource.has("identifier")) {
             String identifier = resource.get("identifier").getAsString();
@@ -257,8 +255,7 @@ public class RepoManager {
             String[] identifierCmd = {"git", "log", "--pretty=%an,%ae"};
             String devOutput = softwareUtil.runCommand(identifierCmd, projectDir);
 
-            // String[] devList = devOutput.replace(/\r\n/g, "\r").replace(/\n/g,
-            // "\r").split(/\r/);
+            // String[] devList = devOutput.replace(/\r\n/g, "\r").replace(/\n/g,"\r").split(/\r/);
             String[] devList = devOutput.split("\n");
             JsonArray members = new JsonArray();
             Map<String, String> memberMap = new HashMap<>();

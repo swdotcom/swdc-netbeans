@@ -483,7 +483,7 @@ public class SoftwareUtil {
      * @param args
      * @return
      */
-    public String runCommand(String[] args, String dir) {
+public String runCommand(String[] args, String dir) {
         // use process builder as it allows to run the command from a specified dir
         ProcessBuilder builder = new ProcessBuilder();
 
