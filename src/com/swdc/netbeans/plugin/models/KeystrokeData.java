@@ -4,6 +4,9 @@
  */
 package com.swdc.netbeans.plugin.models;
 
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -46,7 +49,7 @@ public class KeystrokeData {
     
     public void resetData() {
         this.start = Math.round(System.currentTimeMillis() / 1000);
-        this.sourceList = new ArrayList<KeystrokeFileMetrics>();
+        this.sourceList = new ArrayList<>();
         
         // offset is negative if the tz is before utc, and positive if after
         Integer offset  = ZonedDateTime.now().getOffset().getTotalSeconds();
@@ -58,7 +61,7 @@ public class KeystrokeData {
 
         for (KeystrokeFileMetrics fileMetrics : sourceList) {
             if (fileMetrics.getFileName().equals(fileName)) {
-                return fileMetrics.getSource();
+                return fileMetrics.getMetrics();
             }
         }
         
@@ -66,7 +69,31 @@ public class KeystrokeData {
         KeystrokeFileMetrics fileMetrics = new KeystrokeFileMetrics(fileName);
         sourceList.add(fileMetrics);
         
-        return fileMetrics.getSource();
+        return fileMetrics.getMetrics();
+    }
+    
+    public String getPayload() {
+        if (this.hasData()) {
+            
+            JsonObject jsonObj = new JsonObject();
+            JsonObject sourceObj = new JsonObject();
+            sourceList.forEach((fileMetrics) -> {
+                JsonElement jsonEl = SoftwareUtil.gson.toJsonTree(fileMetrics.getMetrics());
+                
+                sourceObj.add(fileMetrics.getFileName(), jsonEl);
+            });
+            jsonObj.add("source", sourceObj);
+            jsonObj.addProperty("version", this.version);
+            jsonObj.addProperty("pluginId", this.pluginId);
+            jsonObj.addProperty("keystrokes", this.keystrokes);
+            jsonObj.addProperty("start", this.start);
+            jsonObj.addProperty("local_start", this.local_start);
+            jsonObj.addProperty("timezone", this.timezone);
+            jsonObj.add("project", SoftwareUtil.gson.toJsonTree(this.project));
+            
+            return jsonObj.toString();
+        }
+        return null;
     }
 
     public String getType() {

@@ -109,7 +109,7 @@ public class Software extends ModuleInstall implements Runnable {
         
         KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
         if (keystrokeData != null && keystrokeData.hasData()) {
-            String payload = SoftwareUtil.gson.toJson(keystrokeData);
+            String payload = keystrokeData.getPayload();
             SoftwareResponse resp = softwareUtil.makeApiCall("/data", HttpPost.METHOD_NAME, payload);
             if (!resp.isOk()) {
                 // save the data offline

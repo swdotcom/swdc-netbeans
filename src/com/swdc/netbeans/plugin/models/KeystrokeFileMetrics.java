@@ -10,23 +10,23 @@ package com.swdc.netbeans.plugin.models;
 public class KeystrokeFileMetrics {
     
     private String fileName;
-    private KeystrokeMetrics source;
+    private KeystrokeMetrics metrics;
     
     public KeystrokeFileMetrics(String fileName) {
         this.fileName = fileName;
-        this.source = new KeystrokeMetrics();
+        this.metrics = new KeystrokeMetrics();
     }
 
     public String getFileName() {
         return fileName;
     }
 
-    public KeystrokeMetrics getSource() {
-        return source;
+    public KeystrokeMetrics getMetrics() {
+        return metrics;
     }
 
-    public void setSource(KeystrokeMetrics source) {
-        this.source = source;
+    public void setMetrics(KeystrokeMetrics metrics) {
+        this.metrics = metrics;
     }
     
     
