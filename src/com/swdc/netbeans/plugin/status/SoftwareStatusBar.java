@@ -5,8 +5,12 @@
  */
 package com.swdc.netbeans.plugin.status;
 
+import com.swdc.netbeans.plugin.SoftwareUtil;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -25,7 +29,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
 
     private static JLabel statusLabel = new JLabel(" Software.com ");
     private JPanel panel = new JPanel(new BorderLayout());
-    
+
     public enum StatusBarType {
         ROCKET("com/swdc/netbeans/plugin/status/rocket.png"),
         FULL("com/swdc/netbeans/plugin/status/100.png"),
@@ -34,19 +38,26 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
         QUARTER("com/swdc/netbeans/plugin/status/25.png"),
         NO_KPM("com/swdc/netbeans/plugin/status/sw.png"),
         ALERT("com/swdc/netbeans/plugin/status/warning.png");
-        
+
         private Icon icon;
+
         private StatusBarType(String iconStr) {
             icon = new ImageIcon(ImageUtilities.loadImage(iconStr));
         }
     }
-    
+
     public SoftwareStatusBar() {
         statusLabel.setIcon(StatusBarType.NO_KPM.icon);
+        statusLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                SoftwareUtil.getInstance().launchDashboard();
+            }
+        });
         panel.add(new JSeparator(SwingConstants.VERTICAL), BorderLayout.WEST);
         panel.add(statusLabel, BorderLayout.CENTER);
     }
-    
+
     public void updateMessage(StatusBarType status, String text, String tooltip) {
         statusLabel.setText(text + " ");
         statusLabel.setToolTipText(tooltip);
