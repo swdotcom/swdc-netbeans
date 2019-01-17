@@ -83,6 +83,8 @@ public class SoftwareUtil {
 
     private static boolean confirmWindowOpen = false;
     
+    public static boolean TELEMETRY_ON = true;
+    
     private SoftwareStatusBar statusBar;
 
     public static SoftwareUtil getInstance() {
@@ -268,11 +270,15 @@ public class SoftwareUtil {
     }
 
     public SoftwareResponse makeApiCall(String api, String httpMethodName, String payload) {
+        
+        SoftwareResponse softwareResponse = new SoftwareResponse();
+        if (!TELEMETRY_ON) {
+            softwareResponse.setIsOk(true);
+            return softwareResponse;
+        }
 
         SoftwareHttpManager httpTask = new SoftwareHttpManager(api, httpMethodName, payload);
         Future<HttpResponse> response = EXECUTOR_SERVICE.submit(httpTask);
-
-        SoftwareResponse softwareResponse = new SoftwareResponse();
 
         //
         // Handle the Future if it exist
@@ -396,6 +402,10 @@ public class SoftwareUtil {
     }
 
     public void checkUserAuthenticationStatus() {
+        
+        if (!TELEMETRY_ON) {
+            return;
+        }
 
         boolean isOnline = isServerOnline();
         boolean authenticated = isAuthenticated();
@@ -547,6 +557,10 @@ public class SoftwareUtil {
         } catch (MalformedURLException e) {
             LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
         }
+    }
+    
+    public void updateTelementry(boolean telemetryOn) {
+        TELEMETRY_ON = telemetryOn;
     }
 
     public void setStatusLineMessage(final StatusBarType barType, final String statusMsg, final String tooltip) {
