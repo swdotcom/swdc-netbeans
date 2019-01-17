@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 
 import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,7 +66,7 @@ public class RepoManager {
                 } else {
                     LOG.log(Level.INFO, "Software.com: Unable to fetch latest commit info");
                 }
-            } catch (Exception e) {
+            } catch (UnsupportedEncodingException e) {
                 //
             }
 
@@ -101,7 +102,6 @@ public class RepoManager {
                 cmdList.add(sinceOption);
             }
 
-            // String[] commitHistoryCmd = {"git", "log", "--stat", "--pretty=COMMIT:%H,%ct,%cI,%s", authorOption};
             String[] commitHistoryCmd = Arrays.copyOf(cmdList.toArray(), cmdList.size(), String[].class);
             String historyContent = softwareUtil.runCommand(commitHistoryCmd, projectDir);
 
@@ -148,7 +148,7 @@ public class RepoManager {
                             changesObj.add("__sftwTotal__", sftwTotalsObj);
                             commit.add("changes", changesObj);
                         }
-                    } else if (commit != null && line.indexOf("|") != -1) {
+                    } else if (commit != null && line.contains("|")) {
                         line = line.replaceAll("\\s+", " ");
                         String[] lineInfos = line.split("|");
 
@@ -191,7 +191,7 @@ public class RepoManager {
                     commits.add(commit);
                 }
 
-                if (commits != null && commits.size() > 0) {
+                if (commits.size() > 0) {
                     // send it in batches of 100
                     JsonArray batch = new JsonArray();
                     for (int i = 0; i < commits.size(); i++) {

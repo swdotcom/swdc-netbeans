@@ -37,7 +37,7 @@ public class KeystrokeData {
     public KeystrokeData(String projectName, String projectDir) {
         this.start = Math.round(System.currentTimeMillis() / 1000);
         this.version = softwareUtil.getPluginVersion();
-        this.pluginId = SoftwareUtil.pluginId;
+        this.pluginId = SoftwareUtil.PLUGIN_ID;
         
         // offset is negative if the tz is before utc, and positive if after
         Integer offset  = ZonedDateTime.now().getOffset().getTotalSeconds();

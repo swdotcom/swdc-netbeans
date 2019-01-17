@@ -46,7 +46,7 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
 
             switch (httpMethodName) {
                 case HttpPost.METHOD_NAME:
-                    req = new HttpPost("" + SoftwareUtil.api_endpoint + this.api);
+                    req = new HttpPost("" + SoftwareUtil.API_ENDPOINT + this.api);
                     if (payload != null) {
                         //
                         // add the json payload
@@ -55,10 +55,10 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
                         ((HttpPost)req).setEntity(params);
                     }   break;
                 case HttpDelete.METHOD_NAME:
-                    req = new HttpDelete(SoftwareUtil.api_endpoint + "" + this.api);
+                    req = new HttpDelete(SoftwareUtil.API_ENDPOINT + "" + this.api);
                     break;
                 default:
-                    req = new HttpGet(SoftwareUtil.api_endpoint + "" + this.api);
+                    req = new HttpGet(SoftwareUtil.API_ENDPOINT + "" + this.api);
                     break;
             }
 

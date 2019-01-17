@@ -7,6 +7,8 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
+import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
+import com.swdc.netbeans.plugin.status.SoftwareStatusBar.StatusBarType;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,25 +31,23 @@ public class SessionManager {
         String api = "/sessions?from=" + fromSeconds + "&summary=true";
         SoftwareResponse softwareResponse = softwareUtil.makeApiCall(api, HttpGet.METHOD_NAME, null);
         JsonObject jsonObj = softwareResponse.getJsonObj();
+        StatusBarType barType = StatusBarType.NO_KPM;
         if (jsonObj != null) {
             boolean inFlow = true;
             if (jsonObj.has("inFlow")) {
                 inFlow = jsonObj.get("inFlow").getAsBoolean();
             }
-            String sessionTimeIcon = "";
             if (jsonObj.has("currentSessionGoalPercent")) {
                 float currentSessionGoalPercent = jsonObj.get("currentSessionGoalPercent").getAsFloat();
                 if (currentSessionGoalPercent > 0) {
                     if (currentSessionGoalPercent < 0.40) {
-                        sessionTimeIcon = "🌘";
+                        barType = StatusBarType.QUARTER;
                     } else if (currentSessionGoalPercent < 0.70) {
-                        sessionTimeIcon = "🌗";
+                        barType = StatusBarType.HALF;
                     } else if (currentSessionGoalPercent < 0.93) {
-                        sessionTimeIcon = "🌖";
+                        barType = StatusBarType.ALMOST;
                     } else if (currentSessionGoalPercent < 1.3) {
-                        sessionTimeIcon = "🌕";
-                    } else {
-                        sessionTimeIcon = "🌔";
+                        barType = StatusBarType.FULL;
                     }
                 }
             }
@@ -75,18 +75,23 @@ public class SessionManager {
                 sessionTime = currentSessionMinutes + " min";
             }
             if (lastKpm > 0 || currentSessionMinutes > 0) {
-                String sessionMsg = (sessionTime.equals("")) ? sessionTime : sessionTimeIcon + " " + sessionTime;
+                String sessionMsg = (sessionTime.equals("")) ? sessionTime : sessionTime;
                 String statusMsg = String.valueOf(lastKpm) + " KPM, " + sessionMsg;
                 if (inFlow) {
-                    statusMsg = "🚀" + " " + statusMsg;
+                    barType = StatusBarType.ROCKET;
+                    // statusMsg = "🚀" + " " + statusMsg;
                 }
-                softwareUtil.setStatusLineMessage("<S> " + statusMsg,
-                    "Click to see more from Software.com");
+                softwareUtil.setStatusLineMessage(barType,
+                        "<S> " + statusMsg,
+                        "Click to see more from Software.com");
             } else {
-                softwareUtil.setStatusLineMessage("Software.com", "Click to see more from Software.com");
+                softwareUtil.setStatusLineMessage(barType,
+                        "Software.com",
+                        "Click to see more from Software.com");
             }
         } else {
-            LOG.log(Level.WARNING, "⚠️Software.com", "Click to log in to Software.com");
+            softwareUtil.setStatusLineMessage(StatusBarType.ALERT, "Software.com", "Click to log in to Software.com");
+            LOG.log(Level.WARNING, "Software.com", "Click to log in to Software.com");
             softwareUtil.checkUserAuthenticationStatus();
         }
     }

@@ -12,22 +12,23 @@ import com.google.gson.JsonSyntaxException;
 import com.sun.javafx.PlatformUtil;
 import com.swdc.netbeans.plugin.managers.SoftwareHttpManager;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
+import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
+import com.swdc.netbeans.plugin.status.SoftwareStatusBar.StatusBarType;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
@@ -47,7 +48,6 @@ import org.netbeans.api.autoupdate.UpdateElement;
 import org.netbeans.api.autoupdate.UpdateManager;
 import org.netbeans.api.autoupdate.UpdateUnit;
 import org.openide.awt.HtmlBrowser.URLDisplayer;
-import org.openide.awt.StatusDisplayer;
 
 /**
  *
@@ -68,30 +68,35 @@ public class SoftwareUtil {
     private final static int LONG_THRESHOLD_HOURS = 24;
 
     // set the api endpoint to use
-    public final static String api_endpoint = PROD_API_ENDPOINT;
+    public final static String API_ENDPOINT = PROD_API_ENDPOINT;
     // set the launch url to use
-    public final static String launch_url = PROD_URL_ENDPOINT;
+    public final static String LAUNCH_URL = PROD_URL_ENDPOINT;
     // netbeans plugin id
-    public final static int pluginId = 11;
-
-    private final static int EOF = -1;
+    public final static int PLUGIN_ID = 11;
 
     public static final AtomicBoolean SEND_TELEMTRY = new AtomicBoolean(true);
 
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
+    private final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
     public static JsonParser jsonParser = new JsonParser();
     public static Gson gson = new Gson();
 
     private static boolean confirmWindowOpen = false;
+    
+    private SoftwareStatusBar statusBar;
 
     public static SoftwareUtil getInstance() {
         synchronized (UTIL_LOCK) {
             if (instance == null) {
                 instance = new SoftwareUtil();
+                
             }
         }
         return instance;
+    }
+    
+    private SoftwareUtil() {
+        statusBar = new SoftwareStatusBar();
     }
 
     public String getPluginVersion() {
@@ -123,9 +128,9 @@ public class SoftwareUtil {
         String sessionFile = getSoftwareSessionFile();
 
         try {
-            Writer output = new BufferedWriter(new FileWriter(sessionFile));
-            output.write(content);
-            output.close();
+            try (Writer output = new BufferedWriter(new FileWriter(sessionFile))) {
+                output.write(content);
+            }
         } catch (IOException e) {
             LOG.log(Level.WARNING, "Software.com: Failed to write the key value pair ({0}, {1}) into the session, error: {2}", new Object[]{key, val, e.getMessage()});
         }
@@ -247,17 +252,17 @@ public class SoftwareUtil {
         InputStreamReader reader;
         reader = new InputStreamReader(inputStream);
 
-        BufferedReader br = new BufferedReader(reader);
-        boolean done = false;
-        while (!done) {
-            String aLine = br.readLine();
-            if (aLine != null) {
-                sb.append(aLine);
-            } else {
-                done = true;
+        try (BufferedReader br = new BufferedReader(reader)) {
+            boolean done = false;
+            while (!done) {
+                String aLine = br.readLine();
+                if (aLine != null) {
+                    sb.append(aLine);
+                } else {
+                    done = true;
+                }
             }
         }
-        br.close();
 
         return sb.toString();
     }
@@ -265,7 +270,7 @@ public class SoftwareUtil {
     public SoftwareResponse makeApiCall(String api, String httpMethodName, String payload) {
 
         SoftwareHttpManager httpTask = new SoftwareHttpManager(api, httpMethodName, payload);
-        Future<HttpResponse> response = executorService.submit(httpTask);
+        Future<HttpResponse> response = EXECUTOR_SERVICE.submit(httpTask);
 
         SoftwareResponse softwareResponse = new SoftwareResponse();
 
@@ -319,17 +324,15 @@ public class SoftwareUtil {
             try {
                 FileInputStream fis = new FileInputStream(f);
 
-                //Construct BufferedReader from InputStreamReader
-                BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-
-                String line = null;
-                while ((line = br.readLine()) != null) {
-                    if (line.length() > 0) {
-                        sb.append(line).append(",");
+                try ( //Construct BufferedReader from InputStreamReader
+                        BufferedReader br = new BufferedReader(new InputStreamReader(fis))) {
+                    String line = null;
+                    while ((line = br.readLine()) != null) {
+                        if (line.length() > 0) {
+                            sb.append(line).append(",");
+                        }
                     }
                 }
-
-                br.close();
 
                 if (sb.length() > 0) {
                     String payloads = sb.toString();
@@ -435,7 +438,7 @@ public class SoftwareUtil {
         boolean isOk = makeApiCall("/users/ping/", HttpGet.METHOD_NAME, null).isOk();
         if (!isOk) {
             // update the status bar with Sign Up message
-            setStatusLineMessage("⚠️Software.com", "Click to log in to Software.com");
+            setStatusLineMessage(StatusBarType.ALERT, "Software.com", "Click to log in to Software.com");
         }
         return isOk;
     }
@@ -476,50 +479,42 @@ public class SoftwareUtil {
 
         return jsonObj;
     }
+    
+    public String runCommand(String[] args, String dir) {
+        String command = Arrays.toString(args);
+        
+        ProcessBuilder processBuilder = new ProcessBuilder(args);
+        if (dir != null) {
+            processBuilder.directory(new File(dir));
+        }
 
-    /**
-     * Execute the args
-     *
-     * @param args
-     * @return
-     */
-public String runCommand(String[] args, String dir) {
-        // use process builder as it allows to run the command from a specified dir
-        ProcessBuilder builder = new ProcessBuilder();
+        processBuilder.redirectErrorStream(true);
 
         try {
-            builder.command(args);
-            if (dir != null) {
-                // change to the directory to run the command
-                builder.directory(new File(dir));
+            Process process = processBuilder.start();
+            
+            StringBuilder processOutput = new StringBuilder();
+            BufferedReader processOutputReader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()));
+            String readLine;
+
+            while ((readLine = processOutputReader.readLine()) != null) {
+                processOutput.append(readLine).append(System.lineSeparator());
             }
-            Process process = builder.start();
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-            InputStream is = process.getInputStream();
-            copyLarge(is, baos, new byte[4096]);
-            return baos.toString().trim();
-
-        } catch (IOException e) {
-            Thread.currentThread().interrupt();
-            return null;
+            process.waitFor();
+            String result = processOutput.toString().trim();
+            return result;
+        } catch (IOException | InterruptedException e) {
+            LOG.log(Level.WARNING, "Software.com: Unable to complete command request: {0}", command);
         }
-    }
 
-    private long copyLarge(InputStream input, OutputStream output, byte[] buffer) throws IOException {
-        long count = 0;
-        int n;
-        while (EOF != (n = input.read(buffer))) {
-            output.write(buffer, 0, n);
-            count += n;
-        }
-        return count;
+        return "";
     }
 
     public void launchDashboard() {
 
-        String url = launch_url;
+        String url = LAUNCH_URL;
 
         // create the token value
         String token = getItem("token");
@@ -554,7 +549,7 @@ public String runCommand(String[] args, String dir) {
         }
     }
 
-    public void setStatusLineMessage(final String statusMsg, final String tooltip) {
-        StatusDisplayer.getDefault().setStatusText(statusMsg);
+    public void setStatusLineMessage(final StatusBarType barType, final String statusMsg, final String tooltip) {
+        statusBar.updateMessage(barType, statusMsg, tooltip);
     }
 }

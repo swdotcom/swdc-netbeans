@@ -46,6 +46,12 @@ public class KeystrokeManager {
         return keystrokeData;
     }
     
+    public void reset() {
+        if (keystrokeData != null) {
+            keystrokeData = null;
+        }
+    }
+    
     public void incrementKeystrokes() {
         if (keystrokeData != null) {
             keystrokeData.setKeystrokes(keystrokeData.getKeystrokes() + 1);

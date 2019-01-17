@@ -15,7 +15,6 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -166,11 +165,10 @@ public class Software extends ModuleInstall implements Runnable {
             if (!resp.isOk()) {
                 // save the data offline
                 softwareUtil.storePayload(payload);
-            } else {
-                keystrokeData.resetData();
             }
+            keystrokeMgr.reset();
         } else if (keystrokeData != null) {
-            keystrokeData.resetData();
+            keystrokeMgr.reset();
         }
     }
     
