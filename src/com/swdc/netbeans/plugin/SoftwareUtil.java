@@ -287,7 +287,8 @@ public class SoftwareUtil {
             try {
                 HttpResponse httpResponse = response.get();
                 if (httpResponse != null) {
-                    if (httpResponse.getStatusLine().getStatusCode() < 300) {
+                    int statusCode = httpResponse.getStatusLine().getStatusCode();
+                    if (statusCode < 300) {
                         softwareResponse.setIsOk(true);
                     }
                     HttpEntity entity = httpResponse.getEntity();
@@ -307,6 +308,20 @@ public class SoftwareUtil {
                             String errorMessage = "Software.com: Unable to get the response from the http request, error: " + e.getMessage();
                             softwareResponse.setErrorMessage(errorMessage);
                             LOG.log(Level.WARNING, errorMessage);
+                        }
+                    }
+                    
+                    if (statusCode >= 400 && statusCode < 500 && softwareResponse.getJsonObj() != null) {
+                        JsonObject data = softwareResponse.getJsonObj();
+                        if (data.has("code")) {
+                            String code = data.get("code").getAsString();
+                            if (code != null && code.equals("DEACTIVATED")) {
+                                SoftwareUtil.getInstance().setStatusLineMessage(
+                                    StatusBarType.ALERT,
+                                    "Software.com",
+                                    "To see your coding data in Software.com, please reactivate your account.");
+                                softwareResponse.setDeactivated(true);
+                            }
                         }
                     }
                 }
@@ -344,7 +359,8 @@ public class SoftwareUtil {
                     String payloads = sb.toString();
                     payloads = payloads.substring(0, payloads.lastIndexOf(","));
                     payloads = "[" + payloads + "]";
-                    if (makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloads).isOk()) {
+                    SoftwareResponse resp = makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloads);
+                    if (resp.isOk() || resp.isDeactivated()) {
                         deleteFile(dataStoreFile);
                     }
                 } else {
@@ -378,13 +394,14 @@ public class SoftwareUtil {
             return;
         }
 
-        JsonObject responseData = makeApiCall("/users/plugin/confirm?token=" + tokenVal, HttpGet.METHOD_NAME, null).getJsonObj();
+        SoftwareResponse resp = makeApiCall("/users/plugin/confirm?token=" + tokenVal, HttpGet.METHOD_NAME, null);
+        JsonObject responseData = resp.getJsonObj();
         if (responseData != null) {
             // update the jwt, user and netbeans_lastUpdateTime
             setItem("jwt", responseData.get("jwt").getAsString());
             setItem("user", responseData.get("user").getAsString());
             setItem("netbeans_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
-        } else {
+        } else if (!resp.isDeactivated()) {
             // check again in 2 minutes
             new Thread(() -> {
                 try {
@@ -561,6 +578,11 @@ public class SoftwareUtil {
     
     public void updateTelementry(boolean telemetryOn) {
         TELEMETRY_ON = telemetryOn;
+        if (!TELEMETRY_ON) {
+            setStatusLineMessage(StatusBarType.ALERT, "<S> Paused", "Enable metrics to resume");
+        } else {
+            setStatusLineMessage(StatusBarType.NO_KPM, "Software.com", "Click to log in to Software.com");
+        }
     }
 
     public void setStatusLineMessage(final StatusBarType barType, final String statusMsg, final String tooltip) {

@@ -7,7 +7,6 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
-import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar.StatusBarType;
 import java.util.Date;
 import java.util.logging.Level;
@@ -89,10 +88,21 @@ public class SessionManager {
                         "Software.com",
                         "Click to see more from Software.com");
             }
-        } else {
+        } else if (!softwareResponse.isDeactivated()) {
             softwareUtil.setStatusLineMessage(StatusBarType.ALERT, "Software.com", "Click to log in to Software.com");
             LOG.log(Level.WARNING, "Software.com", "Click to log in to Software.com");
             softwareUtil.checkUserAuthenticationStatus();
+        } else {
+            // check in a day
+            LOG.log(Level.WARNING, "Software.com", "Click to log in to Software.com");
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000 * 60 * 60 * 24);
+                    softwareUtil.checkUserAuthenticationStatus();
+                } catch (InterruptedException e) {
+                    System.err.println(e);
+                }
+            }).start();
         }
     }
 }

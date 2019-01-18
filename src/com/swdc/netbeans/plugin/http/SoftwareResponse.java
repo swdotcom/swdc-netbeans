@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
  */
 public class SoftwareResponse {
     private boolean ok = false;
+    private boolean deactivated = false;
     private int code;
     private String errorMessage;
     private String jsonStr;
@@ -22,6 +23,14 @@ public class SoftwareResponse {
 
     public void setIsOk(boolean ok) {
         this.ok = ok;
+    }
+
+    public boolean isDeactivated() {
+        return deactivated;
+    }
+
+    public void setDeactivated(boolean deactivated) {
+        this.deactivated = deactivated;
     }
 
     public int getCode() {

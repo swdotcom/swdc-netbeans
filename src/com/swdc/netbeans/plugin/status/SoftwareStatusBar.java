@@ -10,7 +10,6 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
@@ -76,6 +75,9 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
                 break;
             case QUARTER:
                 statusLabel.setIcon(StatusBarType.QUARTER.icon);
+                break;
+            case ALERT:
+                statusLabel.setIcon(StatusBarType.ALERT.icon);
                 break;
             default:
                 statusLabel.setIcon(StatusBarType.NO_KPM.icon);
