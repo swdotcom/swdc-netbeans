@@ -13,6 +13,7 @@ public class SoftwareResponse {
     private boolean ok = false;
     private boolean deactivated = false;
     private int code;
+    private String dataMessage;
     private String errorMessage;
     private String jsonStr;
     private JsonObject jsonObj;
@@ -39,6 +40,14 @@ public class SoftwareResponse {
 
     public void setCode(int code) {
         this.code = code;
+    }
+
+    public String getDataMessage() {
+        return dataMessage;
+    }
+
+    public void setDataMessage(String dataMessage) {
+        this.dataMessage = dataMessage;
     }
 
     public String getErrorMessage() {

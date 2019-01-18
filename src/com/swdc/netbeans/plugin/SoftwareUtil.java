@@ -292,6 +292,7 @@ public class SoftwareUtil {
                         softwareResponse.setIsOk(true);
                     }
                     HttpEntity entity = httpResponse.getEntity();
+                    JsonObject jsonObj = null;
                     if (entity != null) {
                         try {
                             String jsonStr = getStringRepresentation(entity);
@@ -299,9 +300,23 @@ public class SoftwareUtil {
                             LOG.log(Level.INFO, "Sofware.com: API response {0}", jsonStr);
                             if (jsonStr != null) {
                                 Object jsonEl = jsonParser.parse(jsonStr);
+                                
                                 if (jsonEl instanceof JsonElement) {
-                                    JsonObject jsonObj = ((JsonElement) jsonEl).getAsJsonObject();
-                                    softwareResponse.setJsonObj(jsonObj);
+                                    try {
+                                        JsonElement el = (JsonElement)jsonEl;
+                                        if (el.isJsonPrimitive()) {
+                                            if (statusCode < 300) {
+                                                softwareResponse.setDataMessage((String)jsonEl);
+                                            } else {
+                                                softwareResponse.setErrorMessage((String)jsonEl);
+                                            }
+                                        } else {
+                                            jsonObj = ((JsonElement) jsonEl).getAsJsonObject();
+                                            softwareResponse.setJsonObj(jsonObj);
+                                        }
+                                    } catch (Exception e) {
+                                        LOG.log(Level.WARNING, "Unable to parse response data: {0}", e.getMessage());
+                                    }
                                 }
                             }
                         } catch (IOException e) {
@@ -311,10 +326,9 @@ public class SoftwareUtil {
                         }
                     }
                     
-                    if (statusCode >= 400 && statusCode < 500 && softwareResponse.getJsonObj() != null) {
-                        JsonObject data = softwareResponse.getJsonObj();
-                        if (data.has("code")) {
-                            String code = data.get("code").getAsString();
+                    if (statusCode >= 400 && statusCode < 500 && jsonObj != null) {
+                        if (jsonObj.has("code")) {
+                            String code = jsonObj.get("code").getAsString();
                             if (code != null && code.equals("DEACTIVATED")) {
                                 SoftwareUtil.getInstance().setStatusLineMessage(
                                     StatusBarType.ALERT,
@@ -462,12 +476,12 @@ public class SoftwareUtil {
             return false;
         }
 
-        boolean isOk = makeApiCall("/users/ping/", HttpGet.METHOD_NAME, null).isOk();
-        if (!isOk) {
+        SoftwareResponse resp = makeApiCall("/users/ping/", HttpGet.METHOD_NAME, null);
+        if (!resp.isOk() && !resp.isDeactivated()) {
             // update the status bar with Sign Up message
             setStatusLineMessage(StatusBarType.ALERT, "Software.com", "Click to log in to Software.com");
         }
-        return isOk;
+        return resp.isOk();
     }
 
     public String generateToken() {
