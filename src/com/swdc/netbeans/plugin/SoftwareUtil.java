@@ -306,9 +306,9 @@ public class SoftwareUtil {
                                         JsonElement el = (JsonElement)jsonEl;
                                         if (el.isJsonPrimitive()) {
                                             if (statusCode < 300) {
-                                                softwareResponse.setDataMessage((String)jsonEl);
+                                                softwareResponse.setDataMessage(el.getAsString());
                                             } else {
-                                                softwareResponse.setErrorMessage((String)jsonEl);
+                                                softwareResponse.setErrorMessage(el.getAsString());
                                             }
                                         } else {
                                             jsonObj = ((JsonElement) jsonEl).getAsJsonObject();
