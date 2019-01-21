@@ -8,6 +8,7 @@ package com.swdc.netbeans.plugin;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
+import com.swdc.netbeans.plugin.managers.MusicManager;
 import com.swdc.netbeans.plugin.managers.RepoManager;
 import com.swdc.netbeans.plugin.models.KeystrokeData;
 import com.swdc.netbeans.plugin.managers.SessionManager;
@@ -38,6 +39,7 @@ public class Software extends ModuleInstall implements Runnable {
     private KeystrokeManager keystrokeMgr;
     private SoftwareUtil softwareUtil;
     private RepoManager repoManager;
+    private MusicManager musicManager;
     
     private final int ONE_MINUTE_SECONDS = 60;
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
@@ -47,6 +49,7 @@ public class Software extends ModuleInstall implements Runnable {
         keystrokeMgr = KeystrokeManager.getInstance();
         softwareUtil = SoftwareUtil.getInstance();
         repoManager = RepoManager.getInstance();
+        musicManager = MusicManager.getInstance();
         
         // INFO [Software]: Software.com: Loaded vUnknown on platform: null
         LOG.log(Level.INFO, "Software.com: Loaded v{0}", softwareUtil.getPluginVersion());
@@ -59,6 +62,8 @@ public class Software extends ModuleInstall implements Runnable {
         
         // setup the kpm metrics info fetch (every minute)
         setupScheduledKpmMetricsProcessor();
+        
+        setupRepoMusicInfoProcessor();
         
         setupRepoCommitsProcessor();
         
@@ -100,6 +105,13 @@ public class Software extends ModuleInstall implements Runnable {
                 handler, 10, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
     }
     
+    private void setupRepoMusicInfoProcessor() {
+        final Runnable handler = () -> processMusicInfo();
+        int interval = 15;
+        scheduler.scheduleAtFixedRate(
+                handler, 15, interval, TimeUnit.SECONDS);
+    }
+    
     private void setupRepoCommitsProcessor() {
         final Runnable handler = () -> processHistoricalCommits();
         int interval = ONE_HOUR_SECONDS + 20;
@@ -125,6 +137,10 @@ public class Software extends ModuleInstall implements Runnable {
                 LOG.log(Level.WARNING, "Software.com: error boostraping user plugin status, error: {0}", e.getMessage());
             }
         }).start();
+    }
+    
+    private void processMusicInfo() {
+        musicManager.processMusicTrack();
     }
     
     private void processHistoricalCommits() {
