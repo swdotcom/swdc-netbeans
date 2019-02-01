@@ -84,7 +84,7 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
             //
             return response;
         } catch (IOException e) {
-            LOG.log(Level.WARNING, "Software.com: Unable to make api request.{0}", e.getMessage());
+            LOG.log(Level.WARNING, "Code Time: Unable to make api request.{0}", e.getMessage());
         }
 
         return null;

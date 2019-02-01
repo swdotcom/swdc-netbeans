@@ -105,7 +105,7 @@ public class MusicManager {
                     "/data/music", HttpPost.METHOD_NAME, trackStr);
             if (resp == null || !resp.isOk()) {
                 String errorStr = (resp != null && resp.getErrorMessage() != null) ? resp.getErrorMessage() : "";
-                LOG.log(Level.INFO, "Software.com: Unable to get the music track response from the http request, error: {0}", errorStr);
+                LOG.log(Level.INFO, "Code Time: Unable to get the music track response from the http request, error: {0}", errorStr);
             }
         }
     }

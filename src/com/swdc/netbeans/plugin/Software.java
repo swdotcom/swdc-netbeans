@@ -51,8 +51,8 @@ public class Software extends ModuleInstall implements Runnable {
         repoManager = RepoManager.getInstance();
         musicManager = MusicManager.getInstance();
         
-        // INFO [Software]: Software.com: Loaded vUnknown on platform: null
-        LOG.log(Level.INFO, "Software.com: Loaded v{0}", softwareUtil.getPluginVersion());
+        // INFO [Software]: Code Time: Loaded vUnknown on platform: null
+        LOG.log(Level.INFO, "Code Time: Loaded v{0}", softwareUtil.getPluginVersion());
         
         // setup the document change event listeners
         setupEventListeners();
@@ -134,7 +134,7 @@ public class Software extends ModuleInstall implements Runnable {
                 softwareUtil.sendOfflineData();
             }
             catch (InterruptedException e){
-                LOG.log(Level.WARNING, "Software.com: error boostraping user plugin status, error: {0}", e.getMessage());
+                LOG.log(Level.WARNING, "Code Time: error boostraping user plugin status, error: {0}", e.getMessage());
             }
         }).start();
     }

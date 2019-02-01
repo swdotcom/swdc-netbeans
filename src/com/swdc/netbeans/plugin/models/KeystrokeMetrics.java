@@ -34,7 +34,7 @@ public class KeystrokeMetrics {
     }
 
     public void setAdd(int add) {
-        log.log(Level.INFO, "Software.com: incrementing add");
+        log.log(Level.INFO, "Code Time: incrementing add");
         this.add = add;
     }
 
@@ -43,7 +43,7 @@ public class KeystrokeMetrics {
     }
 
     public void setOpen(int open) {
-        log.log(Level.INFO, "Software.com: incrementing open");
+        log.log(Level.INFO, "Code Time: incrementing open");
         this.open = open;
     }
 
@@ -52,7 +52,7 @@ public class KeystrokeMetrics {
     }
 
     public void setClose(int close) {
-        log.log(Level.INFO, "Software.com: incrementing close");
+        log.log(Level.INFO, "Code Time: incrementing close");
         this.close = close;
     }
 
@@ -61,7 +61,7 @@ public class KeystrokeMetrics {
     }
 
     public void setPaste(int paste) {
-        log.log(Level.INFO, "Software.com: incrementing paste");
+        log.log(Level.INFO, "Code Time: incrementing paste");
         this.paste = paste;
     }
 
@@ -70,7 +70,7 @@ public class KeystrokeMetrics {
     }
 
     public void setDelete(int delete) {
-        log.log(Level.INFO, "Software.com: incrementing delete");
+        log.log(Level.INFO, "Code Time: incrementing delete");
         this.delete = delete;
     }
 
@@ -79,7 +79,7 @@ public class KeystrokeMetrics {
     }
 
     public void setLength(int length) {
-        log.log(Level.INFO, "Software.com: setting length");
+        log.log(Level.INFO, "Code Time: setting length");
         this.length = length;
     }
 
@@ -88,7 +88,7 @@ public class KeystrokeMetrics {
     }
 
     public void setNetkeys(int netkeys) {
-        log.log(Level.INFO, "Software.com: incrementing netkeys");
+        log.log(Level.INFO, "Code Time: incrementing netkeys");
         this.netkeys = netkeys;
     }
 
@@ -97,7 +97,7 @@ public class KeystrokeMetrics {
     }
 
     public void setLines(int lines) {
-        log.log(Level.INFO, "Software.com: updating lines");
+        log.log(Level.INFO, "Code Time: updating lines");
         this.lines = lines;
     }
 
@@ -106,7 +106,7 @@ public class KeystrokeMetrics {
     }
 
     public void setLinesAdded(int linesAdded) {
-        log.log(Level.INFO, "Software.com: incrementing lines added");
+        log.log(Level.INFO, "Code Time: incrementing lines added");
         this.linesAdded = linesAdded;
     }
 
@@ -115,7 +115,7 @@ public class KeystrokeMetrics {
     }
 
     public void setLinesRemoved(int linesRemoved) {
-        log.log(Level.INFO, "Software.com: incrementing lines removed");
+        log.log(Level.INFO, "Code Time: incrementing lines removed");
         this.linesRemoved = linesRemoved;
     }
 

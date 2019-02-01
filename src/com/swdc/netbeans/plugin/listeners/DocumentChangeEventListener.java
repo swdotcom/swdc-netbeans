@@ -132,7 +132,7 @@ public class DocumentChangeEventListener implements DocumentListener {
         try {
             return (int) Files.lines(path).count();
         } catch (IOException e) {
-            log.log(Level.INFO, "Software.com: failed to get the line count for file {0}", fileName);
+            log.log(Level.INFO, "Code Time: failed to get the line count for file {0}", fileName);
             return 0;
         }
     }

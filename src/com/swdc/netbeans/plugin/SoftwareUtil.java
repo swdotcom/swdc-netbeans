@@ -18,10 +18,12 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -44,6 +46,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.netbeans.api.autoupdate.UpdateElement;
 import org.netbeans.api.autoupdate.UpdateManager;
 import org.netbeans.api.autoupdate.UpdateUnit;
@@ -134,7 +137,7 @@ public class SoftwareUtil {
                 output.write(content);
             }
         } catch (IOException e) {
-            LOG.log(Level.WARNING, "Software.com: Failed to write the key value pair ({0}, {1}) into the session, error: {2}", new Object[]{key, val, e.getMessage()});
+            LOG.log(Level.WARNING, "Code Time: Failed to write the key value pair ({0}, {1}) into the session, error: {2}", new Object[]{key, val, e.getMessage()});
         }
     }
 
@@ -152,7 +155,7 @@ public class SoftwareUtil {
                     data = jsonParser.parse(content).getAsJsonObject();
                 }
             } catch (JsonSyntaxException | IOException e) {
-                LOG.log(Level.WARNING, "Software.com: Error trying to read and json parse the session file.{0}", e.getMessage());
+                LOG.log(Level.WARNING, "Code Time: Error trying to read and json parse the session file.{0}", e.getMessage());
             }
         }
         return (data == null) ? new JsonObject() : data;
@@ -177,6 +180,16 @@ public class SoftwareUtil {
         }
         return file;
     }
+    
+    private String getCodeTimeDashboardFile() {
+        String file = getSoftwareDir();
+        if (isWindows()) {
+            file += "\\CodeTime";
+        } else {
+            file += "/CodeTime";
+        }
+        return file;
+    }
 
     public void storePayload(String payload) {
         if (payload == null || payload.length() == 0) {
@@ -195,7 +208,7 @@ public class SoftwareUtil {
             output.append(payload);
             output.close();
         } catch (IOException e) {
-            LOG.log(Level.WARNING, "Software.com: Error appending to the Software data store file, error: {0}", e.getMessage());
+            LOG.log(Level.WARNING, "Code Time: Error appending to the Software data store file, error: {0}", e.getMessage());
         }
     }
 
@@ -238,7 +251,7 @@ public class SoftwareUtil {
         return calendar.getTime();
     }
 
-    private String getStringRepresentation(HttpEntity res) throws IOException {
+    private String getStringRepresentation(HttpEntity res, boolean isPlainText) throws IOException {
         if (res == null) {
             return null;
         }
@@ -260,6 +273,9 @@ public class SoftwareUtil {
                 String aLine = br.readLine();
                 if (aLine != null) {
                     sb.append(aLine);
+                    if (isPlainText) {
+                        sb.append("\n");
+                    }
                 } else {
                     done = true;
                 }
@@ -292,13 +308,19 @@ public class SoftwareUtil {
                         softwareResponse.setIsOk(true);
                     }
                     HttpEntity entity = httpResponse.getEntity();
+                    
+                    ContentType contentType = ContentType.getOrDefault(entity);
+                    String mimeType = contentType.getMimeType();
+                    boolean isPlainText = (mimeType.indexOf("text/plain") == -1) ? false : true;
+                    
                     JsonObject jsonObj = null;
                     if (entity != null) {
                         try {
-                            String jsonStr = getStringRepresentation(entity);
+                            String jsonStr = getStringRepresentation(entity, isPlainText);
                             softwareResponse.setJsonStr(jsonStr);
-                            LOG.log(Level.INFO, "Sofware.com: API response {0}", jsonStr);
-                            if (jsonStr != null) {
+                            
+                            if (jsonStr != null && !isPlainText) {
+                                LOG.log(Level.INFO, "Sofware.com: API response {0}", jsonStr);
                                 Object jsonEl = jsonParser.parse(jsonStr);
                                 
                                 if (jsonEl instanceof JsonElement) {
@@ -320,7 +342,7 @@ public class SoftwareUtil {
                                 }
                             }
                         } catch (IOException e) {
-                            String errorMessage = "Software.com: Unable to get the response from the http request, error: " + e.getMessage();
+                            String errorMessage = "Code Time: Unable to get the response from the http request, error: " + e.getMessage();
                             softwareResponse.setErrorMessage(errorMessage);
                             LOG.log(Level.WARNING, errorMessage);
                         }
@@ -332,15 +354,15 @@ public class SoftwareUtil {
                             if (code != null && code.equals("DEACTIVATED")) {
                                 SoftwareUtil.getInstance().setStatusLineMessage(
                                     StatusBarType.ALERT,
-                                    "Software.com",
-                                    "To see your coding data in Software.com, please reactivate your account.");
+                                    "Code Time",
+                                    "To see your coding data in Code Time, please reactivate your account.");
                                 softwareResponse.setDeactivated(true);
                             }
                         }
                     }
                 }
             } catch (InterruptedException | ExecutionException e) {
-                String errorMessage = "Software.com: Unable to get the response from the http request, error: " + e.getMessage();
+                String errorMessage = "Code Time: Unable to get the response from the http request, error: " + e.getMessage();
                 softwareResponse.setErrorMessage(errorMessage);
                 LOG.log(Level.WARNING, errorMessage);
             }
@@ -378,10 +400,10 @@ public class SoftwareUtil {
                         deleteFile(dataStoreFile);
                     }
                 } else {
-                    LOG.log(Level.INFO, "Software.com: No offline data to send");
+                    LOG.log(Level.INFO, "Code Time: No offline data to send");
                 }
             } catch (IOException e) {
-                LOG.log(Level.WARNING, "Software.com: Error trying to read and send offline data, error: {0}", e.getMessage());
+                LOG.log(Level.WARNING, "Code Time: Error trying to read and send offline data, error: {0}", e.getMessage());
             }
         }
     }
@@ -447,7 +469,7 @@ public class SoftwareUtil {
         if (requiresLogin) {
             setItem("netbeans_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
             confirmWindowOpen = true;
-            String msg = "To see your coding data in Software.com, please log in to your account.";
+            String msg = "To see your coding data in Code Time, please log in to your account.";
 
             Object[] options = {"Log in", "Not now"};
             int choice = JOptionPane.showOptionDialog(
@@ -479,7 +501,7 @@ public class SoftwareUtil {
         SoftwareResponse resp = makeApiCall("/users/ping/", HttpGet.METHOD_NAME, null);
         if (!resp.isOk() && !resp.isDeactivated()) {
             // update the status bar with Sign Up message
-            setStatusLineMessage(StatusBarType.ALERT, "Software.com", "Click to log in to Software.com");
+            setStatusLineMessage(StatusBarType.ALERT, "Code Time", "Click to log in to Code Time");
         }
         return resp.isOk();
     }
@@ -547,7 +569,7 @@ public class SoftwareUtil {
             String result = processOutput.toString().trim();
             return result;
         } catch (IOException | InterruptedException e) {
-            LOG.log(Level.WARNING, "Software.com: Unable to complete command request: {0}", command);
+            LOG.log(Level.WARNING, "Code Time: Unable to complete command request: {0}", command);
         }
 
         return "";
@@ -595,7 +617,52 @@ public class SoftwareUtil {
         if (!TELEMETRY_ON) {
             setStatusLineMessage(StatusBarType.ALERT, "<S> Paused", "Enable metrics to resume");
         } else {
-            setStatusLineMessage(StatusBarType.NO_KPM, "Software.com", "Click to log in to Software.com");
+            setStatusLineMessage(StatusBarType.NO_KPM, "Code Time", "Click to log in to Code Time");
+        }
+    }
+    
+    public String humanizeMinutes(int minutes) {
+        String str = "";
+        if (minutes == 60) {
+            str = "1 hr";
+        } else if (minutes > 60) {
+            float fval = (float)minutes / 60;
+            try {
+                if (fval % 1 == 0) {
+                    str = String.format("%.0f", fval) + " hrs";
+                } else {
+                    str = String.format("%.2f", fval) + " hrs";
+                }
+            } catch (Exception e) {
+                str = String.valueOf(fval);
+            }
+        } else if (minutes == 1) {
+            str = "1 min";
+        } else {
+            str = minutes + " min";
+        }
+        return str;
+    }
+    
+    public void launchCodeTimeMetricsDashboard() {
+        String api = "/dashboard";
+        String dashboardContent = this.makeApiCall(api, HttpGet.METHOD_NAME, null).getJsonStr();
+        String codeTimeFile = this.getCodeTimeDashboardFile();
+        File f = new File(codeTimeFile);
+
+        Writer writer = null;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(codeTimeFile), "utf-8"));
+            writer.write(dashboardContent);
+        } catch (IOException ex) {
+            // Report
+        } finally {
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException ex) {/*ignore*/}
         }
     }
 

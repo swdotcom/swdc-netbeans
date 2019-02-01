@@ -64,7 +64,7 @@ public class RepoManager {
                     JsonObject latestCommit = payload.get("commit").getAsJsonObject();
                     return latestCommit;
                 } else {
-                    LOG.log(Level.INFO, "Software.com: Unable to fetch latest commit info");
+                    LOG.log(Level.INFO, "Code Time: Unable to fetch latest commit info");
                 }
             } catch (UnsupportedEncodingException e) {
                 //
@@ -236,12 +236,12 @@ public class RepoManager {
                     message = responseObj.get("message").getAsString();
                 }
 
-                LOG.log(Level.INFO, "Software.com: completed commits update - {0}", message);
+                LOG.log(Level.INFO, "Code Time: completed commits update - {0}", message);
             } else {
-                LOG.log(Level.INFO, "Software.com: Unable to process repo commits");
+                LOG.log(Level.INFO, "Code Time: Unable to process repo commits");
             }
         } catch (Exception e) {
-            LOG.log(Level.INFO, "Software.com: Unable to process repo commits, error: {0}", e.getMessage());
+            LOG.log(Level.INFO, "Code Time: Unable to process repo commits, error: {0}", e.getMessage());
         }
     }
 
@@ -289,12 +289,12 @@ public class RepoManager {
                     SoftwareResponse softwareResp =
                             softwareUtil.makeApiCall("/repo/members", HttpPost.METHOD_NAME, repoDataStr);
                     if (softwareResp.isOk()) {
-                        LOG.log(Level.INFO, "Software.com: Completed sending repo member info");
+                        LOG.log(Level.INFO, "Code Time: Completed sending repo member info");
                     } else {
-                        LOG.log(Level.WARNING, "Software.com: Unable to process repo member metrics, error: {0}", softwareResp.getErrorMessage());
+                        LOG.log(Level.WARNING, "Code Time: Unable to process repo member metrics, error: {0}", softwareResp.getErrorMessage());
                     }
                 } catch (Exception e) {
-                    LOG.log(Level.INFO, "Software.com: Unable to process repo member metrics, error: {0}", e.getMessage());
+                    LOG.log(Level.INFO, "Code Time: Unable to process repo member metrics, error: {0}", e.getMessage());
                 }
             }
         }

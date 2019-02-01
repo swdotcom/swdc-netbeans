@@ -26,7 +26,7 @@ import org.openide.util.lookup.ServiceProvider;
 @ServiceProvider(service = StatusLineElementProvider.class, position = 1)
 public class SoftwareStatusBar implements StatusLineElementProvider {
 
-    private static JLabel statusLabel = new JLabel(" Software.com ");
+    private static JLabel statusLabel = new JLabel(" Code Time ");
     private JPanel panel = new JPanel(new BorderLayout());
 
     public enum StatusBarType {
