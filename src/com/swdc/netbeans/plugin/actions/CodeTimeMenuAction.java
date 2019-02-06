@@ -20,7 +20,7 @@ import org.openide.util.NbBundle;
 @ActionRegistration(
         displayName = "#CTL_CodeTimeMenuAction"
 )
-@ActionReference(path = "Menu/Tools/Software.com", position = -2)
+@ActionReference(path = "Menu/Tools/Code Time", position = -2)
 @NbBundle.Messages("CTL_CodeTimeMenuAction=Code time metrics")
 public final class CodeTimeMenuAction implements ActionListener {
 

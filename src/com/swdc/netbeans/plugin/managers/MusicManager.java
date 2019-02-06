@@ -44,39 +44,66 @@ public class MusicManager {
         // get the music track json string
         //
         JsonObject trackInfo = this.getCurrentMusicTrack();
+        Integer offset = ZonedDateTime.now().getOffset().getTotalSeconds();
+        long now = Math.round(System.currentTimeMillis() / 1000);
+        long local_start = now + offset;
+        String trackStr = null;
+        String existingTrackId = (currentTrack.has("id")) ? currentTrack.get("id").getAsString() : null;
 
         if (trackInfo == null || !trackInfo.has("id") || !trackInfo.has("name")) {
+            // end the existing track if the one coming is null
+            if (existingTrackId != null) {
+                // update the end time on the previous track and send it as well
+                currentTrack.addProperty("end", now);
+                // send the post to end the previous track
+                trackStr = SoftwareUtil.gson.toJson(currentTrack);
+                SoftwareResponse resp = softwareUtil.makeApiCall(
+                    "/data/music", HttpPost.METHOD_NAME, trackStr);
+                // song has ended, clear out the current track
+                currentTrack = new JsonObject();
+                if (resp == null || !resp.isOk()) {
+                    String errorStr = (resp != null && resp.getErrorMessage() != null) ? resp.getErrorMessage() : "";
+                    LOG.log(Level.INFO, "Code Time: Unable to get the music track response from the http request, error: {0}", errorStr);
+                }
+            }
             return;
         }
 
         SoftwareResponse response = null;
 
-        String existingTrackId = (currentTrack.has("id")) ? currentTrack.get("id").getAsString() : null;
-        String trackId = (trackInfo != null && trackInfo.has("id")) ? trackInfo.get("id").getAsString() : null;
+        String trackId = (trackInfo.has("id")) ? trackInfo.get("id").getAsString() : null;
 
         if (trackId != null && !trackId.contains("spotify") && !trackId.contains("itunes")) {
             // update it to itunes since spotify uses that in the id
             trackId = "itunes:track:" + trackId;
             trackInfo.addProperty("id", trackId);
         }
+        
+        boolean isSpotify = (trackId != null && trackId.contains("spotify"));
+        if (isSpotify) {
+            // convert the duration from milliseconds to seconds
+            String durationStr = trackInfo.get("duration").getAsString();
+            long duration = Long.parseLong(durationStr);
+            int durationInSec = Math.round(duration / 1000);
+            trackInfo.addProperty("duration", durationInSec);
+        }
+        String trackState = (trackInfo.get("state").getAsString());
 
-        Integer offset = ZonedDateTime.now().getOffset().getTotalSeconds();
-        long now = Math.round(System.currentTimeMillis() / 1000);
-        long local_start = now + offset;
-
-        String trackStr = null;
+        boolean isPaused = !(trackState.toLowerCase().equals("playing"));
 
         if (trackId != null) {
 
-            if (existingTrackId != null && !existingTrackId.equals(trackId)) {
+            if (existingTrackId != null && (!existingTrackId.equals(trackId) || isPaused)) {
                 // update the end time on the previous track and send it as well
                 currentTrack.addProperty("end", now);
                 // send the post to end the previous track
                 trackStr = SoftwareUtil.gson.toJson(currentTrack);
+                // clear out the current track
+                currentTrack = new JsonObject();
             }
 
             // if the current track doesn't have an "id" then a song has started
-            if (existingTrackId == null || !existingTrackId.equals(trackId)) {
+            if (!isPaused && (existingTrackId == null || !existingTrackId.equals(trackId))) {
 
                 // send the post to send the new track info
                 trackInfo.addProperty("start", now);
@@ -88,16 +115,6 @@ public class MusicManager {
                 cloneTrackInfoToCurrent(trackInfo);
             }
 
-        } else {
-            if (existingTrackId != null) {
-                // update the end time on the previous track and send it as well
-                currentTrack.addProperty("end", now);
-                // send the post to end the previous track
-                trackStr = SoftwareUtil.gson.toJson(currentTrack);
-            }
-
-            // song has ended, clear out the current track
-            currentTrack = new JsonObject();
         }
 
         if (trackStr != null) {
@@ -109,6 +126,7 @@ public class MusicManager {
             }
         }
     }
+
 
     private JsonObject getCurrentMusicTrack() {
         if (!softwareUtil.isMac()) {
@@ -122,7 +140,8 @@ public class MusicManager {
                 + "set track_genre to genre of current track\n"
                 + "set track_id to database ID of current track\n"
                 + "set track_duration to duration of current track\n"
-                + "set json to \"type='itunes';genre='\" & track_genre & \"';artist='\" & track_artist & \"';id='\" & track_id & \"';name='\" & track_name & \"';state='playing';duration='\" & track_duration & \"'\"\n"
+                + "set track_state to player state\n"
+                + "set json to \"type='itunes';genre='\" & track_genre & \"';artist='\" & track_artist & \"';id='\" & track_id & \"';name='\" & track_name & \"';state='\" & track_state & \"';duration='\" & track_duration & \"'\"\n"
                 + "end tell\n"
                 + "return json\n"
                 + "end buildItunesRecord\n"
@@ -130,10 +149,10 @@ public class MusicManager {
                 + "tell application \"Spotify\"\n"
                 + "set track_artist to artist of current track\n"
                 + "set track_name to name of current track\n"
-                + "set track_duration to duration of current track\n"
                 + "set track_id to id of current track\n"
                 + "set track_duration to duration of current track\n"
-                + "set json to \"type='spotify';genre='';artist='\" & track_artist & \"';id='\" & track_id & \"';name='\" & track_name & \"';state='playing';duration='\" & track_duration & \"'\"\n"
+                + "set track_state to player state\n"
+                + "set json to \"type='spotify';genre='';artist='\" & track_artist & \"';id='\" & track_id & \"';name='\" & track_name & \"';state='\" & track_state & \"';duration='\" & track_duration & \"'\"\n"
                 + "end tell\n"
                 + "return json\n"
                 + "end buildSpotifyRecord\n\n"

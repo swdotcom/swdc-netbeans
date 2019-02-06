@@ -21,7 +21,7 @@ import org.openide.util.NbBundle.Messages;
         iconBase = "com/swdc/netbeans/plugin/status/sw.png",
         displayName = "#CTL_SoftwareMenuAction"
 )
-@ActionReference(path = "Menu/Tools/Software.com", position = 0)
+@ActionReference(path = "Menu/Tools/Code Time", position = 0)
 @Messages("CTL_SoftwareMenuAction=Go to software.com")
 public final class SoftwareMenuAction implements ActionListener {
 

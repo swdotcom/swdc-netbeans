@@ -51,6 +51,13 @@ import org.netbeans.api.autoupdate.UpdateElement;
 import org.netbeans.api.autoupdate.UpdateManager;
 import org.netbeans.api.autoupdate.UpdateUnit;
 import org.openide.awt.HtmlBrowser.URLDisplayer;
+import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
+import org.openide.loaders.DataObject;
+import org.openide.nodes.Node;
+import org.openide.text.Line;
+import org.openide.text.NbDocument;
+import org.openide.util.Exceptions;
 
 /**
  *
@@ -626,15 +633,17 @@ public class SoftwareUtil {
         if (minutes == 60) {
             str = "1 hr";
         } else if (minutes > 60) {
-            float fval = (float)minutes / 60;
+            float hours = (float)minutes / 60;
             try {
-                if (fval % 1 == 0) {
-                    str = String.format("%.0f", fval) + " hrs";
+                if (hours % 1 == 0) {
+                    // don't return a number with 2 decimal place precision
+                    str = String.format("%.0f", hours) + " hrs";
                 } else {
-                    str = String.format("%.2f", fval) + " hrs";
+                    hours = Math.round(hours * 10) / 10;
+                    str = String.format("%.1f", hours) + " hrs";
                 }
             } catch (Exception e) {
-                str = String.valueOf(fval);
+                str = String.valueOf(Math.round(hours)) + " hrs";
             }
         } else if (minutes == 1) {
             str = "1 min";
@@ -664,6 +673,16 @@ public class SoftwareUtil {
                 }
             } catch (IOException ex) {/*ignore*/}
         }
+        
+        try {
+            // open the file in the editor
+            FileObject fo = FileUtil.createData(f);
+            DataObject d = DataObject.find(fo);
+            NbDocument.openDocument(d, PLUGIN_ID, Line.ShowOpenType.OPEN, Line.ShowVisibilityType.FOCUS);
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        
     }
 
     public void setStatusLineMessage(final StatusBarType barType, final String statusMsg, final String tooltip) {
