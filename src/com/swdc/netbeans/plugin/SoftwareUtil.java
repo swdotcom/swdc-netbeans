@@ -54,7 +54,6 @@ import org.openide.awt.HtmlBrowser.URLDisplayer;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
-import org.openide.nodes.Node;
 import org.openide.text.Line;
 import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
@@ -108,7 +107,9 @@ public class SoftwareUtil {
     }
     
     private SoftwareUtil() {
-        statusBar = new SoftwareStatusBar();
+        if (statusBar == null) {
+            statusBar = new SoftwareStatusBar();
+        }
     }
 
     public String getPluginVersion() {
@@ -191,9 +192,9 @@ public class SoftwareUtil {
     private String getCodeTimeDashboardFile() {
         String file = getSoftwareDir();
         if (isWindows()) {
-            file += "\\CodeTime";
+            file += "\\CodeTime.txt";
         } else {
-            file += "/CodeTime";
+            file += "/CodeTime.txt";
         }
         return file;
     }
@@ -480,7 +481,7 @@ public class SoftwareUtil {
 
             Object[] options = {"Log in", "Not now"};
             int choice = JOptionPane.showOptionDialog(
-                    null, msg, "Software", JOptionPane.YES_NO_OPTION,
+                    null, msg, "Code Time", JOptionPane.YES_NO_OPTION,
                     JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
             // interpret the user's choice
             if (choice == JOptionPane.YES_OPTION) {
@@ -581,6 +582,20 @@ public class SoftwareUtil {
 
         return "";
     }
+    
+    public boolean requiresAuthentication() {
+        boolean requiresAuthentication = false;
+        // create the token value
+        String token = getItem("token");
+        String jwt = getItem("jwt");
+        boolean addToken = false;
+        if (token == null || token.equals("")) {
+            requiresAuthentication = true;
+        } else if (jwt == null || jwt.equals("") || !isAuthenticated()) {
+            requiresAuthentication = true;
+        }
+        return requiresAuthentication;
+    }
 
     public void launchDashboard() {
 
@@ -588,16 +603,12 @@ public class SoftwareUtil {
 
         // create the token value
         String token = getItem("token");
-        String jwt = getItem("jwt");
-        boolean addToken = false;
-        if (token == null || token.equals("")) {
+        boolean requiresAuthentication = this.requiresAuthentication();
+        if (requiresAuthentication && (token == null || token.equals(""))) {
             token = generateToken();
             setItem("token", token);
-            addToken = true;
-        } else if (jwt == null || jwt.equals("") || !isAuthenticated()) {
-            addToken = true;
         }
-        if (addToken) {
+        if (requiresAuthentication) {
             url += "/onboarding?token=" + token;
 
             // checkTokenAvailability in a minute
@@ -691,6 +702,13 @@ public class SoftwareUtil {
             NbDocument.openDocument(d, PLUGIN_ID, Line.ShowOpenType.OPEN, Line.ShowVisibilityType.FOCUS);
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
+        }
+        
+        // delete the legacy file
+        String legacyFileName = codeTimeFile.substring(0, codeTimeFile.lastIndexOf("."));
+        File legacyFile = new File(legacyFileName);
+        if (legacyFile.exists()) {
+            legacyFile.delete();
         }
         
     }

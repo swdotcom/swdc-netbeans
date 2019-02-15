@@ -13,6 +13,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.SwingConstants;
@@ -28,7 +29,10 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
 
     private static JLabel statusLabel = new JLabel(" Code Time ");
     private JPanel panel = new JPanel(new BorderLayout());
+    private long last_click_time = -1;
 
+    private static boolean registeredMouseClick = false;
+    
     public enum StatusBarType {
         ROCKET("com/swdc/netbeans/plugin/status/rocket.png"),
         FULL("com/swdc/netbeans/plugin/status/100.png"),
@@ -46,13 +50,38 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     }
 
     public SoftwareStatusBar() {
+        
         statusLabel.setIcon(StatusBarType.NO_KPM.icon);
-        statusLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                SoftwareUtil.getInstance().launchDashboard();
-            }
-        });
+        if (!registeredMouseClick) {
+            registeredMouseClick = true;
+            statusLabel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+
+                    if (last_click_time == -1 || System.currentTimeMillis() - last_click_time > 5000) {
+                        last_click_time = System.currentTimeMillis();
+                        if (SoftwareUtil.getInstance().requiresAuthentication()) {
+                            // just launch the onboarding flow
+                            SoftwareUtil.getInstance().launchDashboard();
+                        } else {
+                            String msg = "Click to view your Code Time dashboard or visit the app.";
+
+                            Object[] options = {"Software.com", "Dashboard"};
+                            int choice = JOptionPane.showOptionDialog(
+                                    null, msg, "Code Time", JOptionPane.YES_NO_OPTION,
+                                    JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+                            // interpret the user's choice
+                            if (choice == JOptionPane.YES_OPTION) {
+                                SoftwareUtil.getInstance().launchDashboard();
+                            } else if (choice == JOptionPane.NO_OPTION) {
+                                SoftwareUtil.getInstance().launchCodeTimeMetricsDashboard();
+                            }
+                        }
+                    }
+
+                }
+            });
+        }
         panel.add(new JSeparator(SwingConstants.VERTICAL), BorderLayout.WEST);
         panel.add(statusLabel, BorderLayout.CENTER);
     }
