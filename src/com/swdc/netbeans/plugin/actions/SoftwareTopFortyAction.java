@@ -15,17 +15,17 @@ import org.openide.util.NbBundle;
 
 @ActionID(
         category = "Tools",
-        id = "com.swdc.netbeans.plugin.actions.CodeTimeMenuAction"
+        id = "com.swdc.netbeans.plugin.actions.SoftwareTopFortyAction"
 )
 @ActionRegistration(
-        displayName = "#CTL_CodeTimeMenuAction"
+        displayName = "#CTL_SoftwareTopFortyAction"
 )
-@ActionReference(path = "Menu/Tools/Code Time", position = 0)
-@NbBundle.Messages("CTL_CodeTimeMenuAction=Dashboard")
-public final class CodeTimeMenuAction implements ActionListener {
+@ActionReference(path = "Menu/Tools/Code Time", position = 2)
+@NbBundle.Messages("CTL_SoftwareTopFortyAction=Software top 40")
+public final class SoftwareTopFortyAction implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        SoftwareUtil.getInstance().launchCodeTimeMetricsDashboard();
+        SoftwareUtil.getInstance().launchSoftwareTopForty();
     }
 }

@@ -653,6 +653,16 @@ public class SoftwareUtil {
         return str;
     }
     
+    public void launchSoftwareTopForty() {
+        String url = "https://api.software.com/music/top40";
+        try {
+            URL launchUrl = new URL(url);
+            URLDisplayer.getDefault().showURL(launchUrl);
+        } catch (MalformedURLException e) {
+            LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
+        }
+    }
+    
     public void launchCodeTimeMetricsDashboard() {
         String api = "/dashboard";
         String dashboardContent = this.makeApiCall(api, HttpGet.METHOD_NAME, null).getJsonStr();
