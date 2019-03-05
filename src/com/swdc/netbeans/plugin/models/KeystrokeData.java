@@ -24,6 +24,7 @@ public class KeystrokeData {
     // non-hardcoded attributes
     private List<KeystrokeFileMetrics> sourceList = new ArrayList<>();
     private String version;
+    private String os;
     private int pluginId;
     private int keystrokes = 0;
     // start and end are in seconds
@@ -37,6 +38,7 @@ public class KeystrokeData {
     public KeystrokeData(String projectName, String projectDir) {
         this.start = Math.round(System.currentTimeMillis() / 1000);
         this.version = softwareUtil.getPluginVersion();
+        this.os = softwareUtil.getOsInfo();
         this.pluginId = SoftwareUtil.PLUGIN_ID;
         
         // offset is negative if the tz is before utc, and positive if after
@@ -84,6 +86,7 @@ public class KeystrokeData {
             });
             jsonObj.add("source", sourceObj);
             jsonObj.addProperty("version", this.version);
+            jsonObj.addProperty("os", this.os);
             jsonObj.addProperty("pluginId", this.pluginId);
             jsonObj.addProperty("keystrokes", this.keystrokes);
             jsonObj.addProperty("start", this.start);

@@ -5,6 +5,7 @@
 package com.swdc.netbeans.plugin;
 
 
+import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
@@ -14,6 +15,10 @@ import com.swdc.netbeans.plugin.models.KeystrokeData;
 import com.swdc.netbeans.plugin.managers.SessionManager;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
@@ -69,6 +75,8 @@ public class Software extends ModuleInstall implements Runnable {
         
         setupRepoMembersProcessor();
         
+        setupUserStatusProcessor();
+        
         // check the user auth status and send any offline data
         bootstrapStatus();
     }
@@ -105,6 +113,12 @@ public class Software extends ModuleInstall implements Runnable {
                 handler, 10, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
     }
     
+    private void setupUserStatusProcessor() {
+        final Runnable handler = () -> processUserStatus();
+        scheduler.scheduleAtFixedRate(
+                handler, 60, 90, TimeUnit.SECONDS);
+    }
+    
     private void setupRepoMusicInfoProcessor() {
         final Runnable handler = () -> processMusicInfo();
         int interval = 15;
@@ -129,14 +143,17 @@ public class Software extends ModuleInstall implements Runnable {
     private void bootstrapStatus() {
         new Thread(() -> {
             try {
-                Thread.sleep(1000 * 15);
-                softwareUtil.checkUserAuthenticationStatus();
+                Thread.sleep(5000);
+                initializeUserInfo();
                 softwareUtil.sendOfflineData();
-            }
-            catch (InterruptedException e){
-                LOG.log(Level.WARNING, "Code Time: error boostraping user plugin status, error: {0}", e.getMessage());
+            } catch (InterruptedException e) {
+                System.err.println(e);
             }
         }).start();
+    }
+    
+    private void processUserStatus() {
+        softwareUtil.getUserStatus();
     }
     
     private void processMusicInfo() {
@@ -185,6 +202,121 @@ public class Software extends ModuleInstall implements Runnable {
             keystrokeMgr.reset();
         } else if (keystrokeData != null) {
             keystrokeMgr.reset();
+        }
+    }
+    
+    private void initializeUserInfo() {
+        new Thread(() -> {
+            // this should only ever possibly return true the very first
+            // time the IDE loads this new code
+            if (requiresUserCreation()) {
+                createAnonymousUser();
+            }
+            SoftwareUtil.UserStatus userStatus = softwareUtil.getUserStatus();
+            if (userStatus.loggedInUser == null) {
+                // ask the user to login one time only
+                // run the initial calls in 6 seconds
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(1000 * 10);
+                        softwareUtil.checkUserAuthenticationStatus();
+                    }
+                    catch (Exception e){
+                        System.err.println(e);
+                    }
+                }).start();
+                initializeCalls();
+            }
+        }).start();
+    }
+    
+    private void initializeCalls() {
+        new Thread(() -> {
+            softwareUtil.sendOfflineData();
+            SessionManager.fetchDailyKpmSessionInfo();
+        }).start();
+    }
+
+    protected String getAppJwt() {
+        String appJwt = softwareUtil.getItem("app_jwt");
+        boolean serverIsOnline = softwareUtil.isServerOnline();
+        if (appJwt == null && serverIsOnline) {
+            String macAddress = softwareUtil.getMacAddress();
+            if (macAddress != null) {
+                String encodedMacIdentity = "";
+                try {
+                    encodedMacIdentity = URLEncoder.encode(macAddress, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    // url encoding failed, just use the mac addr id
+                    encodedMacIdentity = macAddress;
+                }
+
+                String api = "/data/token?addr=" + encodedMacIdentity;
+                SoftwareResponse resp = softwareUtil.makeApiCall(api, HttpGet.METHOD_NAME, null);
+                if (resp.isOk()) {
+                    JsonObject obj = resp.getJsonObj();
+                    appJwt = obj.get("jwt").getAsString();
+                    softwareUtil.setItem("app_jwt", appJwt);
+                }
+            }
+        }
+        return softwareUtil.getItem("app_jwt");
+    }
+
+    protected boolean requiresUserCreation() {
+        // check using the mac address
+        List<SoftwareUtil.User> authAccounts = softwareUtil.getAuthenticatedPluginAccounts();
+        if (authAccounts != null && authAccounts.size() > 0) {
+            for (SoftwareUtil.User user : authAccounts) {
+                if (user.email != null && user.mac_addr != null && user.email.equals(user.mac_addr)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    protected void createAnonymousUser() {
+        boolean serverIsOnline = softwareUtil.isServerOnline();
+        String pluginToken = softwareUtil.getItem("token");
+        String macAddress = softwareUtil.getMacAddress();
+        // make sure we've fetched the app jwt
+        String appJwt = getAppJwt();
+
+        if (serverIsOnline && macAddress != null) {
+            String email = macAddress;
+            if (pluginToken == null) {
+                pluginToken = softwareUtil.generateToken();
+                softwareUtil.setItem("token", pluginToken);
+            }
+            String timezone = TimeZone.getDefault().getID();
+
+            String encodedMacIdentity = "";
+            try {
+                encodedMacIdentity = URLEncoder.encode(macAddress, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                // url encoding failed, just use the mac addr id
+                encodedMacIdentity = macAddress;
+            }
+            JsonObject payload = new JsonObject();
+            payload.addProperty("email", email);
+            payload.addProperty("plugin_token", pluginToken);
+            payload.addProperty("timezone", timezone);
+            String api = "/data/onboard?addr=" + encodedMacIdentity;
+            SoftwareResponse resp = softwareUtil.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), appJwt);
+            if (resp.isOk()) {
+                // check if we have the data and jwt
+                // resp.data.jwt and resp.data.user
+                // then update the session.json for the jwt, user, and jetbrains_lastUpdateTime
+                JsonObject data = resp.getJsonObj();
+                // check if we have any data
+                if (data != null && data.has("jwt")) {
+                    String dataJwt = data.get("jwt").getAsString();
+                    String user = data.get("user").getAsString();
+                    softwareUtil.setItem("jwt", dataJwt);
+                    softwareUtil.setItem("user", user);
+                }
+            }
         }
     }
     

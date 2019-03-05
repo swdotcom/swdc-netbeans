@@ -16,7 +16,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
  *
@@ -30,12 +29,14 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
     private String api;
     private String httpMethodName;
     private HttpClient httpClient;
+    private String overridingJwt;
     
-    public SoftwareHttpManager(String api, String httpMethodName, String payload) {
+    public SoftwareHttpManager(String api, String httpMethodName, String payload, String overridingJwt, HttpClient httpClient) {
         this.payload = payload;
         this.api = api;
         this.httpMethodName = httpMethodName;
-        httpClient = HttpClientBuilder.create().build();
+        this.httpClient = httpClient;
+        this.overridingJwt = overridingJwt;
     }
     
     @Override
@@ -62,7 +63,7 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
                     break;
             }
 
-            String jwtToken = SoftwareUtil.getInstance().getItem("jwt");
+            String jwtToken = (overridingJwt != null) ? overridingJwt : SoftwareUtil.getInstance().getItem("jwt");
             // obtain the jwt session token if we have it
             if (jwtToken != null) {
                 req.addHeader("Authorization", jwtToken);
