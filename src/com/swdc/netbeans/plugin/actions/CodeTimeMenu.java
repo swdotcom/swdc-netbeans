@@ -24,7 +24,7 @@ import org.openide.util.actions.Presenter;
 
 @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeMenu")
 @ActionRegistration(displayName = "CodeTimeMenu", lazy = false)
-@ActionReference(path = "Menu/Code Time", position = 12)
+@ActionReference(path = "Menu/Tools/Code Time", position = 1600)
 public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, Presenter.Popup {
 
     @Override
@@ -151,7 +151,10 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public JMenuItem getMenuPresenter() {
-            JMenuItem item = new JMenuItem("Log out of Code Time");
+            SoftwareUtil.UserStatus userStatus = SoftwareUtil.getInstance().getUserStatus();
+            String emailPart = (userStatus != null && userStatus.loggedInUser != null)
+                    ? " (" + userStatus.email + ")" : "";
+            JMenuItem item = new JMenuItem("Log out of Code Time" + emailPart);
             item.addActionListener(this);
             return item;
         }
