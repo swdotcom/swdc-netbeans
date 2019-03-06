@@ -207,11 +207,6 @@ public class Software extends ModuleInstall implements Runnable {
     
     private void initializeUserInfo() {
         new Thread(() -> {
-            // this should only ever possibly return true the very first
-            // time the IDE loads this new code
-            if (requiresUserCreation()) {
-                createAnonymousUser();
-            }
             SoftwareUtil.UserStatus userStatus = softwareUtil.getUserStatus();
             if (userStatus.loggedInUser == null) {
                 // ask the user to login one time only
@@ -235,89 +230,6 @@ public class Software extends ModuleInstall implements Runnable {
             softwareUtil.sendOfflineData();
             SessionManager.fetchDailyKpmSessionInfo();
         }).start();
-    }
-
-    protected String getAppJwt() {
-        String appJwt = softwareUtil.getItem("app_jwt");
-        boolean serverIsOnline = softwareUtil.isServerOnline();
-        if (appJwt == null && serverIsOnline) {
-            String macAddress = softwareUtil.getMacAddress();
-            if (macAddress != null) {
-                String encodedMacIdentity = "";
-                try {
-                    encodedMacIdentity = URLEncoder.encode(macAddress, "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    // url encoding failed, just use the mac addr id
-                    encodedMacIdentity = macAddress;
-                }
-
-                String api = "/data/token?addr=" + encodedMacIdentity;
-                SoftwareResponse resp = softwareUtil.makeApiCall(api, HttpGet.METHOD_NAME, null);
-                if (resp.isOk()) {
-                    JsonObject obj = resp.getJsonObj();
-                    appJwt = obj.get("jwt").getAsString();
-                    softwareUtil.setItem("app_jwt", appJwt);
-                }
-            }
-        }
-        return softwareUtil.getItem("app_jwt");
-    }
-
-    protected boolean requiresUserCreation() {
-        // check using the mac address
-        List<SoftwareUtil.User> authAccounts = softwareUtil.getAuthenticatedPluginAccounts();
-        if (authAccounts != null && authAccounts.size() > 0) {
-            for (SoftwareUtil.User user : authAccounts) {
-                if (user.email != null && user.mac_addr != null && user.email.equals(user.mac_addr)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    protected void createAnonymousUser() {
-        boolean serverIsOnline = softwareUtil.isServerOnline();
-        String pluginToken = softwareUtil.getItem("token");
-        String macAddress = softwareUtil.getMacAddress();
-        // make sure we've fetched the app jwt
-        String appJwt = getAppJwt();
-
-        if (serverIsOnline && macAddress != null) {
-            String email = macAddress;
-            if (pluginToken == null) {
-                pluginToken = softwareUtil.generateToken();
-                softwareUtil.setItem("token", pluginToken);
-            }
-            String timezone = TimeZone.getDefault().getID();
-
-            String encodedMacIdentity = "";
-            try {
-                encodedMacIdentity = URLEncoder.encode(macAddress, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                // url encoding failed, just use the mac addr id
-                encodedMacIdentity = macAddress;
-            }
-            JsonObject payload = new JsonObject();
-            payload.addProperty("email", email);
-            payload.addProperty("plugin_token", pluginToken);
-            payload.addProperty("timezone", timezone);
-            String api = "/data/onboard?addr=" + encodedMacIdentity;
-            SoftwareResponse resp = softwareUtil.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), appJwt);
-            if (resp.isOk()) {
-                // check if we have the data and jwt
-                // resp.data.jwt and resp.data.user
-                // then update the session.json for the jwt, user, and jetbrains_lastUpdateTime
-                JsonObject data = resp.getJsonObj();
-                // check if we have any data
-                if (data != null && data.has("jwt")) {
-                    String dataJwt = data.get("jwt").getAsString();
-                    String user = data.get("user").getAsString();
-                    softwareUtil.setItem("jwt", dataJwt);
-                    softwareUtil.setItem("user", user);
-                }
-            }
-        }
     }
     
 }

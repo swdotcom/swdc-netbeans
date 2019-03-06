@@ -56,14 +56,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
             statusLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
-                    SoftwareUtil.UserStatus userStatus = softwareUtil.getUserStatus();
-                    if (userStatus.hasAccounts) {
-                        // show the metrics dashboard
-                        softwareUtil.launchCodeTimeMetricsDashboard();
-                    } else {
-                        softwareUtil.launchSignup();
-                    }
+                    SoftwareUtil.getInstance().launchCodeTimeMetricsDashboard();
                 }
             });
         }
