@@ -36,7 +36,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -972,6 +971,22 @@ public class SoftwareUtil {
         }
         return null;
     }
+    
+    public static boolean hasRegisteredUserAccount(String macAddr, List<User> authAccounts) {
+        if (authAccounts != null && authAccounts.size() > 0) {
+            for (User user : authAccounts) {
+                String userMacAddr = (user.mac_addr != null) ? user.mac_addr : "";
+                String userEmail = (user.email != null) ? user.email : "";
+                String userMacAddrShare = (user.mac_addr_share != null) ? user.mac_addr_share : "";
+                if (!userEmail.equals(userMacAddr) &&
+                        !userEmail.equals(macAddr) &&
+                        !userEmail.equals(userMacAddrShare)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     public User getAnonymousUser(String macAddr, List<User> authAccounts) {
         if (authAccounts != null && authAccounts.size() > 0) {
@@ -1022,7 +1037,7 @@ public class SoftwareUtil {
                 authAccounts = getAuthenticatedPluginAccounts(macAddress);
                 anonUser = getAnonymousUser(macAddress, authAccounts);
             }
-            boolean hasUserAccounts = (loggedInUser != null) ? true : false;
+            boolean hasUserAccounts = hasRegisteredUserAccount(macAddress, authAccounts);
 
             if (loggedInUser != null) {
                 updateSessionUser(loggedInUser);
