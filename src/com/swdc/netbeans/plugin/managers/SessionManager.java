@@ -35,20 +35,6 @@ public class SessionManager {
             if (jsonObj.has("inFlow")) {
                 inFlow = jsonObj.get("inFlow").getAsBoolean();
             }
-//            if (jsonObj.has("currentSessionGoalPercent")) {
-//                float currentSessionGoalPercent = jsonObj.get("currentSessionGoalPercent").getAsFloat();
-//                if (currentSessionGoalPercent > 0) {
-//                    if (currentSessionGoalPercent < 0.40) {
-//                        barType = StatusBarType.QUARTER;
-//                    } else if (currentSessionGoalPercent < 0.70) {
-//                        barType = StatusBarType.HALF;
-//                    } else if (currentSessionGoalPercent < 0.93) {
-//                        barType = StatusBarType.ALMOST;
-//                    } else if (currentSessionGoalPercent < 1.3) {
-//                        barType = StatusBarType.FULL;
-//                    }
-//                }
-//            }
             int lastKpm = 0;
             if (jsonObj.has("lastKpm")) {
                 lastKpm = jsonObj.get("lastKpm").getAsInt();
@@ -71,28 +57,14 @@ public class SessionManager {
             String averageDailyMinutesTimeStr = softwareUtil.humanizeMinutes(averageDailyMinutes);
 
             StatusBarType barType = currentDayMinutes > averageDailyMinutes ? StatusBarType.ROCKET : StatusBarType.NO_KPM;
-            String msg = "Code time today: " + currentDayTimeStr;
+            String msg = "Code time: " + currentDayTimeStr;
             if (averageDailyMinutes > 0) {
                 msg += " | Avg: " + averageDailyMinutesTimeStr;
             }
             
             softwareUtil.setStatusLineMessage(barType, msg, "Click to see more from Code Time");
 
-        } else if (!softwareResponse.isDeactivated()) {
-            softwareUtil.setStatusLineMessage(StatusBarType.ALERT, "Code Time", "Click to log in to Code Time");
-            LOG.log(Level.WARNING, "Code Time", "Click to log in to Code Time");
-            softwareUtil.checkUserAuthenticationStatus();
-        } else {
-            // check in a day
-            LOG.log(Level.WARNING, "Code Time", "Click to log in to Code Time");
-            new Thread(() -> {
-                try {
-                    Thread.sleep(1000 * 60 * 60 * 24);
-                    softwareUtil.checkUserAuthenticationStatus();
-                } catch (InterruptedException e) {
-                    System.err.println(e);
-                }
-            }).start();
+            softwareUtil.fetchCodeTimeMetrics();
         }
     }
 }
