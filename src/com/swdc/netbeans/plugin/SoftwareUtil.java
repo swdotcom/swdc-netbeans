@@ -760,8 +760,8 @@ public class SoftwareUtil {
     private static final Pattern patternMacPairs = Pattern.compile("^([a-fA-F0-9]{2}[:\\.-]?){5}[a-fA-F0-9]{2}$");
     private static final Pattern patternMacTriples = Pattern.compile("^([a-fA-F0-9]{3}[:\\.-]?){3}[a-fA-F0-9]{3}$");
 
-    public String getMacAddress() {
-        String macAddress = null;
+    public String getIdentity() {
+        String identityId = null;
 
         try {
             List<String> cmd = new ArrayList<String>();
@@ -785,7 +785,7 @@ public class SoftwareUtil {
                     for (String line : contentList) {
                         if (line != null && line.trim().length() > 0 &&
                                 (patternMacPairs.matcher(line).find() || patternMacTriples.matcher(line).find())) {
-                            macAddress = line.trim();
+                            identityId = line.trim();
                             break;
                         }
                     }
@@ -794,7 +794,6 @@ public class SoftwareUtil {
         } catch (Exception e) {
             //
         }
-        Long time = this.getUserHomeDirCreateTime();
         String username = this.getOsUserName();
         String macAddrId = "";
         if (username != null) {
@@ -803,30 +802,10 @@ public class SoftwareUtil {
         if (macAddrId.length() > 0) {
             macAddrId += "_";
         }
-        if (macAddress != null) {
-            macAddrId += macAddress;
-        }
-        if (macAddrId.length() > 0) {
-            macAddrId += "_";
-        }
-        if (time != null) {
-            macAddrId += String.valueOf(time);
+        if (identityId != null) {
+            macAddrId += identityId;
         }
         return macAddrId;
-    }
-
-    private Long getUserHomeDirCreateTime() {
-        String homedir = getUserHomeDir();
-        Long createTimeMs = null;
-        File f = new File(homedir);
-        if (f.exists()) {
-            try {
-                createTimeMs = new Long(getCreationTime(f).toMillis());
-            } catch (IOException e) {
-                //
-            }
-        }
-        return createTimeMs;
     }
 
     public String getJsonObjString(JsonObject obj, String key) {
@@ -844,28 +823,25 @@ public class SoftwareUtil {
     }
 
     public String getAppJwt(String macAddr) {
-        String appJwt = getItem("app_jwt");
+        setItem("app_jwt", null);
         boolean serverIsOnline = isServerOnline();
-        if (appJwt == null && serverIsOnline) {
-            if (macAddr != null) {
-                String encodedMacIdentity = "";
-                try {
-                    encodedMacIdentity = URLEncoder.encode(macAddr, "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    // url encoding failed, just use the mac addr id
-                    encodedMacIdentity = macAddr;
-                }
+        if (serverIsOnline && macAddr != null) {
+            String encodedMacIdentity = "";
+            try {
+                encodedMacIdentity = URLEncoder.encode(macAddr, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                // url encoding failed, just use the mac addr id
+                encodedMacIdentity = macAddr;
+            }
 
-                String api = "/data/token?addr=" + encodedMacIdentity;
-                SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null);
-                if (resp.isOk()) {
-                    JsonObject obj = resp.getJsonObj();
-                    appJwt = obj.get("jwt").getAsString();
-                    setItem("app_jwt", appJwt);
-                }
+            String api = "/data/token?addr=" + encodedMacIdentity;
+            SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null);
+            if (resp.isOk()) {
+                JsonObject obj = resp.getJsonObj();
+                return obj.get("jwt").getAsString();
             }
         }
-        return getItem("app_jwt");
+        return null;
     }
 
     public void createAnonymousUser(String macAddr) {
@@ -1018,26 +994,23 @@ public class SoftwareUtil {
             }
         }
 
-        String macAddress = getMacAddress();
-
-        // make sure the app jwt is available
-        getAppJwt(macAddress);
+        String identityId = getIdentity();
 
         if (currentUserStatus == null) {
             currentUserStatus = new UserStatus();
         }
 
         try {
-            List<User> authAccounts = getAuthenticatedPluginAccounts(macAddress);
-            User loggedInUser = getLoggedInUser(macAddress, authAccounts);
-            User anonUser = getAnonymousUser(macAddress, authAccounts);
+            List<User> authAccounts = getAuthenticatedPluginAccounts(identityId);
+            User loggedInUser = getLoggedInUser(identityId, authAccounts);
+            User anonUser = getAnonymousUser(identityId, authAccounts);
             if (anonUser == null) {
                 // create the anonymous user
-                createAnonymousUser(macAddress);
-                authAccounts = getAuthenticatedPluginAccounts(macAddress);
-                anonUser = getAnonymousUser(macAddress, authAccounts);
+                createAnonymousUser(identityId);
+                authAccounts = getAuthenticatedPluginAccounts(identityId);
+                anonUser = getAnonymousUser(identityId, authAccounts);
             }
-            boolean hasUserAccounts = hasRegisteredUserAccount(macAddress, authAccounts);
+            boolean hasUserAccounts = hasRegisteredUserAccount(identityId, authAccounts);
 
             if (loggedInUser != null) {
                 updateSessionUser(loggedInUser);
@@ -1102,13 +1075,13 @@ public class SoftwareUtil {
 
     public void launchLogin() {
         String url = LAUNCH_URL;
-        String macAddress = this.getMacAddress();
+        String identityId = this.getIdentity();
         String encodedMacAddr = null;
         try {
-            encodedMacAddr = URLEncoder.encode(macAddress, "UTF-8");
+            encodedMacAddr = URLEncoder.encode(identityId, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             // url encoding failed, just use the mac addr
-            encodedMacAddr = macAddress;
+            encodedMacAddr = identityId;
         }
 
         url += "/login?addr=" + encodedMacAddr;
@@ -1132,13 +1105,13 @@ public class SoftwareUtil {
 
     public void launchSignup() {
         String url = LAUNCH_URL;
-        String macAddress = this.getMacAddress();
+        String identityId = this.getIdentity();
         String encodedMacAddr = null;
         try {
-            encodedMacAddr = URLEncoder.encode(macAddress, "UTF-8");
+            encodedMacAddr = URLEncoder.encode(identityId, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             // url encoding failed, just use the mac addr
-            encodedMacAddr = macAddress;
+            encodedMacAddr = identityId;
         }
         url += "/onboarding?addr=" + encodedMacAddr;
         try {
