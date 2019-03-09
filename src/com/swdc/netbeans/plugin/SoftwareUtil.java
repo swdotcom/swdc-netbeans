@@ -104,8 +104,10 @@ public class SoftwareUtil {
 
     public static JsonParser jsonParser = new JsonParser();
     public static Gson gson = new Gson();
-
-    private static boolean confirmWindowOpen = false;
+    
+    private static Pattern patternMacPairs = Pattern.compile("([a-fA-F0-9]{2}[:\\.-]?){5}[a-fA-F0-9]{2}");
+    private static Pattern patternMacTriples = Pattern.compile("([a-fA-F0-9]{3}[:\\.-]?){3}[a-fA-F0-9]{3}");
+    private static Pattern patternMac = Pattern.compile("([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})");
     
     public static boolean TELEMETRY_ON = true;
     
@@ -181,7 +183,7 @@ public class SoftwareUtil {
 
     public String getItem(String key) {
         JsonObject jsonObj = getSoftwareSessionAsJson();
-        if (jsonObj != null && jsonObj.has(key)) {
+        if (jsonObj != null && !jsonObj.get(key).isJsonNull() && jsonObj.has(key)) {
             return jsonObj.get(key).getAsString();
         }
         return null;
@@ -546,7 +548,6 @@ public class SoftwareUtil {
 
         if (isOnline && lastUpdateTimeStr == null && !userStatus.hasUserAccounts) {
             setItem("netbeans_lastUpdateTime", String.valueOf(System.currentTimeMillis()));
-            confirmWindowOpen = true;
             String msg = "To see your coding data in Code Time, please log in to your account.";
 
             Object[] options = {"Log in", "Sign up", "Not now"};
@@ -756,9 +757,25 @@ public class SoftwareUtil {
         FileTime fileTime = attr.creationTime();
         return fileTime;
     }
-
-    private static final Pattern patternMacPairs = Pattern.compile("^([a-fA-F0-9]{2}[:\\.-]?){5}[a-fA-F0-9]{2}$");
-    private static final Pattern patternMacTriples = Pattern.compile("^([a-fA-F0-9]{3}[:\\.-]?){3}[a-fA-F0-9]{3}$");
+    
+    public static boolean isMacEmail(String email) {
+        if (email.contains("_")) {
+            String[] parts = email.split("_");
+            for (int i = 0; i < parts.length; i++) {
+                String part = parts[i];
+                if (patternMacPairs.matcher(part).find()
+                        || patternMacTriples.matcher(part).find()
+                        || patternMac.matcher(part).find()) {
+                    return true;
+                }
+            }
+        } else if (patternMacPairs.matcher(email).find()
+                || patternMacTriples.matcher(email).find()
+                || patternMac.matcher(email).find()) {
+            return true;
+        }
+        return false;
+    }
 
     public String getIdentity() {
         String identityId = null;
@@ -784,7 +801,9 @@ public class SoftwareUtil {
                 if (contentList != null && contentList.length > 0) {
                     for (String line : contentList) {
                         if (line != null && line.trim().length() > 0 &&
-                                (patternMacPairs.matcher(line).find() || patternMacTriples.matcher(line).find())) {
+                                ( patternMacPairs.matcher(line).find()
+                                        || patternMacTriples.matcher(line).find()
+                                        || patternMac.matcher(line).find() ) ) {
                             identityId = line.trim();
                             break;
                         }
@@ -948,15 +967,10 @@ public class SoftwareUtil {
         return null;
     }
     
-    public static boolean hasRegisteredUserAccount(String macAddr, List<User> authAccounts) {
+    public static boolean hasRegisteredUserAccount(List<User> authAccounts) {
         if (authAccounts != null && authAccounts.size() > 0) {
             for (User user : authAccounts) {
-                String userMacAddr = (user.mac_addr != null) ? user.mac_addr : "";
-                String userEmail = (user.email != null) ? user.email : "";
-                String userMacAddrShare = (user.mac_addr_share != null) ? user.mac_addr_share : "";
-                if (!userEmail.equals(userMacAddr) &&
-                        !userEmail.equals(macAddr) &&
-                        !userEmail.equals(userMacAddrShare)) {
+                if (user.email != null && !isMacEmail(user.email)) {
                     return true;
                 }
             }
@@ -964,13 +978,10 @@ public class SoftwareUtil {
         return false;
     }
 
-    public User getAnonymousUser(String macAddr, List<User> authAccounts) {
+    public static User getAnonymousUser(List<User> authAccounts) {
         if (authAccounts != null && authAccounts.size() > 0) {
             for (User user : authAccounts) {
-                String userMacAddr = (user.mac_addr != null) ? user.mac_addr : "";
-                String userEmail = (user.email != null) ? user.email : "";
-                String userMacAddrShare = (user.mac_addr_share != null) ? user.mac_addr_share : "";
-                if (userEmail.equals(userMacAddr) || userEmail.equals(macAddr) || userEmail.equals(userMacAddrShare)) {
+                if (user.email != null && isMacEmail(user.email)) {
                     return user;
                 }
             }
@@ -1003,14 +1014,14 @@ public class SoftwareUtil {
         try {
             List<User> authAccounts = getAuthenticatedPluginAccounts(identityId);
             User loggedInUser = getLoggedInUser(identityId, authAccounts);
-            User anonUser = getAnonymousUser(identityId, authAccounts);
+            User anonUser = getAnonymousUser(authAccounts);
             if (anonUser == null) {
                 // create the anonymous user
                 createAnonymousUser(identityId);
                 authAccounts = getAuthenticatedPluginAccounts(identityId);
-                anonUser = getAnonymousUser(identityId, authAccounts);
+                anonUser = getAnonymousUser(authAccounts);
             }
-            boolean hasUserAccounts = hasRegisteredUserAccount(identityId, authAccounts);
+            boolean hasUserAccounts = hasRegisteredUserAccount(authAccounts);
 
             if (loggedInUser != null) {
                 updateSessionUser(loggedInUser);
