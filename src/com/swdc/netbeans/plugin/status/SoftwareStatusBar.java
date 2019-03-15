@@ -65,6 +65,10 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     }
 
     public void updateMessage(StatusBarType status, String text, String tooltip) {
+        String name = SoftwareUtil.getInstance().getItem("name");
+        if (tooltip != null && name != null && !name.equals("")) {
+            tooltip += " (logged in as " + name + ")";
+        }
         statusLabel.setText(text + " ");
         statusLabel.setToolTipText(tooltip);
         switch (status) {

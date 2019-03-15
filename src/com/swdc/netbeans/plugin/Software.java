@@ -104,7 +104,7 @@ public class Software extends ModuleInstall implements Runnable {
     private void setupScheduledKpmMetricsProcessor() {
         final Runnable handler = () -> SessionManager.fetchDailyKpmSessionInfo();
         scheduler.scheduleAtFixedRate(
-                handler, 10, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
+                handler, 15, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
     }
     
     private void setupUserStatusProcessor() {
@@ -139,7 +139,6 @@ public class Software extends ModuleInstall implements Runnable {
             try {
                 Thread.sleep(5000);
                 initializeUserInfo();
-                softwareUtil.sendOfflineData();
             } catch (InterruptedException e) {
                 System.err.println(e);
             }
@@ -200,21 +199,38 @@ public class Software extends ModuleInstall implements Runnable {
     }
     
     private void initializeUserInfo() {
+        // this should only ever possibly return true the very first
+        // time the IDE loads this new code
+        String user = softwareUtil.getItem("user");
+        if (user != null) {
+                softwareUtil.setItem("user", null);
+        }
+
+        String jwt = softwareUtil.getItem("jwt");
+        boolean initializingPlugin = false;
+        if (jwt == null || jwt.equals("")) {
+                initializingPlugin = true;
+        }
+
+        softwareUtil.getUserStatus();
+
+        if (initializingPlugin) {
+            // ask the user to login one time only
+            new Thread(() -> {
+                try {
+                    Thread.sleep(5000);
+                    softwareUtil.checkUserAuthenticationStatus();
+                } catch (Exception e) {
+                    System.err.println(e);
+                }
+            }).start();
+        }
         new Thread(() -> {
-            SoftwareUtil.UserStatus userStatus = softwareUtil.getUserStatus();
-            if (userStatus.loggedInUser == null) {
-                // ask the user to login one time only
-                // run the initial calls in 6 seconds
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(1000 * 10);
-                        softwareUtil.checkUserAuthenticationStatus();
-                    }
-                    catch (Exception e){
-                        System.err.println(e);
-                    }
-                }).start();
+            try {
+                Thread.sleep(1000 * 20);
                 initializeCalls();
+            } catch (Exception e) {
+                System.err.println(e);
             }
         }).start();
     }

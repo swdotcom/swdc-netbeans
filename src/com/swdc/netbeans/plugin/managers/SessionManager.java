@@ -9,7 +9,6 @@ import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar.StatusBarType;
 import java.util.Date;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.http.client.methods.HttpGet;
 

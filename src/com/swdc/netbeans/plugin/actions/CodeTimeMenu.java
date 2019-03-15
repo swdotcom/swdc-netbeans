@@ -57,14 +57,12 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
         List<JComponent> items = new ArrayList<>();
 
         items.add(toMenuItem(new CodeTimeDashboardAction()));
-        items.add(toMenuItem(new WebDashboardAction()));
         items.add(toMenuItem(new CodeTimeTop40Action()));
-        if (userStatus.loggedInUser == null) {
+        items.add(toMenuItem(new WebDashboardAction()));
+        
+        if (!userStatus.loggedIn) {
             // not logged in, show the login and signup menu items
             items.add(toMenuItem(new CodeTimeLoginAction()));
-            items.add(toMenuItem(new CodeTimeSignupAction()));
-        } else {
-            items.add(toMenuItem(new CodeTimeLogoutAction()));
         }
         return items.toArray(new JComponent[items.size()]);
     }
@@ -135,43 +133,6 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
         @Override
         public JMenuItem getMenuPresenter() {
             JMenuItem item = new JMenuItem("Log in to see your coding data");
-            item.addActionListener(this);
-            return item;
-        }
-    }
-    
-    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeLogoutAction")
-    @ActionRegistration(displayName = "not-used", lazy = false)
-    public static class CodeTimeLogoutAction extends AbstractAction implements Presenter.Menu {
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().pluginLogout();
-        }
-
-        @Override
-        public JMenuItem getMenuPresenter() {
-            SoftwareUtil.UserStatus userStatus = SoftwareUtil.getInstance().getUserStatus();
-            String emailPart = (userStatus != null && userStatus.loggedInUser != null)
-                    ? " (" + userStatus.email + ")" : "";
-            JMenuItem item = new JMenuItem("Log out of Code Time" + emailPart);
-            item.addActionListener(this);
-            return item;
-        }
-    }
-    
-    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeSignupAction")
-    @ActionRegistration(displayName = "not-used", lazy = false)
-    public static class CodeTimeSignupAction extends AbstractAction implements Presenter.Menu {
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchSignup();
-        }
-
-        @Override
-        public JMenuItem getMenuPresenter() {
-            JMenuItem item = new JMenuItem("Sign up a new account");
             item.addActionListener(this);
             return item;
         }
