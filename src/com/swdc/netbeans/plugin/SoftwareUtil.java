@@ -82,9 +82,6 @@ public class SoftwareUtil {
     private final static String PROD_API_ENDPOINT = "https://api.software.com";
     private final static String PROD_URL_ENDPOINT = "https://app.software.com";
 
-    private final static long MILLIS_PER_HOUR = 1000 * 60 * 60;
-    private final static int LONG_THRESHOLD_HOURS = 24;
-
     // set the api endpoint to use
     public final static String API_ENDPOINT = PROD_API_ENDPOINT;
     // set the launch url to use
@@ -530,20 +527,6 @@ public class SoftwareUtil {
         }
     }
 
-    public boolean isAuthenticated() {
-        String tokenVal = getItem("token");
-        if (tokenVal == null) {
-            return false;
-        }
-
-        SoftwareResponse resp = makeApiCall("/users/ping/", HttpGet.METHOD_NAME, null);
-        if (!resp.isOk() && !resp.isDeactivated()) {
-            // update the status bar with Sign Up message
-            setStatusLineMessage(StatusBarType.ALERT, "Code Time", "Click to log in to Code Time");
-        }
-        return resp.isOk();
-    }
-
     public String generateToken() {
         String uuid = UUID.randomUUID().toString();
         return uuid.replace("-", "");
@@ -611,20 +594,6 @@ public class SoftwareUtil {
         }
 
         return "";
-    }
-    
-    public boolean requiresAuthentication() {
-        boolean requiresAuthentication = false;
-        // create the token value
-        String token = getItem("token");
-        String jwt = getItem("jwt");
-        boolean addToken = false;
-        if (token == null || token.equals("")) {
-            requiresAuthentication = true;
-        } else if (jwt == null || jwt.equals("") || !isAuthenticated()) {
-            requiresAuthentication = true;
-        }
-        return requiresAuthentication;
     }
     
     public void updateTelementry(boolean telemetryOn) {
