@@ -12,6 +12,7 @@ import com.google.gson.JsonSyntaxException;
 import com.sun.javafx.PlatformUtil;
 import com.swdc.netbeans.plugin.managers.SoftwareHttpManager;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
+import com.swdc.netbeans.plugin.managers.SessionManager;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar.StatusBarType;
 import java.io.BufferedReader;
@@ -103,6 +104,7 @@ public class SoftwareUtil {
     public static boolean TELEMETRY_ON = true;
     
     private boolean appAvailable = true;
+    private static boolean loggedInCacheState = false;
     
     private SoftwareStatusBar statusBar;
     
@@ -670,7 +672,8 @@ public class SoftwareUtil {
     }
     
     public void fetchCodeTimeMetrics() {
-        String api = "/dashboard";
+        boolean isLinux = (isMac() || isWindows()) ? false : true;
+        String api = "/dashboard?linux=" + isLinux;
         String dashboardContent = this.makeApiCall(api, HttpGet.METHOD_NAME, null).getJsonStr();
         String codeTimeFile = this.getCodeTimeDashboardFile();
 
@@ -813,7 +816,8 @@ public class SoftwareUtil {
                 // then update the session.json for the jwt
                 JsonObject data = resp.getJsonObj();
                 // check if we have any data
-                if (data != null && data.has("jwt")) {
+                String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
+                if (state.equals("OK")) {
                     String dataJwt = data.get("jwt").getAsString();
                     setItem("jwt", dataJwt);
                     String dataEmail = data.get("email").getAsString();
@@ -821,9 +825,14 @@ public class SoftwareUtil {
                         setItem("name", dataEmail);
                     }
                     return true;
+                } else if (!state.equals("ANONYMOUS")) {
+                    setItem("jwt", null);
                 }
+            } else {
+            	setItem("jwt", null);
             }
         }
+        setItem("name", null);
         return false;
     }
 
@@ -840,6 +849,19 @@ public class SoftwareUtil {
 
         UserStatus currentUserStatus = new UserStatus();
         currentUserStatus.loggedIn = loggedIn;
+        
+        if (loggedInCacheState != loggedIn) {
+            // refetch kpm
+            new Thread(() -> {
+                try {
+                    SessionManager.fetchDailyKpmSessionInfo();
+                } catch (Exception e) {
+                    System.err.println(e);
+                }
+            }).start();
+        }
+
+        loggedInCacheState = loggedIn;
 
         return currentUserStatus;
     }
@@ -881,7 +903,7 @@ public class SoftwareUtil {
         new Thread(() -> {
             try {
                 Thread.sleep(10000);
-                lazilyFetchUserStatus(3);
+                lazilyFetchUserStatus(10);
             }
             catch (InterruptedException e){
                 System.err.println(e);
