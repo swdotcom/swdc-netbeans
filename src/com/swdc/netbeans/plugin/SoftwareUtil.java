@@ -47,6 +47,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -131,6 +132,13 @@ public class SoftwareUtil {
         if (statusBar == null) {
             statusBar = new SoftwareStatusBar();
         }
+    }
+    
+    private static String regex = "^\\S+@\\S+\\.\\S+$";
+    private static Pattern pattern = Pattern.compile(regex);
+
+    private static boolean validateEmail(String email) {
+        return pattern.matcher(email).matches();
     }
     
     public class UserStatus {
@@ -773,10 +781,38 @@ public class SoftwareUtil {
             }
         }
     }
+    
+    private JsonObject getUser(boolean serverIsOnline) {
+        String jwt = getItem("jwt");
+        if (serverIsOnline) {
+            String api = "/users/me";
+            SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+            if (resp.isOk()) {
+                // check if we have the data and jwt
+                // resp.data.jwt and resp.data.user
+                // then update the session.json for the jwt
+                JsonObject obj = resp.getJsonObj();
+                if (obj != null && obj.has("data")) {
+                    return obj.get("data").getAsJsonObject();
+                }
+            }
+        }
+        return null;
+    }
 
     private boolean isLoggedOn(boolean serverIsOnline) {
         String jwt = getItem("jwt");
         if (serverIsOnline) {
+            JsonObject userObj = getUser(serverIsOnline);
+            if (userObj != null && userObj.has("email")) {
+                // check if the email is valid
+                String email = userObj.get("email").getAsString();
+                if (validateEmail(email)) {
+                    setItem("jwt", userObj.get("plugin_jwt").getAsString());
+                    setItem("name", email);
+                    return true;
+                }
+            }
             String api = "/users/plugin/state";
             SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
             if (resp.isOk()) {
