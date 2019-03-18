@@ -80,13 +80,18 @@ public class SoftwareUtil {
     private final static Object UTIL_LOCK = new Object();
     private static SoftwareUtil instance = null;
 
+    // set the api endpoint to use
+    // "http://localhost:5000", "https://qaapi.software.com", "https://stagingapi.software.com", "https://api.software.com"
     private final static String PROD_API_ENDPOINT = "https://api.software.com";
+    // set the launch url to use
+    // "http://localhost:3000", "https://qa.software.com", "https://staging.software.com", "https://app.software.com"
     private final static String PROD_URL_ENDPOINT = "https://app.software.com";
 
     // set the api endpoint to use
     public final static String API_ENDPOINT = PROD_API_ENDPOINT;
     // set the launch url to use
     public final static String LAUNCH_URL = PROD_URL_ENDPOINT;
+    
     // netbeans plugin id
     public final static int PLUGIN_ID = 11;
 
