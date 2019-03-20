@@ -835,11 +835,9 @@ public class SoftwareUtil {
                         setItem("name", dataEmail);
                     }
                     return true;
-                } else if (!state.equals("ANONYMOUS")) {
+                } else if (state.equals("NOT_FOUND")) {
                     setItem("jwt", null);
                 }
-            } else {
-            	setItem("jwt", null);
             }
         }
         setItem("name", null);
