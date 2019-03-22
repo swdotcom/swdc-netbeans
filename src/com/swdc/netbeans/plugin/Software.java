@@ -12,6 +12,7 @@ import com.swdc.netbeans.plugin.managers.MusicManager;
 import com.swdc.netbeans.plugin.managers.RepoManager;
 import com.swdc.netbeans.plugin.models.KeystrokeData;
 import com.swdc.netbeans.plugin.managers.SessionManager;
+import com.swdc.netbeans.plugin.models.KeystrokeMetrics;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.Executors;
@@ -52,7 +53,7 @@ public class Software extends ModuleInstall implements Runnable {
         musicManager = MusicManager.getInstance();
         
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
-        LOG.log(Level.INFO, "Code Time: Loaded v{0}", softwareUtil.getPluginVersion());
+        LOG.log(Level.INFO, "Code Time: Loaded v{0}", softwareUtil.getVersion());
         
         // setup the document change event listeners
         setupEventListeners();
@@ -65,9 +66,10 @@ public class Software extends ModuleInstall implements Runnable {
         
         setupRepoMusicInfoProcessor();
         
-        setupRepoCommitsProcessor();
-        
-        setupRepoMembersProcessor();
+        final Runnable hourlyJobs = () -> hourlyJobsProcessor();
+        int interval = ONE_HOUR_SECONDS;
+        scheduler.scheduleAtFixedRate(
+                hourlyJobs, 45, interval, TimeUnit.SECONDS);
         
         setupUserStatusProcessor();
         
@@ -120,18 +122,26 @@ public class Software extends ModuleInstall implements Runnable {
                 handler, 15, interval, TimeUnit.SECONDS);
     }
     
-    private void setupRepoCommitsProcessor() {
-        final Runnable handler = () -> processHistoricalCommits();
-        int interval = ONE_HOUR_SECONDS + 20;
-        scheduler.scheduleAtFixedRate(
-                handler, 45, interval, TimeUnit.SECONDS);
-    }
-    
-    private void setupRepoMembersProcessor() {
-        final Runnable handler = () -> processRepoMembers();
-        int interval = ONE_HOUR_SECONDS + 10;
-        scheduler.scheduleAtFixedRate(
-                handler, 35, interval, TimeUnit.SECONDS);
+    private void hourlyJobsProcessor() {
+        // send a heartbeat
+        softwareUtil.sendHeartbeat();
+        
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000 * 5);
+                processHistoricalCommits();
+            } catch (Exception e) {
+                System.err.println(e);
+            }
+        }).start();
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000 * 60);
+                processRepoMembers();
+            } catch (Exception e) {
+                System.err.println(e);
+            }
+        }).start();
     }
     
     private void bootstrapStatus() {
@@ -159,10 +169,6 @@ public class Software extends ModuleInstall implements Runnable {
         if (keystrokeData != null && keystrokeData.getProject() != null) {
             String projectDir = keystrokeData.getProject().getDirectory();
             repoManager.getHistoricalCommits(projectDir);
-        } else {
-            // try again in 2 minutes
-            final Runnable handler = () -> processHistoricalCommits();
-            scheduler.schedule(handler, (ONE_MINUTE_SECONDS * 2), TimeUnit.SECONDS);
         }
     }
     
@@ -172,10 +178,6 @@ public class Software extends ModuleInstall implements Runnable {
         if (keystrokeData != null && keystrokeData.getProject() != null) {
             String projectDir = keystrokeData.getProject().getDirectory();
             repoManager.processRepoMembersInfo(projectDir);
-        } else {
-            // try again in 2 minutes
-            final Runnable handler = () -> processRepoMembers();
-            scheduler.schedule(handler, (ONE_MINUTE_SECONDS * 2), TimeUnit.SECONDS);
         }
     }
 
@@ -215,6 +217,7 @@ public class Software extends ModuleInstall implements Runnable {
         softwareUtil.getUserStatus();
 
         if (initializingPlugin) {
+            sendInstallPayload();
             // ask the user to login one time only
             new Thread(() -> {
                 try {
@@ -233,6 +236,8 @@ public class Software extends ModuleInstall implements Runnable {
                 System.err.println(e);
             }
         }).start();
+        
+        softwareUtil.sendHeartbeat();
     }
     
     private void initializeCalls() {
@@ -240,6 +245,18 @@ public class Software extends ModuleInstall implements Runnable {
             softwareUtil.sendOfflineData();
             SessionManager.fetchDailyKpmSessionInfo();
         }).start();
+    }
+    
+    protected void sendInstallPayload() {
+        String currentFile = "Untitled";
+        String projectName = "Unnamed";
+        String projectDir = "";
+        KeystrokeMetrics metrics = keystrokeMgr.getKeystrokeMetrics(
+                currentFile, projectName, projectDir);
+        metrics.setAdd(1);
+        keystrokeMgr.incrementKeystrokes();
+        
+        processKeystrokes();
     }
     
 }

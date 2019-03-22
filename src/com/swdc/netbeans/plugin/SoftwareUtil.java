@@ -155,7 +155,7 @@ public class SoftwareUtil {
         appAvailable = isOnlineStatus;
     }
 
-    public String getPluginVersion() {
+    public String getVersion() {
         for (UpdateUnit updateUnit : UpdateManager.getDefault().getUpdateUnits()) {
             UpdateElement updateElement = updateUnit.getInstalled();
             if (updateElement != null) {
@@ -267,7 +267,7 @@ public class SoftwareUtil {
         return System.getProperty("user.home");
     }
 
-    public String getOsInfo() {
+    public String getOs() {
         String osInfo = "";
         try {
             String osName = System.getProperty("os.name");
@@ -859,6 +859,8 @@ public class SoftwareUtil {
         currentUserStatus.loggedIn = loggedIn;
         
         if (loggedInCacheState != loggedIn) {
+            // logged in state changed
+            sendHeartbeat();
             // refetch kpm
             new Thread(() -> {
                 try {
@@ -872,6 +874,27 @@ public class SoftwareUtil {
         loggedInCacheState = loggedIn;
 
         return currentUserStatus;
+    }
+    
+    public void sendHeartbeat() {
+        boolean serverIsOnline = isServerOnline();
+        String jwt = getItem("jwt");
+        if (serverIsOnline && jwt != null) {
+
+            long start = Math.round(System.currentTimeMillis() / 1000);
+
+            JsonObject payload = new JsonObject();
+            payload.addProperty("pluginId", SoftwareUtil.PLUGIN_ID);
+            payload.addProperty("os", getOs());
+            payload.addProperty("start", start);
+            payload.addProperty("version", getVersion());
+
+            String api = "/data/heartbeat";
+            SoftwareResponse resp = makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), jwt);
+            if (!resp.isOk()) {
+                LOG.log(Level.WARNING, "Code Time: unable to send heartbeat ping");
+            }
+        }
     }
     
     protected void lazilyFetchUserStatus(int retryCount) {
