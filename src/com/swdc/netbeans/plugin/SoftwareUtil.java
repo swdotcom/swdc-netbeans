@@ -943,7 +943,7 @@ public class SoftwareUtil {
     }
 
     public void launchWebDashboard() {
-        String url = LAUNCH_URL;
+        String url = LAUNCH_URL + "/login";
         try {
             URL launchUrl = new URL(url);
             URLDisplayer.getDefault().showURL(launchUrl);
