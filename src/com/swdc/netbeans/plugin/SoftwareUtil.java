@@ -37,7 +37,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -103,6 +105,7 @@ public class SoftwareUtil {
 
     public static JsonParser jsonParser = new JsonParser();
     public static Gson gson = new Gson();
+    private static Map<String, String> sessionMap = new HashMap<String, String>();
     
     public static boolean TELEMETRY_ON = true;
     
@@ -154,6 +157,13 @@ public class SoftwareUtil {
     public void updateServerStatus(boolean isOnlineStatus) {
         appAvailable = isOnlineStatus;
     }
+    
+    public String getHostname() {
+        List<String> cmd = new ArrayList<String>();
+        cmd.add("hostname");
+        String hostname = getSingleLineResult(cmd, 1);
+        return hostname;
+    }
 
     public String getVersion() {
         for (UpdateUnit updateUnit : UpdateManager.getDefault().getUpdateUnits()) {
@@ -168,6 +178,10 @@ public class SoftwareUtil {
     }
 
     public String getItem(String key) {
+        String val = sessionMap.get(key);
+        if (val != null) {
+            return val;
+        }
         JsonObject jsonObj = getSoftwareSessionAsJson();
         if (jsonObj != null && jsonObj.has(key) && !jsonObj.get(key).isJsonNull()) {
             return jsonObj.get(key).getAsString();
@@ -176,12 +190,14 @@ public class SoftwareUtil {
     }
 
     public void setItem(String key, String val) {
+        sessionMap.put(key, val);
+        
         JsonObject jsonObj = getSoftwareSessionAsJson();
         jsonObj.addProperty(key, val);
 
         String content = jsonObj.toString();
 
-        String sessionFile = getSoftwareSessionFile();
+        String sessionFile = getSoftwareSessionFile(true);
 
         try {
             try (Writer output = new BufferedWriter(new FileWriter(sessionFile))) {
@@ -191,11 +207,19 @@ public class SoftwareUtil {
             LOG.log(Level.WARNING, "Code Time: Failed to write the key value pair ({0}, {1}) into the session, error: {2}", new Object[]{key, val, e.getMessage()});
         }
     }
+    
+    public boolean softwareSessionFileExists() {
+        // don't auto create the file
+        String file = getSoftwareSessionFile(false);
+        // check if it exists
+        File f = new File(file);
+        return f.exists();
+    }
 
     private JsonObject getSoftwareSessionAsJson() {
         JsonObject data = null;
 
-        String sessionFile = getSoftwareSessionFile();
+        String sessionFile = getSoftwareSessionFile(true);
         File f = new File(sessionFile);
         if (f.exists()) {
             try {
@@ -212,8 +236,8 @@ public class SoftwareUtil {
         return (data == null) ? new JsonObject() : data;
     }
 
-    private String getSoftwareSessionFile() {
-        String file = getSoftwareDir();
+    private String getSoftwareSessionFile(boolean autoCreate) {
+        String file = getSoftwareDir(autoCreate);
         if (isWindows()) {
             file += "\\session.json";
         } else {
@@ -223,7 +247,7 @@ public class SoftwareUtil {
     }
 
     private String getSoftwareDataStoreFile() {
-        String file = getSoftwareDir();
+        String file = getSoftwareDir(true);
         if (isWindows()) {
             file += "\\data.json";
         } else {
@@ -233,7 +257,7 @@ public class SoftwareUtil {
     }
     
     private String getCodeTimeDashboardFile() {
-        String file = getSoftwareDir();
+        String file = getSoftwareDir(true);
         if (isWindows()) {
             file += "\\CodeTime.txt";
         } else {
@@ -304,7 +328,7 @@ public class SoftwareUtil {
         return (PlatformUtil.isMac());
     }
 
-    private String getSoftwareDir() {
+    private String getSoftwareDir(boolean autoCreate) {
         String softwareDataDir = getUserHomeDir();
         if (isWindows()) {
             softwareDataDir += "\\.software";
@@ -313,7 +337,7 @@ public class SoftwareUtil {
         }
 
         File f = new File(softwareDataDir);
-        if (!f.exists()) {
+        if (autoCreate && !f.exists()) {
             // make the directory
             f.mkdirs();
         }
@@ -702,7 +726,7 @@ public class SoftwareUtil {
         statusBar.updateMessage(barType, statusMsg, tooltip);
     }
     
-    private String getSingleLineResult(List<String> cmd) {
+    private String getSingleLineResult(List<String> cmd, int maxLen) {
         String result = null;
         String[] cmdArgs = Arrays.copyOf(cmd.toArray(), cmd.size(), String[].class);
         String content = runCommand(cmdArgs, null);
@@ -711,7 +735,9 @@ public class SoftwareUtil {
         if (content != null) {
             String[] contentList = content.split("\n");
             if (contentList != null && contentList.length > 0) {
-                for (String line : contentList) {
+                int len = (maxLen != -1) ? Math.min(maxLen, contentList.length) : contentList.length;
+                for (int i = 0; i < len; i++) {
+                    String line = contentList[i];
                     if (line != null && line.trim().length() > 0) {
                         result = line.trim();
                         break;
@@ -736,7 +762,7 @@ public class SoftwareUtil {
                     cmd.add("-c");
                     cmd.add("whoami");
                 }
-                username = getSingleLineResult(cmd);
+                username = getSingleLineResult(cmd, 1);
             } catch (Exception e) {
                 //
             }
@@ -760,7 +786,7 @@ public class SoftwareUtil {
         return null;
     }
 
-    public void createAnonymousUser(boolean serverIsOnline) {
+    public String createAnonymousUser(boolean serverIsOnline) {
         // make sure we've fetched the app jwt
         String appJwt = getAppJwt(serverIsOnline);
 
@@ -782,9 +808,11 @@ public class SoftwareUtil {
                 if (data != null && data.has("jwt")) {
                     String dataJwt = data.get("jwt").getAsString();
                     setItem("jwt", dataJwt);
+                    return dataJwt;
                 }
             }
         }
+        return null;
     }
     
     private JsonObject getUser(boolean serverIsOnline) {
@@ -848,11 +876,6 @@ public class SoftwareUtil {
         String jwt = getItem("jwt");
         boolean serverIsOnline = isServerOnline();
 
-        if (jwt == null || jwt.equals("")) {
-            // create an anonymous user
-            createAnonymousUser(serverIsOnline);
-        }
-
         boolean loggedIn = isLoggedOn(serverIsOnline);
 
         UserStatus currentUserStatus = new UserStatus();
@@ -860,7 +883,7 @@ public class SoftwareUtil {
         
         if (loggedInCacheState != loggedIn) {
             // logged in state changed
-            sendHeartbeat();
+            sendHeartbeat("STATE_CHANGE:LOGGED_IN:" + loggedIn);
             // refetch kpm
             new Thread(() -> {
                 try {
@@ -876,7 +899,7 @@ public class SoftwareUtil {
         return currentUserStatus;
     }
     
-    public void sendHeartbeat() {
+    public void sendHeartbeat(String reason) {
         boolean serverIsOnline = isServerOnline();
         String jwt = getItem("jwt");
         if (serverIsOnline && jwt != null) {
@@ -888,6 +911,8 @@ public class SoftwareUtil {
             payload.addProperty("os", getOs());
             payload.addProperty("start", start);
             payload.addProperty("version", getVersion());
+            payload.addProperty("hostname", getHostname());
+            payload.addProperty("trigger_annotation", reason);
 
             String api = "/data/heartbeat";
             SoftwareResponse resp = makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), jwt);

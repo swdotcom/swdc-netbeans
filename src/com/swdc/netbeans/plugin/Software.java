@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import org.apache.http.client.methods.HttpPost;
@@ -38,17 +39,66 @@ public class Software extends ModuleInstall implements Runnable {
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     
     private KeystrokeManager keystrokeMgr;
-    private SoftwareUtil softwareUtil;
+    private SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
     private RepoManager repoManager;
     private MusicManager musicManager;
     
     private final int ONE_MINUTE_SECONDS = 60;
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
+    
+    private static int retry_counter = 0;
+    private static long check_online_interval_ms = 1000 * 60 * 10;
 
     @Override
     public void run() {
+        initComponent();
+    }
+    
+    protected void initComponent() {
+        boolean serverIsOnline = softwareUtil.isServerOnline();
+        boolean sessionFileExists = softwareUtil.softwareSessionFileExists();
+        if (!sessionFileExists) {
+            if (!serverIsOnline) {
+                // server isn't online, check again in 10 min
+                if (retry_counter == 0) {
+                    showOfflinePrompt();
+                }
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(check_online_interval_ms);
+                        initComponent();
+                    } catch (Exception e) {
+                        System.err.println(e);
+                    }
+                }).start();
+            } else {
+                // create the anon user
+                String jwt = softwareUtil.createAnonymousUser(serverIsOnline);
+                if (jwt == null) {
+                    // it failed, try again later
+                    if (retry_counter == 0) {
+                        initComponent();
+                    }
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(check_online_interval_ms);
+                            initComponent();
+                        } catch (Exception e) {
+                            System.err.println(e);
+                        }
+                    }).start();
+                } else {
+                    initializePlugin();
+                }
+            }
+        } else {
+            // session json already exists, continue with plugin init
+            initializePlugin();
+        }
+    }
+    
+    protected void initializePlugin() {
         keystrokeMgr = KeystrokeManager.getInstance();
-        softwareUtil = SoftwareUtil.getInstance();
         repoManager = RepoManager.getInstance();
         musicManager = MusicManager.getInstance();
         
@@ -124,7 +174,7 @@ public class Software extends ModuleInstall implements Runnable {
     
     private void hourlyJobsProcessor() {
         // send a heartbeat
-        softwareUtil.sendHeartbeat();
+        softwareUtil.sendHeartbeat("HOURLY");
         
         new Thread(() -> {
             try {
@@ -237,7 +287,7 @@ public class Software extends ModuleInstall implements Runnable {
             }
         }).start();
         
-        softwareUtil.sendHeartbeat();
+        softwareUtil.sendHeartbeat("INITIALIZED");
     }
     
     private void initializeCalls() {
@@ -257,6 +307,15 @@ public class Software extends ModuleInstall implements Runnable {
         keystrokeMgr.incrementKeystrokes();
         
         processKeystrokes();
+    }
+    
+    protected void showOfflinePrompt() {
+        String infoMsg = "Our service is temporarily unavailable. We will try to reconnect again " +
+                        "in 10 minutes. Your status bar will not update at this time.";
+        Object[] options = {"OK"};
+        JOptionPane.showOptionDialog(
+                null, infoMsg, "Code Time", JOptionPane.OK_OPTION,
+                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
     }
     
 }
