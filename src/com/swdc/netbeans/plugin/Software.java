@@ -67,7 +67,7 @@ public class Software extends ModuleInstall implements Runnable {
                     try {
                         Thread.sleep(check_online_interval_ms);
                         initComponent();
-                    } catch (Exception e) {
+                    } catch (InterruptedException e) {
                         System.err.println(e);
                     }
                 }).start();
@@ -83,21 +83,21 @@ public class Software extends ModuleInstall implements Runnable {
                         try {
                             Thread.sleep(check_online_interval_ms);
                             initComponent();
-                        } catch (Exception e) {
+                        } catch (InterruptedException e) {
                             System.err.println(e);
                         }
                     }).start();
                 } else {
-                    initializePlugin();
+                    initializePlugin(true);
                 }
             }
         } else {
             // session json already exists, continue with plugin init
-            initializePlugin();
+            initializePlugin(false);
         }
     }
     
-    protected void initializePlugin() {
+    protected void initializePlugin(boolean initializedUser) {
         keystrokeMgr = KeystrokeManager.getInstance();
         repoManager = RepoManager.getInstance();
         musicManager = MusicManager.getInstance();
@@ -124,7 +124,7 @@ public class Software extends ModuleInstall implements Runnable {
         setupUserStatusProcessor();
         
         // check the user auth status and send any offline data
-        bootstrapStatus();
+        bootstrapStatus(initializedUser);
     }
     
     /**
@@ -194,11 +194,11 @@ public class Software extends ModuleInstall implements Runnable {
         }).start();
     }
     
-    private void bootstrapStatus() {
+    private void bootstrapStatus(boolean initializedUser) {
         new Thread(() -> {
             try {
                 Thread.sleep(5000);
-                initializeUserInfo();
+                initializeUserInfo(initializedUser);
             } catch (InterruptedException e) {
                 System.err.println(e);
             }
@@ -250,30 +250,18 @@ public class Software extends ModuleInstall implements Runnable {
         }
     }
     
-    private void initializeUserInfo() {
-        // this should only ever possibly return true the very first
-        // time the IDE loads this new code
-        String user = softwareUtil.getItem("user");
-        if (user != null) {
-                softwareUtil.setItem("user", null);
-        }
-
-        String jwt = softwareUtil.getItem("jwt");
-        boolean initializingPlugin = false;
-        if (jwt == null || jwt.equals("")) {
-                initializingPlugin = true;
-        }
+    private void initializeUserInfo(boolean initializedUser) {
 
         softwareUtil.getUserStatus();
 
-        if (initializingPlugin) {
+        if (initializedUser) {
             sendInstallPayload();
             // ask the user to login one time only
             new Thread(() -> {
                 try {
                     Thread.sleep(5000);
-                    softwareUtil.checkUserAuthenticationStatus();
-                } catch (Exception e) {
+                    softwareUtil.showLoginPrompt();
+                } catch (InterruptedException e) {
                     System.err.println(e);
                 }
             }).start();
@@ -282,7 +270,7 @@ public class Software extends ModuleInstall implements Runnable {
             try {
                 Thread.sleep(1000 * 20);
                 initializeCalls();
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
                 System.err.println(e);
             }
         }).start();

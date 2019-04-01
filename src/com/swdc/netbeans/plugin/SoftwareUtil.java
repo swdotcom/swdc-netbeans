@@ -546,7 +546,7 @@ public class SoftwareUtil {
         return isOk;
     }
 
-    public void checkUserAuthenticationStatus() {
+    public void showLoginPrompt() {
         
         boolean isOnline = isServerOnline();
 
@@ -796,6 +796,8 @@ public class SoftwareUtil {
             JsonObject payload = new JsonObject();
             payload.addProperty("username", getOsUsername());
             payload.addProperty("timezone", timezone);
+            payload.addProperty("hostname", getHostname());
+            payload.addProperty("creation_annotation", "NO_SESSION_FILE");
 
             String api = "/data/onboard";
             SoftwareResponse resp = makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), appJwt);
@@ -873,7 +875,6 @@ public class SoftwareUtil {
     }
 
     public UserStatus getUserStatus() {
-        String jwt = getItem("jwt");
         boolean serverIsOnline = isServerOnline();
 
         boolean loggedIn = isLoggedOn(serverIsOnline);
