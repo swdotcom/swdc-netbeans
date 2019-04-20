@@ -29,6 +29,11 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     private static JLabel statusLabel = new JLabel(" Code Time ");
     private JPanel panel = new JPanel(new BorderLayout());
     private long last_click_time = -1;
+    
+    private static boolean showStatusText = true;
+    private static StatusBarType lastStatusType = StatusBarType.NO_KPM;
+    private static String lastMsg = "";
+    private static String lastTooltip = "";
 
     private static boolean registeredMouseClick = false;
     
@@ -39,7 +44,8 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
         HALF("com/swdc/netbeans/plugin/status/50.png"),
         QUARTER("com/swdc/netbeans/plugin/status/25.png"),
         NO_KPM("com/swdc/netbeans/plugin/status/sw.png"),
-        ALERT("com/swdc/netbeans/plugin/status/warning.png");
+        ALERT("com/swdc/netbeans/plugin/status/warning.png"),
+        OFF("com/swdc/netbeans/plugin/status/clock.png");
 
         private Icon icon;
 
@@ -63,12 +69,35 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
         panel.add(new JSeparator(SwingConstants.VERTICAL), BorderLayout.WEST);
         panel.add(statusLabel, BorderLayout.CENTER);
     }
+    
+    public void toggleStatusBarText() {
+        showStatusText = !showStatusText;
+        if (showStatusText) {
+            updateMessage(lastStatusType, lastMsg, lastTooltip);
+        } else {
+            // set status line will update it to a clock
+            updateMessage(StatusBarType.NO_KPM, "", lastTooltip);
+        }
+    }
 
     public void updateMessage(StatusBarType status, String text, String tooltip) {
         String name = SoftwareUtil.getInstance().getItem("name");
-        if (tooltip != null && name != null && !name.equals("")) {
-            tooltip += " (logged in as " + name + ")";
+        
+        if ( showStatusText ) {
+            lastMsg = text;
+            lastTooltip = tooltip;
+            lastStatusType = status;
         }
+        
+        if (tooltip != null && name != null && !name.equals("")) {
+            tooltip += " (" + name + ")";
+        }
+        
+        if (!showStatusText) {
+            tooltip = lastMsg + " | " + tooltip;
+            status = StatusBarType.OFF;
+        }
+        
         statusLabel.setText(text + " ");
         statusLabel.setToolTipText(tooltip);
         switch (status) {
@@ -89,6 +118,9 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
                 break;
             case ALERT:
                 statusLabel.setIcon(StatusBarType.ALERT.icon);
+                break;
+            case OFF:
+                statusLabel.setIcon(StatusBarType.OFF.icon);
                 break;
             default:
                 statusLabel.setIcon(StatusBarType.NO_KPM.icon);

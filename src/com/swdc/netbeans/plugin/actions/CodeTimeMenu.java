@@ -59,11 +59,12 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
         items.add(toMenuItem(new CodeTimeDashboardAction()));
         items.add(toMenuItem(new CodeTimeTop40Action()));
         items.add(toMenuItem(new WebDashboardAction()));
-        
+
         if (!userStatus.loggedIn) {
             // not logged in, show the login and signup menu items
             items.add(toMenuItem(new CodeTimeLoginAction()));
         }
+        items.add(toMenuItem(new CodeTimeToggleStatusAction()));
         return items.toArray(new JComponent[items.size()]);
     }
 
@@ -150,6 +151,23 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
         @Override
         public JMenuItem getMenuPresenter() {
             JMenuItem item = new JMenuItem("Software top 40");
+            item.addActionListener(this);
+            return item;
+        }
+    }
+    
+    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeToggleStatusAction")
+    @ActionRegistration(displayName = "not-used", lazy = false)
+    public static class CodeTimeToggleStatusAction extends AbstractAction implements Presenter.Menu {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            SoftwareUtil.getInstance().toggleStatusBar();
+        }
+
+        @Override
+        public JMenuItem getMenuPresenter() {
+            JMenuItem item = new JMenuItem("Show/hide status bar metrics");
             item.addActionListener(this);
             return item;
         }

@@ -152,6 +152,10 @@ public class SoftwareUtil {
     public class UserStatus {
         public boolean loggedIn;
     }
+    
+    public void toggleStatusBar() {
+        statusBar.toggleStatusBarText();
+    }
 
     
     public void updateServerStatus(boolean isOnlineStatus) {

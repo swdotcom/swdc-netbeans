@@ -56,12 +56,12 @@ public class SessionManager {
             String averageDailyMinutesTimeStr = softwareUtil.humanizeMinutes(averageDailyMinutes);
 
             StatusBarType barType = currentDayMinutes > averageDailyMinutes ? StatusBarType.ROCKET : StatusBarType.NO_KPM;
-            String msg = "Code time: " + currentDayTimeStr;
+            String msg = currentDayTimeStr;
             if (averageDailyMinutes > 0) {
-                msg += " | Avg: " + averageDailyMinutesTimeStr;
+                msg += " | " + averageDailyMinutesTimeStr;
             }
             
-            softwareUtil.setStatusLineMessage(barType, msg, "Click to see more from Code Time");
+            softwareUtil.setStatusLineMessage(barType, msg, "Code time today vs. your daily average. Click to see more from Code Time");
 
             softwareUtil.fetchCodeTimeMetrics();
         }

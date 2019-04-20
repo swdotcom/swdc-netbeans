@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -130,9 +131,16 @@ public class DocumentChangeEventListener implements DocumentListener {
     private int getLineCount(String fileName) {
         Path path = Paths.get(fileName);
         try {
-            return (int) Files.lines(path).count();
-        } catch (IOException e) {
-            log.log(Level.INFO, "Code Time: failed to get the line count for file {0}", fileName);
+            Stream<String> stream = Files.lines(path);
+            int count = (int) stream.count();
+            stream.close();
+            return count;
+
+        } catch (Exception e) {
+        	log.log(Level.INFO, "Code Time: unable to get the line count for file " + fileName);
+            return 0;
+        } catch (Throwable e) {
+        	log.log(Level.INFO, "Code Time: unable to get the line count for file " + fileName);
             return 0;
         }
     }

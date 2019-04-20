@@ -184,14 +184,6 @@ public class Software extends ModuleInstall implements Runnable {
                 System.err.println(e);
             }
         }).start();
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000 * 60);
-                processRepoMembers();
-            } catch (Exception e) {
-                System.err.println(e);
-            }
-        }).start();
     }
     
     private void bootstrapStatus(boolean initializedUser) {
@@ -219,15 +211,6 @@ public class Software extends ModuleInstall implements Runnable {
         if (keystrokeData != null && keystrokeData.getProject() != null) {
             String projectDir = keystrokeData.getProject().getDirectory();
             repoManager.getHistoricalCommits(projectDir);
-        }
-    }
-    
-    private void processRepoMembers() {
-        KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
-        // if we have keystroke data, we'll have the project info
-        if (keystrokeData != null && keystrokeData.getProject() != null) {
-            String projectDir = keystrokeData.getProject().getDirectory();
-            repoManager.processRepoMembersInfo(projectDir);
         }
     }
 
