@@ -89,10 +89,13 @@ public class DocumentChangeEventListener implements DocumentListener {
                     }
                     
                     if (metrics.getSyntax() == null || metrics.getSyntax().equals("")) {
-                        String ext = currentFile.substring(currentFile.lastIndexOf(".") + 1);
-                        metrics.setSyntax(ext);
+                        if (currentFile.contains(".")) {
+                            String ext = currentFile.substring(currentFile.lastIndexOf(".") + 1);
+                            metrics.setSyntax(ext);
+                        }
                     }
                     
+
                     if (lineChange != null) {
                         // check if it's line removed or added
                         Element[] addedLines = lineChange.getChildrenAdded();

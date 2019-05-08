@@ -111,6 +111,7 @@ public class SoftwareUtil {
     
     private boolean appAvailable = true;
     private static boolean loggedInCacheState = false;
+    private static long lastAppAvailableCheck = 0;
     
     private SoftwareStatusBar statusBar;
     
@@ -218,6 +219,11 @@ public class SoftwareUtil {
         // check if it exists
         File f = new File(file);
         return f.exists();
+    }
+    
+    public boolean hasJwt() {
+        String jwt = getItem("jwt");
+        return (jwt != null && !jwt.equals(""));
     }
 
     private JsonObject getSoftwareSessionAsJson() {
@@ -509,7 +515,7 @@ public class SoftwareUtil {
                 FileInputStream fis = new FileInputStream(f);
 
                 try ( //Construct BufferedReader from InputStreamReader
-                        BufferedReader br = new BufferedReader(new InputStreamReader(fis))) {
+                    BufferedReader br = new BufferedReader(new InputStreamReader(fis))) {
                     String line = null;
                     while ((line = br.readLine()) != null) {
                         if (line.length() > 0) {
@@ -544,10 +550,14 @@ public class SoftwareUtil {
     }
     
     public boolean isServerOnline() {
-        SoftwareResponse resp = this.makeApiCall("/ping", HttpGet.METHOD_NAME, null);
-        boolean isOk = resp.isOk();
-        this.updateServerStatus(isOk);
-        return isOk;
+        long nowInSec = Math.round(System.currentTimeMillis() / 1000);
+        boolean pastThreshold = (nowInSec - lastAppAvailableCheck > 60);
+        if (pastThreshold) {
+            SoftwareResponse resp = this.makeApiCall("/ping", HttpGet.METHOD_NAME, null);
+            this.updateServerStatus(resp.isOk());
+            lastAppAvailableCheck = nowInSec;
+        }
+        return appAvailable;
     }
 
     public void showLoginPrompt() {

@@ -89,6 +89,9 @@ public class RepoManager {
             if (latestCommit != null && latestCommit.has("timestamp")) {
                 long unixTs = latestCommit.get("timestamp").getAsLong();
                 sinceOption = "--since=" + unixTs;
+            } else {
+                // only fetch no more than the last 100
+                sinceOption = " --max-count=100";
             }
 
             String authorOption = "--author=" + email;
@@ -192,11 +195,11 @@ public class RepoManager {
                 }
 
                 if (commits.size() > 0) {
-                    // send it in batches of 100
+                    // send it in batches of 25 since they may be large
                     JsonArray batch = new JsonArray();
                     for (int i = 0; i < commits.size(); i++) {
                         batch.add(commits.get(i));
-                        if (i > 0 && i % 100 == 0) {
+                        if (i > 0 && i % 25 == 0) {
                             this.processCommits(batch, identifier, tag, branch);
                             batch = new JsonArray();
                         }

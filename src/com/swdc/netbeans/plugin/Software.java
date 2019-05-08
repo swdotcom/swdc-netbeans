@@ -46,8 +46,8 @@ public class Software extends ModuleInstall implements Runnable {
     private final int ONE_MINUTE_SECONDS = 60;
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
     
-    private static int retry_counter = 0;
-    private static long check_online_interval_ms = 1000 * 60 * 10;
+    private static final int retry_counter = 0;
+    private static final long check_online_interval_ms = 1000 * 60 * 10;
 
     @Override
     public void run() {
@@ -57,7 +57,9 @@ public class Software extends ModuleInstall implements Runnable {
     protected void initComponent() {
         boolean serverIsOnline = softwareUtil.isServerOnline();
         boolean sessionFileExists = softwareUtil.softwareSessionFileExists();
-        if (!sessionFileExists) {
+        boolean hasJwt = softwareUtil.hasJwt();
+        // no session file or no jwt
+        if (!sessionFileExists || !hasJwt) {
             if (!serverIsOnline) {
                 // server isn't online, check again in 10 min
                 if (retry_counter == 0) {
