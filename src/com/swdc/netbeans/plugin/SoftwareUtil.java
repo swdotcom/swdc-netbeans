@@ -379,7 +379,7 @@ public class SoftwareUtil {
         //
         StringBuilder sb = new StringBuilder();
         InputStreamReader reader;
-        reader = new InputStreamReader(inputStream);
+        reader = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
 
         try (BufferedReader br = new BufferedReader(reader)) {
             boolean done = false;

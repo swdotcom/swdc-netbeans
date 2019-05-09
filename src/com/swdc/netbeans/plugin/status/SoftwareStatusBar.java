@@ -126,6 +126,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
                 statusLabel.setIcon(StatusBarType.NO_KPM.icon);
                 break;
         }
+        statusLabel.repaint();
     }
 
     @Override

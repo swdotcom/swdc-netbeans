@@ -30,18 +30,6 @@ public class SessionManager {
         SoftwareResponse softwareResponse = softwareUtil.makeApiCall(api, HttpGet.METHOD_NAME, null);
         JsonObject jsonObj = softwareResponse.getJsonObj();
         if (jsonObj != null) {
-            boolean inFlow = true;
-            if (jsonObj.has("inFlow")) {
-                inFlow = jsonObj.get("inFlow").getAsBoolean();
-            }
-            int lastKpm = 0;
-            if (jsonObj.has("lastKpm")) {
-                lastKpm = jsonObj.get("lastKpm").getAsInt();
-            }
-            int currentSessionMinutes = 0;
-            if (jsonObj.has("currentSessionMinutes")) {
-                currentSessionMinutes = jsonObj.get("currentSessionMinutes").getAsInt();
-            }
             int averageDailyMinutes = 0;
             if (jsonObj.has("averageDailyMinutes")) {
                 averageDailyMinutes = jsonObj.get("averageDailyMinutes").getAsInt();
@@ -51,7 +39,6 @@ public class SessionManager {
                 currentDayMinutes = jsonObj.get("currentDayMinutes").getAsInt();
             }
             
-            String sessionTimeStr = softwareUtil.humanizeMinutes(currentSessionMinutes);
             String currentDayTimeStr = softwareUtil.humanizeMinutes(currentDayMinutes);
             String averageDailyMinutesTimeStr = softwareUtil.humanizeMinutes(averageDailyMinutes);
 
