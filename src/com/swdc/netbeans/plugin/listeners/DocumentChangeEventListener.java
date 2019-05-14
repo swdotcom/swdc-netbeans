@@ -126,24 +126,24 @@ public class DocumentChangeEventListener implements DocumentListener {
                     } else {
                         log.log(Level.INFO, "Change event happened: {0}", e.toString());
                     }
+                    
                 }
             });
         }
     }
     
     private int getLineCount(String fileName) {
-        Path path = Paths.get(fileName);
         try {
+            Path path = Paths.get(fileName);
             Stream<String> stream = Files.lines(path);
             int count = (int) stream.count();
-            stream.close();
+            try {
+                stream.close();
+            } catch (Exception e) {
+                //
+            }
             return count;
-
         } catch (Exception e) {
-        	log.log(Level.INFO, "Code Time: unable to get the line count for file " + fileName);
-            return 0;
-        } catch (Throwable e) {
-        	log.log(Level.INFO, "Code Time: unable to get the line count for file " + fileName);
             return 0;
         }
     }
