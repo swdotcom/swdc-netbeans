@@ -12,6 +12,7 @@ import com.google.gson.JsonSyntaxException;
 import com.sun.javafx.PlatformUtil;
 import com.swdc.netbeans.plugin.managers.SoftwareHttpManager;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
+import com.swdc.netbeans.plugin.managers.OfflineManager;
 import com.swdc.netbeans.plugin.managers.SessionManager;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar.StatusBarType;
@@ -31,8 +32,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -94,6 +97,17 @@ public class SoftwareUtil {
     // set the launch url to use
     public final static String LAUNCH_URL = PROD_URL_ENDPOINT;
     
+    private static int DASHBOARD_LABEL_WIDTH = 25;
+    private static int DASHBOARD_VALUE_WIDTH = 25;
+    private static int MARKER_WIDTH = 4;
+    
+    private static String SERVICE_NOT_AVAIL =
+            "Our service is temporarily unavailable.\n\nPlease try again later.\n";
+    
+    private static long lastDashboardFetchTime = 0;
+    
+    private final static long MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+    
     // netbeans plugin id
     public final static int PLUGIN_ID = 11;
 
@@ -105,7 +119,8 @@ public class SoftwareUtil {
 
     public static JsonParser jsonParser = new JsonParser();
     public static Gson gson = new Gson();
-    private static Map<String, String> sessionMap = new HashMap<String, String>();
+    
+    private final static Map<String, String> sessionMap = new HashMap<String, String>();
     
     public static boolean TELEMETRY_ON = true;
     
@@ -245,6 +260,16 @@ public class SoftwareUtil {
         }
         return (data == null) ? new JsonObject() : data;
     }
+    
+    public String getSummaryInfoFile(boolean autoCreate) {
+        String file = getSoftwareDir(autoCreate);
+        if (this.isWindows()) {
+            file += "\\SummaryInfo.txt";
+        } else {
+            file += "/SummaryInfo.txt";
+        }
+        return file;
+    };
 
     private String getSoftwareSessionFile(boolean autoCreate) {
         String file = getSoftwareDir(autoCreate);
@@ -266,7 +291,7 @@ public class SoftwareUtil {
         return file;
     }
     
-    private String getCodeTimeDashboardFile() {
+    public String getCodeTimeDashboardFile() {
         String file = getSoftwareDir(true);
         if (isWindows()) {
             file += "\\CodeTime.txt";
@@ -337,8 +362,12 @@ public class SoftwareUtil {
     public boolean isMac() {
         return (PlatformUtil.isMac());
     }
+    
+    public boolean isLinux() {
+        return (!isMac() && !isWindows());
+    }
 
-    private String getSoftwareDir(boolean autoCreate) {
+    public String getSoftwareDir(boolean autoCreate) {
         String softwareDataDir = getUserHomeDir();
         if (isWindows()) {
             softwareDataDir += "\\.software";
@@ -412,11 +441,11 @@ public class SoftwareUtil {
 
         SoftwareHttpManager httpTask = null;
         if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard") || api.contains("/users/plugin/accounts")) {
-            // if the server is having issues, we'll timeout within 3 seconds for these calls
+            // if the server is having issues, we'll timeout within 5 seconds for these calls
             httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, pingClient);
         } else {
             if (httpMethodName.equals(HttpPost.METHOD_NAME)) {
-                // continue, POSTS encapsulated in invoke laters with a timeout of 3 seconds
+                // continue, POSTS encapsulated in invoke laters with a timeout of 5 seconds
                 httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, pingClient);
             } else {
                 if (!appAvailable) {
@@ -691,30 +720,79 @@ public class SoftwareUtil {
         }
     }
     
-    public void fetchCodeTimeMetrics() {
-        boolean isLinux = (isMac() || isWindows()) ? false : true;
-        String api = "/dashboard?linux=" + isLinux;
-        String dashboardContent = this.makeApiCall(api, HttpGet.METHOD_NAME, null).getJsonStr();
-        String codeTimeFile = this.getCodeTimeDashboardFile();
-
+    public void fetchCodeTimeMetricsDashboard(JsonObject summary) {
+        OfflineManager offlineMgr = OfflineManager.getInstance();
+        String summaryInfoFile = this.getSummaryInfoFile(true);
+        String dashboardFile = this.getCodeTimeDashboardFile();
+        long nowInSec = Math.round(System.currentTimeMillis() / 1000);
+        long diff = nowInSec - lastDashboardFetchTime;
         Writer writer = null;
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream(codeTimeFile), "utf-8"));
-            writer.write(dashboardContent);
-        } catch (IOException ex) {
-            // Report
-        } finally {
+
+        File f = new File(summaryInfoFile);
+        if (!f.exists() || lastDashboardFetchTime == 0 || diff >= MILLIS_PER_DAY) {
+            lastDashboardFetchTime = nowInSec;
+            String api = "/dashboard?linux=" + this.isLinux() + "&showToday=false";
+            String dashboardSummary = this.makeApiCall(api, HttpGet.METHOD_NAME, null).getJsonStr();
+            if (dashboardSummary == null || dashboardSummary.trim().isEmpty()) {
+                dashboardSummary = SERVICE_NOT_AVAIL;
+            }
+
+            // write the summary content
             try {
-                if (writer != null) {
-                    writer.close();
-                }
-            } catch (IOException ex) {/*ignore*/}
+                writer = new BufferedWriter(new OutputStreamWriter(
+                        new FileOutputStream(summaryInfoFile), StandardCharsets.UTF_8));
+                writer.write(dashboardSummary);
+            } catch (IOException ex) {
+                // Report
+            } finally {
+                try {writer.close();} catch (Exception ex) {/*ignore*/}
+            }
         }
+
+        // concat summary info with the dashboard file
+        String dashboardContent = "";
+        SimpleDateFormat formatDayTime = new SimpleDateFormat("EEE, MMM d h:mma");
+        SimpleDateFormat formatDay = new SimpleDateFormat("EEE, MMM d");
+        String lastUpdatedStr = formatDayTime.format(new Date());
+        dashboardContent += "Code Time          (Last updated on " + lastUpdatedStr + ")";
+        dashboardContent += "\n\n";
+        String todayStr = formatDay.format(new Date());
+        dashboardContent += getSectionHeader("Today (" + todayStr + ")");
+
+
+        if (summary != null) {
+            int currentDayMinutes = 0;
+            if (summary.has("currentDayMinutes")) {
+                currentDayMinutes = summary.get("currentDayMinutes").getAsInt();
+            }
+            int averageDailyMinutes = 0;
+            if (summary.has("averageDailyMinutes")) {
+                averageDailyMinutes = summary.get("averageDailyMinutes").getAsInt();
+            }
+
+            String currentDayTimeStr = this.humanizeMinutes(currentDayMinutes);
+            String averageDailyMinutesTimeStr = this.humanizeMinutes(averageDailyMinutes);
+
+            dashboardContent += getDashboardRow("Hours coded today", currentDayTimeStr);
+            dashboardContent += getDashboardRow("90-day avg", averageDailyMinutesTimeStr);
+            dashboardContent += "\n";
+        }
+
+        // append the summary content
+        String summaryInfoContent = offlineMgr.getSessionSummaryInfoFileContent();
+        if (summaryInfoContent != null) {
+            dashboardContent += summaryInfoContent;
+        }
+
+        // write the dashboard content to the dashboard file
+        offlineMgr.saveFileContent(dashboardContent, dashboardFile);
     }
     
     public void launchCodeTimeMetricsDashboard() {
-        fetchCodeTimeMetrics();
+        SessionManager.fetchDailyKpmSessionInfo();
+        JsonObject sessionSummary = OfflineManager.getInstance().getSessionSummaryFileAsJson();
+        fetchCodeTimeMetricsDashboard(sessionSummary);
+
         String codeTimeFile = this.getCodeTimeDashboardFile();
         File f = new File(codeTimeFile);
         
@@ -889,11 +967,17 @@ public class SoftwareUtil {
     }
 
     public UserStatus getUserStatus() {
+        UserStatus currentUserStatus = new UserStatus();
+        if (loggedInCacheState) {
+            currentUserStatus.loggedIn = true;
+            return currentUserStatus;
+        }
+        
         boolean serverIsOnline = isServerOnline();
 
         boolean loggedIn = isLoggedOn(serverIsOnline);
 
-        UserStatus currentUserStatus = new UserStatus();
+        
         currentUserStatus.loggedIn = loggedIn;
         
         if (loggedInCacheState != loggedIn) {
@@ -990,5 +1074,44 @@ public class SoftwareUtil {
         } catch (MalformedURLException e) {
             LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
         }
+    }
+    
+    public String getDashboardRow(String label, String value) {
+        String content = getDashboardLabel(label) + " : " + getDashboardValue(value) + "\n";
+        return content;
+    }
+
+    public String getSectionHeader(String label) {
+        String content = label + "\n";
+        // add 3 to account for the " : " between the columns
+        int dashLen = DASHBOARD_LABEL_WIDTH + DASHBOARD_VALUE_WIDTH + 15;
+        for (int i = 0; i < dashLen; i++) {
+            content += "-";
+        }
+        content += "\n";
+        return content;
+    }
+
+    public String getDashboardLabel(String label) {
+        return getDashboardDataDisplay(DASHBOARD_LABEL_WIDTH, label);
+    }
+
+    public String getDashboardValue(String value) {
+        String valueContent = getDashboardDataDisplay(DASHBOARD_VALUE_WIDTH, value);
+        String paddedContent = "";
+        for (int i = 0; i < 11; i++) {
+            paddedContent += " ";
+        }
+        paddedContent += valueContent;
+        return paddedContent;
+    }
+
+    public String getDashboardDataDisplay(int widthLen, String data) {
+        int len = widthLen - data.length();
+        String content = "";
+        for (int i = 0; i < len; i++) {
+            content += " ";
+        }
+        return content + "" + data;
     }
 }

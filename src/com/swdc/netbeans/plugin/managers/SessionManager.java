@@ -6,9 +6,7 @@ package com.swdc.netbeans.plugin.managers;
 
 import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar.StatusBarType;
-import java.util.Date;
 import java.util.logging.Logger;
 import org.apache.http.client.methods.HttpGet;
 
@@ -20,37 +18,40 @@ public class SessionManager {
     public static final Logger LOG = Logger.getLogger("SessionManager");
     
     private static final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
+    private static final OfflineManager offlineMgr = OfflineManager.getInstance();
     
     public static void fetchDailyKpmSessionInfo() {
-        // set the start of the day
-        Date d = softwareUtil.atStartOfDay(new Date());
-        long fromSeconds = Math.round(d.getTime() / 1000);
-        // make an async call to get the kpm 
-        String api = "/sessions?summary=true";
-        SoftwareResponse softwareResponse = softwareUtil.makeApiCall(api, HttpGet.METHOD_NAME, null);
-        JsonObject jsonObj = softwareResponse.getJsonObj();
-        if (jsonObj != null) {
-            int averageDailyMinutes = 0;
-            if (jsonObj.has("averageDailyMinutes")) {
-                averageDailyMinutes = jsonObj.get("averageDailyMinutes").getAsInt();
-            }
-            int currentDayMinutes = 0;
-            if (jsonObj.has("currentDayMinutes")) {
-                currentDayMinutes = jsonObj.get("currentDayMinutes").getAsInt();
-            }
-            
-            String currentDayTimeStr = softwareUtil.humanizeMinutes(currentDayMinutes);
-            String averageDailyMinutesTimeStr = softwareUtil.humanizeMinutes(averageDailyMinutes);
+        
+        JsonObject sessionSummary = offlineMgr.getSessionSummaryFileAsJson();
+        int currentDayMinutes = sessionSummary != null
+                ? sessionSummary.get("currentDayMinutes").getAsInt() : 0;
+        if (currentDayMinutes == 0) {
+            String sessionsApi = "/sessions/summary";
 
-            StatusBarType barType = currentDayMinutes > averageDailyMinutes ? StatusBarType.ROCKET : StatusBarType.NO_KPM;
-            String msg = currentDayTimeStr;
-            if (averageDailyMinutes > 0) {
-                msg += " | " + averageDailyMinutesTimeStr;
-            }
-            
-            softwareUtil.setStatusLineMessage(barType, msg, "Code time today vs. your daily average. Click to see more from Code Time");
+            // make an async call to get the kpm info
+            sessionSummary = softwareUtil.makeApiCall(sessionsApi, HttpGet.METHOD_NAME, null).getJsonObj();
+            if (sessionSummary != null) {
 
-            softwareUtil.fetchCodeTimeMetrics();
+                if (sessionSummary.has("currentDayMinutes")) {
+                    currentDayMinutes = sessionSummary.get("currentDayMinutes").getAsInt();
+                }
+                int currentDayKeystrokes = 0;
+                if (sessionSummary.has("currentDayKeystrokes")) {
+                    currentDayKeystrokes = sessionSummary.get("currentDayKeystrokes").getAsInt();
+                }
+
+                int averageDailyMinutes = 0;
+                if (sessionSummary.has("averageDailyMinutes")) {
+                    averageDailyMinutes = sessionSummary.get("averageDailyMinutes").getAsInt();
+                }
+
+                offlineMgr.setSessionSummaryData(currentDayMinutes, currentDayKeystrokes, averageDailyMinutes);
+
+            } else {
+                softwareUtil.setStatusLineMessage(StatusBarType.NO_KPM, "Code Time", "Click to see more from Code Time");
+            }
         }
+        offlineMgr.updateStatusBarWithSummaryData(sessionSummary);
     }
+    
 }

@@ -4,11 +4,11 @@
  */
 package com.swdc.netbeans.plugin;
 
-
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
 import com.swdc.netbeans.plugin.managers.MusicManager;
+import com.swdc.netbeans.plugin.managers.OfflineManager;
 import com.swdc.netbeans.plugin.managers.RepoManager;
 import com.swdc.netbeans.plugin.models.KeystrokeData;
 import com.swdc.netbeans.plugin.managers.SessionManager;
@@ -33,19 +33,19 @@ import org.openide.windows.OnShowing;
  */
 @OnShowing
 public class Software extends ModuleInstall implements Runnable {
-    
+
     public static final Logger LOG = Logger.getLogger("Software");
-    
+
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    
+
     private KeystrokeManager keystrokeMgr;
-    private SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
+    private final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
     private RepoManager repoManager;
     private MusicManager musicManager;
-    
+
     private final int ONE_MINUTE_SECONDS = 60;
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
-    
+
     private static final int retry_counter = 0;
     private static final long check_online_interval_ms = 1000 * 60 * 10;
 
@@ -53,7 +53,7 @@ public class Software extends ModuleInstall implements Runnable {
     public void run() {
         initComponent();
     }
-    
+
     protected void initComponent() {
         boolean serverIsOnline = softwareUtil.isServerOnline();
         boolean sessionFileExists = softwareUtil.softwareSessionFileExists();
@@ -98,37 +98,36 @@ public class Software extends ModuleInstall implements Runnable {
             initializePlugin(false);
         }
     }
-    
+
     protected void initializePlugin(boolean initializedUser) {
         keystrokeMgr = KeystrokeManager.getInstance();
         repoManager = RepoManager.getInstance();
         musicManager = MusicManager.getInstance();
-        
+
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
         LOG.log(Level.INFO, "Code Time: Loaded v{0}", softwareUtil.getVersion());
-        
+
         // setup the document change event listeners
         setupEventListeners();
-        
+
         // setup the plugin data scheduler (every minute)
         setupScheduledPluginDataProcessor();
-        
+
         // setup the kpm metrics info fetch (every minute)
         setupScheduledKpmMetricsProcessor();
-        
+
         setupRepoMusicInfoProcessor();
-        
+
         final Runnable hourlyJobs = () -> hourlyJobsProcessor();
         int interval = ONE_HOUR_SECONDS;
-        scheduler.scheduleAtFixedRate(
-                hourlyJobs, 45, interval, TimeUnit.SECONDS);
-        
+        scheduler.scheduleAtFixedRate(hourlyJobs, 45, interval, TimeUnit.SECONDS);
+
         setupUserStatusProcessor();
-        
+
         // check the user auth status and send any offline data
         bootstrapStatus(initializedUser);
     }
-    
+
     /**
      * Add the file change listener
      */
@@ -148,36 +147,38 @@ public class Software extends ModuleInstall implements Runnable {
 
         EditorRegistry.addPropertyChangeListener(l);
     }
-    
+
     private void setupScheduledPluginDataProcessor() {
         final Runnable handler = () -> processKeystrokes();
-        scheduler.scheduleAtFixedRate(
-                handler, ONE_MINUTE_SECONDS, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(handler, ONE_MINUTE_SECONDS, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
     }
-    
+
+    private void setupOfflineDataSendProcessor() {
+        final Runnable handler = () -> processOfflineDataSend();
+        long everyThrityMin = ONE_MINUTE_SECONDS * 30;
+        scheduler.scheduleAtFixedRate(handler, 1 /* 1 second */, everyThrityMin, TimeUnit.SECONDS);
+    }
+
     private void setupScheduledKpmMetricsProcessor() {
         final Runnable handler = () -> SessionManager.fetchDailyKpmSessionInfo();
-        scheduler.scheduleAtFixedRate(
-                handler, 15, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(handler, 15, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
     }
-    
+
     private void setupUserStatusProcessor() {
         final Runnable handler = () -> processUserStatus();
-        scheduler.scheduleAtFixedRate(
-                handler, 60, 90, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(handler, 60, 90, TimeUnit.SECONDS);
     }
-    
+
     private void setupRepoMusicInfoProcessor() {
         final Runnable handler = () -> processMusicInfo();
         int interval = 15;
-        scheduler.scheduleAtFixedRate(
-                handler, 15, interval, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(handler, 15, interval, TimeUnit.SECONDS);
     }
-    
+
     private void hourlyJobsProcessor() {
         // send a heartbeat
         softwareUtil.sendHeartbeat("HOURLY");
-        
+
         new Thread(() -> {
             try {
                 Thread.sleep(1000 * 5);
@@ -187,7 +188,7 @@ public class Software extends ModuleInstall implements Runnable {
             }
         }).start();
     }
-    
+
     private void bootstrapStatus(boolean initializedUser) {
         new Thread(() -> {
             try {
@@ -198,15 +199,15 @@ public class Software extends ModuleInstall implements Runnable {
             }
         }).start();
     }
-    
+
     private void processUserStatus() {
         softwareUtil.getUserStatus();
     }
-    
+
     private void processMusicInfo() {
         musicManager.processMusicTrack();
     }
-    
+
     private void processHistoricalCommits() {
         KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
         // if we have keystroke data, we'll have the project info
@@ -216,25 +217,39 @@ public class Software extends ModuleInstall implements Runnable {
         }
     }
 
+    private void processOfflineDataSend() {
+
+    }
+
     private void processKeystrokes() {
-        if(!SoftwareUtil.SEND_TELEMTRY.get()) {
+        if (!SoftwareUtil.SEND_TELEMTRY.get()) {
             return;
         }
-        
+
         KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
         if (keystrokeData != null && keystrokeData.hasData()) {
             String payload = keystrokeData.getPayload();
-            SoftwareResponse resp = softwareUtil.makeApiCall("/data", HttpPost.METHOD_NAME, payload);
-            if (!resp.isOk()) {
-                // save the data offline
-                softwareUtil.storePayload(payload);
-            }
-            keystrokeMgr.reset();
-        } else if (keystrokeData != null) {
-            keystrokeMgr.reset();
+
+            // update the keystrokes and minutes value
+            int keystrokes = keystrokeData.getKeystrokes();
+            OfflineManager.getInstance().incrementSessionSummaryData(1, keystrokes);
+
+            // save the data offline
+            softwareUtil.storePayload(payload);
+
+            new Thread(() -> {
+                try {
+                    Thread.sleep(10000);
+                    SessionManager.fetchDailyKpmSessionInfo();
+                } catch (InterruptedException e) {
+                    System.err.println(e);
+                }
+            }).start();
         }
+
+        keystrokeMgr.reset();
     }
-    
+
     private void initializeUserInfo(boolean initializedUser) {
 
         softwareUtil.getUserStatus();
@@ -253,42 +268,34 @@ public class Software extends ModuleInstall implements Runnable {
         }
         new Thread(() -> {
             try {
-                Thread.sleep(1000 * 20);
-                initializeCalls();
+                Thread.sleep(2000);
+                softwareUtil.sendOfflineData();
+                SessionManager.fetchDailyKpmSessionInfo();
             } catch (InterruptedException e) {
                 System.err.println(e);
             }
         }).start();
-        
+
         softwareUtil.sendHeartbeat("INITIALIZED");
     }
-    
-    private void initializeCalls() {
-        new Thread(() -> {
-            softwareUtil.sendOfflineData();
-            SessionManager.fetchDailyKpmSessionInfo();
-        }).start();
-    }
-    
+
     protected void sendInstallPayload() {
         String currentFile = "Untitled";
         String projectName = "Unnamed";
         String projectDir = "";
-        KeystrokeMetrics metrics = keystrokeMgr.getKeystrokeMetrics(
-                currentFile, projectName, projectDir);
+        KeystrokeMetrics metrics = keystrokeMgr.getKeystrokeMetrics(currentFile, projectName, projectDir);
         metrics.setAdd(1);
         keystrokeMgr.incrementKeystrokes();
-        
+
         processKeystrokes();
     }
-    
+
     protected void showOfflinePrompt() {
-        String infoMsg = "Our service is temporarily unavailable. We will try to reconnect again " +
-                        "in 10 minutes. Your status bar will not update at this time.";
-        Object[] options = {"OK"};
-        JOptionPane.showOptionDialog(
-                null, infoMsg, "Code Time", JOptionPane.OK_OPTION,
-                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+        String infoMsg = "Our service is temporarily unavailable. We will try to reconnect again "
+                + "in 10 minutes. Your status bar will not update at this time.";
+        Object[] options = { "OK" };
+        JOptionPane.showOptionDialog(null, infoMsg, "Code Time", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                null, options, options[0]);
     }
-    
+
 }
