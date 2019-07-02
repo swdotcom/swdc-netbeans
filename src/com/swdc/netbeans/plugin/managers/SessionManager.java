@@ -20,12 +20,12 @@ public class SessionManager {
     private static final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
     private static final OfflineManager offlineMgr = OfflineManager.getInstance();
     
-    public static void fetchDailyKpmSessionInfo() {
+    public static void fetchDailyKpmSessionInfo(boolean foreceRefresh) {
         
         JsonObject sessionSummary = offlineMgr.getSessionSummaryFileAsJson();
         int currentDayMinutes = sessionSummary != null
                 ? sessionSummary.get("currentDayMinutes").getAsInt() : 0;
-        if (currentDayMinutes == 0) {
+        if (currentDayMinutes == 0 || foreceRefresh) {
             String sessionsApi = "/sessions/summary";
 
             // make an async call to get the kpm info

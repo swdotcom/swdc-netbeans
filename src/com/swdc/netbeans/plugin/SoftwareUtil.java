@@ -789,7 +789,7 @@ public class SoftwareUtil {
     }
     
     public void launchCodeTimeMetricsDashboard() {
-        SessionManager.fetchDailyKpmSessionInfo();
+        SessionManager.fetchDailyKpmSessionInfo(false);
         JsonObject sessionSummary = OfflineManager.getInstance().getSessionSummaryFileAsJson();
         fetchCodeTimeMetricsDashboard(sessionSummary);
 
@@ -986,7 +986,7 @@ public class SoftwareUtil {
             // refetch kpm
             new Thread(() -> {
                 try {
-                    SessionManager.fetchDailyKpmSessionInfo();
+                    SessionManager.fetchDailyKpmSessionInfo(true);
                 } catch (Exception e) {
                     System.err.println(e);
                 }

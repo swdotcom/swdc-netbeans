@@ -4,7 +4,6 @@
  */
 package com.swdc.netbeans.plugin;
 
-import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
 import com.swdc.netbeans.plugin.managers.MusicManager;
@@ -23,7 +22,6 @@ import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
-import org.apache.http.client.methods.HttpPost;
 import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
@@ -160,7 +158,7 @@ public class Software extends ModuleInstall implements Runnable {
     }
 
     private void setupScheduledKpmMetricsProcessor() {
-        final Runnable handler = () -> SessionManager.fetchDailyKpmSessionInfo();
+        final Runnable handler = () -> SessionManager.fetchDailyKpmSessionInfo(false);
         scheduler.scheduleAtFixedRate(handler, 15, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
     }
 
@@ -218,7 +216,15 @@ public class Software extends ModuleInstall implements Runnable {
     }
 
     private void processOfflineDataSend() {
-
+        softwareUtil.sendOfflineData();
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000 * 10);
+                SessionManager.fetchDailyKpmSessionInfo(true);
+            } catch (Exception e) {
+                //
+            }
+        }).start();
     }
 
     private void processKeystrokes() {
@@ -236,18 +242,11 @@ public class Software extends ModuleInstall implements Runnable {
 
             // save the data offline
             softwareUtil.storePayload(payload);
-
-            new Thread(() -> {
-                try {
-                    Thread.sleep(10000);
-                    SessionManager.fetchDailyKpmSessionInfo();
-                } catch (InterruptedException e) {
-                    System.err.println(e);
-                }
-            }).start();
         }
 
         keystrokeMgr.reset();
+        
+        SessionManager.fetchDailyKpmSessionInfo(false);
     }
 
     private void initializeUserInfo(boolean initializedUser) {
@@ -270,7 +269,7 @@ public class Software extends ModuleInstall implements Runnable {
             try {
                 Thread.sleep(2000);
                 softwareUtil.sendOfflineData();
-                SessionManager.fetchDailyKpmSessionInfo();
+                SessionManager.fetchDailyKpmSessionInfo(true);
             } catch (InterruptedException e) {
                 System.err.println(e);
             }
