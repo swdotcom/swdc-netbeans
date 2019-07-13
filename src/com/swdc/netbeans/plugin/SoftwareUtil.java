@@ -317,6 +317,7 @@ public class SoftwareUtil {
             output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
             output.append(payload);
             output.close();
+            LOG.log(Level.INFO, "Code Time: stored kpm metrics: " + payload);
         } catch (IOException e) {
             LOG.log(Level.WARNING, "Code Time: Error appending to the Software data store file, error: {0}", e.getMessage());
         }

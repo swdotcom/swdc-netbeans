@@ -6,7 +6,6 @@ package com.swdc.netbeans.plugin.listeners;
 
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
 import com.swdc.netbeans.plugin.models.KeystrokeMetrics;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,6 +31,7 @@ public class DocumentChangeEventListener implements DocumentListener {
     private final Document document;
     
     private KeystrokeManager keystrokeMgr = KeystrokeManager.getInstance();
+    private long lastAccessTime = 0;
 
     public DocumentChangeEventListener(Document d) {
         this.document = d;
@@ -61,7 +61,14 @@ public class DocumentChangeEventListener implements DocumentListener {
     }
 
     public void handleTyping(final DocumentEvent e) {
+        
+        long now = System.currentTimeMillis();
+        if (now - lastAccessTime < 250) {
+            return;
+        }
+        lastAccessTime = now;
         final FileObject file = this.getFile();
+        
         if (file != null) {
             final Project currentProject = this.getProject();
             if (currentProject == null) {

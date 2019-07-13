@@ -133,8 +133,8 @@ public class Software extends ModuleInstall implements Runnable {
         PropertyChangeListener l = new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
-                JTextComponent jtc = EditorRegistry.lastFocusedComponent();
-                if (jtc != null) {
+                JTextComponent jtc = EditorRegistry.focusedComponent();
+                if (jtc != null && jtc.isShowing()) {
                     Document d = jtc.getDocument();
                     DocumentChangeEventListener listener = new DocumentChangeEventListener(d);
                     d.addDocumentListener(listener);
