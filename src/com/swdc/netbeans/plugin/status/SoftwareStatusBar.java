@@ -87,6 +87,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
             lastMsg = text;
             lastTooltip = tooltip;
             lastStatusType = status;
+            statusLabel.setText(text + " ");
         }
         
         if (tooltip != null && name != null && !name.equals("")) {
@@ -96,9 +97,10 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
         if (!showStatusText) {
             tooltip = lastMsg + " | " + tooltip;
             status = StatusBarType.OFF;
+            statusLabel.setText(" ");
         }
         
-        statusLabel.setText(text + " ");
+        
         statusLabel.setToolTipText(tooltip);
         switch (status) {
             case ROCKET:
