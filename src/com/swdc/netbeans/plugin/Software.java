@@ -108,11 +108,11 @@ public class Software extends ModuleInstall implements Runnable {
         // setup the document change event listeners
         setupEventListeners();
 
-        // setup the plugin data scheduler (every minute)
-        setupScheduledPluginDataProcessor();
-
         // setup the kpm metrics info fetch (every minute)
         setupScheduledKpmMetricsProcessor();
+        
+        // setup offline batch processor (every 30 minutes)
+        setupOfflineDataSendProcessor();
 
         setupRepoMusicInfoProcessor();
 
@@ -130,25 +130,17 @@ public class Software extends ModuleInstall implements Runnable {
      * Add the file change listener
      */
     private void setupEventListeners() {
-        PropertyChangeListener l = new PropertyChangeListener() {
-            @Override
-            public void propertyChange(PropertyChangeEvent evt) {
-                JTextComponent jtc = EditorRegistry.focusedComponent();
-                if (jtc != null && jtc.isShowing()) {
-                    Document d = jtc.getDocument();
-                    DocumentChangeEventListener listener = new DocumentChangeEventListener(d);
-                    d.addDocumentListener(listener);
-                    listener.update();
-                }
+        PropertyChangeListener l = (PropertyChangeEvent evt) -> {
+            JTextComponent jtc = EditorRegistry.focusedComponent();
+            if (jtc != null && jtc.isShowing()) {
+                Document d = jtc.getDocument();
+                DocumentChangeEventListener listener = new DocumentChangeEventListener(d);
+                d.addDocumentListener(listener);
+                listener.update();
             }
         };
 
         EditorRegistry.addPropertyChangeListener(l);
-    }
-
-    private void setupScheduledPluginDataProcessor() {
-        final Runnable handler = () -> processKeystrokes();
-        scheduler.scheduleAtFixedRate(handler, ONE_MINUTE_SECONDS, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
     }
 
     private void setupOfflineDataSendProcessor() {
@@ -181,7 +173,7 @@ public class Software extends ModuleInstall implements Runnable {
             try {
                 Thread.sleep(1000 * 5);
                 processHistoricalCommits();
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
                 System.err.println(e);
             }
         }).start();
@@ -227,28 +219,6 @@ public class Software extends ModuleInstall implements Runnable {
         }).start();
     }
 
-    private void processKeystrokes() {
-        if (!SoftwareUtil.SEND_TELEMTRY.get()) {
-            return;
-        }
-
-        KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
-        if (keystrokeData != null && keystrokeData.hasData()) {
-            String payload = keystrokeData.getPayload();
-
-            // update the keystrokes and minutes value
-            int keystrokes = keystrokeData.getKeystrokes();
-            OfflineManager.getInstance().incrementSessionSummaryData(1, keystrokes);
-
-            // save the data offline
-            softwareUtil.storePayload(payload);
-        }
-
-        keystrokeMgr.reset();
-        
-        SessionManager.fetchDailyKpmSessionInfo(false);
-    }
-
     private void initializeUserInfo(boolean initializedUser) {
 
         softwareUtil.getUserStatus();
@@ -286,7 +256,7 @@ public class Software extends ModuleInstall implements Runnable {
         metrics.setAdd(1);
         keystrokeMgr.incrementKeystrokes();
 
-        processKeystrokes();
+        keystrokeMgr.getKeystrokeData().processKeystrokes();
     }
 
     protected void showOfflinePrompt() {

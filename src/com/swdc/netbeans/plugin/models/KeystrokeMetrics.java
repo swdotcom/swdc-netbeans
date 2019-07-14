@@ -24,6 +24,11 @@ public class KeystrokeMetrics {
     private int linesAdded = 0;
     private int linesRemoved = 0;
     private String syntax = "";
+    private long start = 0L;
+    private long end = 0L;
+    private long local_start = 0L;
+    private long local_end = 0L;
+
     
     public KeystrokeMetrics() {
         //
@@ -126,6 +131,39 @@ public class KeystrokeMetrics {
     public void setSyntax(String syntax) {
         this.syntax = syntax;
     }
+
+    public long getStart() {
+        return start;
+    }
+
+    public void setStart(long start) {
+        this.start = start;
+    }
+
+    public long getEnd() {
+        return end;
+    }
+
+    public void setEnd(long end) {
+        this.end = end;
+    }
+
+    public long getLocal_start() {
+        return local_start;
+    }
+
+    public void setLocal_start(long local_start) {
+        this.local_start = local_start;
+    }
+
+    public long getLocal_end() {
+        return local_end;
+    }
+
+    public void setLocal_end(long local_end) {
+        this.local_end = local_end;
+    }
+    
     
     public boolean hasData() {
         return (this.add > 0 || this.open > 0 ||

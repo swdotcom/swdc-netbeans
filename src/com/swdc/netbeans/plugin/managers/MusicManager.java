@@ -9,7 +9,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
-import java.time.ZonedDateTime;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.http.client.methods.HttpPost;
@@ -90,9 +89,8 @@ public class MusicManager {
         // get the music track json string
         //
         JsonObject trackInfo = this.getCurrentMusicTrack();
-        Integer offset = ZonedDateTime.now().getOffset().getTotalSeconds();
-        long now = Math.round(System.currentTimeMillis() / 1000);
-        long local_start = now + offset;
+        SoftwareUtil.TimesData timesData = softwareUtil.getTimesData();
+        long local_start = timesData.local_now;
         String trackStr = null;
         String existingTrackId = (currentTrack.has("id")) ? currentTrack.get("id").getAsString() : null;
 
@@ -100,7 +98,7 @@ public class MusicManager {
             // end the existing track if the one coming is null
             if (existingTrackId != null) {
                 // update the end time on the previous track and send it as well
-                currentTrack.addProperty("end", now);
+                currentTrack.addProperty("end", timesData.now);
                 // send the post to end the previous track
                 trackStr = SoftwareUtil.gson.toJson(currentTrack);
                 SoftwareResponse resp = softwareUtil.makeApiCall("/data/music", HttpPost.METHOD_NAME, trackStr);
@@ -140,7 +138,7 @@ public class MusicManager {
 
             if (existingTrackId != null && (!existingTrackId.equals(trackId) || isPaused)) {
                 // update the end time on the previous track and send it as well
-                currentTrack.addProperty("end", now);
+                currentTrack.addProperty("end", timesData.now);
                 // send the post to end the previous track
                 trackStr = SoftwareUtil.gson.toJson(currentTrack);
                 // clear out the current track
@@ -151,7 +149,7 @@ public class MusicManager {
             if (!isPaused && (existingTrackId == null || !existingTrackId.equals(trackId))) {
 
                 // send the post to send the new track info
-                trackInfo.addProperty("start", now);
+                trackInfo.addProperty("start", timesData.now);
                 trackInfo.addProperty("local_start", local_start);
 
                 trackStr = SoftwareUtil.gson.toJson(trackInfo);

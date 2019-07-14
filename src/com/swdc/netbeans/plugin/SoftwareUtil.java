@@ -5,6 +5,7 @@
 package com.swdc.netbeans.plugin;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -36,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -171,11 +173,6 @@ public class SoftwareUtil {
     
     public void toggleStatusBar() {
         statusBar.toggleStatusBarText();
-    }
-
-    
-    public void updateServerStatus(boolean isOnlineStatus) {
-        appAvailable = isOnlineStatus;
     }
     
     public String getHostname() {
@@ -317,7 +314,7 @@ public class SoftwareUtil {
             output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
             output.append(payload);
             output.close();
-            LOG.log(Level.INFO, "Code Time: stored kpm metrics: " + payload);
+            LOG.log(Level.INFO, "Code Time: stored kpm metrics: {0}", payload);
         } catch (IOException e) {
             LOG.log(Level.WARNING, "Code Time: Error appending to the Software data store file, error: {0}", e.getMessage());
         }
@@ -535,6 +532,11 @@ public class SoftwareUtil {
     }
 
     public void sendOfflineData() {
+        boolean isOnline = isServerOnline();
+        if (!isOnline) {
+            return;
+        }
+                
         String dataStoreFile = getSoftwareDataStoreFile();
         File f = new File(dataStoreFile);
 
@@ -558,10 +560,37 @@ public class SoftwareUtil {
                     String payloads = sb.toString();
                     payloads = payloads.substring(0, payloads.lastIndexOf(","));
                     payloads = "[" + payloads + "]";
-                    SoftwareResponse resp = makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloads);
-                    if (resp.isOk() || resp.isDeactivated()) {
-                        deleteFile(dataStoreFile);
+                    
+                    JsonArray jsonArray = (JsonArray) SoftwareUtil.jsonParser.parse(payloads);
+                    
+                    // delete the file
+                    this.deleteFile(dataStoreFile);
+
+                    JsonArray batch = new JsonArray();
+                    // go through the array about 50 at a time
+                    for (int i = 0; i < jsonArray.size(); i++) {
+                        batch.add(jsonArray.get(i));
+                        if (i > 0 && i % 50 == 0) {
+                            String payloadData = SoftwareUtil.gson.toJson(batch);
+                            SoftwareResponse resp
+                                    = makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloadData);
+                            if (!resp.isOk()) {
+                                // add these back to the offline file
+                                LOG.log(Level.INFO, "Code Time: Unable to send batch data: {0}", resp.getErrorMessage());
+                            }
+                            batch = new JsonArray();
+                        }
                     }
+                    if (batch.size() > 0) {
+                        String payloadData = SoftwareUtil.gson.toJson(batch);
+                        SoftwareResponse resp
+                                = makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloadData);
+                        if (!resp.isOk()) {
+                            // add these back to the offline file
+                            LOG.log(Level.INFO, "Code Time: Unable to send batch data: {0}", resp.getErrorMessage());
+                        }
+                    }
+                    
                 } else {
                     LOG.log(Level.INFO, "Code Time: No offline data to send");
                 }
@@ -581,10 +610,10 @@ public class SoftwareUtil {
     
     public boolean isServerOnline() {
         long nowInSec = Math.round(System.currentTimeMillis() / 1000);
-        boolean pastThreshold = (nowInSec - lastAppAvailableCheck > 60);
+        boolean pastThreshold = (nowInSec - lastAppAvailableCheck > 120);
         if (pastThreshold) {
             SoftwareResponse resp = this.makeApiCall("/ping", HttpGet.METHOD_NAME, null);
-            this.updateServerStatus(resp.isOk());
+            appAvailable = resp.isOk();
             lastAppAvailableCheck = nowInSec;
         }
         return appAvailable;
@@ -1075,6 +1104,18 @@ public class SoftwareUtil {
         } catch (MalformedURLException e) {
             LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
         }
+    }
+    
+    public static class TimesData {
+    	public Integer offset = ZonedDateTime.now().getOffset().getTotalSeconds();
+    	public long now = Math.round(System.currentTimeMillis() / 1000);
+    	public long local_now = now + offset;
+    	public String timezone = TimeZone.getDefault().getID();
+    }
+    
+    public TimesData getTimesData() {
+    	TimesData timesData = new TimesData();
+    	return timesData;
     }
     
     public String getDashboardRow(String label, String value) {

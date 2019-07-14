@@ -8,10 +8,10 @@ package com.swdc.netbeans.plugin.models;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import java.time.ZonedDateTime;
+import com.swdc.netbeans.plugin.managers.OfflineManager;
+import com.swdc.netbeans.plugin.managers.SessionManager;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TimeZone;
 
 /**
  *
@@ -36,42 +36,99 @@ public class KeystrokeData {
     private static final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
     
     public KeystrokeData(String projectName, String projectDir) {
-        this.start = Math.round(System.currentTimeMillis() / 1000);
         this.version = softwareUtil.getVersion();
         this.os = softwareUtil.getOs();
         this.pluginId = SoftwareUtil.PLUGIN_ID;
-        
-        // offset is negative if the tz is before utc, and positive if after
-        Integer offset  = ZonedDateTime.now().getOffset().getTotalSeconds();
-        this.local_start = this.start + offset;
-        this.timezone = TimeZone.getDefault().getID();
         
         this.project = new KeystrokeProject(projectName, projectDir);
     }
     
     public void resetData() {
-        this.start = Math.round(System.currentTimeMillis() / 1000);
         this.sourceList = new ArrayList<>();
         
-        // offset is negative if the tz is before utc, and positive if after
-        Integer offset  = ZonedDateTime.now().getOffset().getTotalSeconds();
-        this.local_start = this.start + offset;
-        this.timezone = TimeZone.getDefault().getID();
+        this.start = 0L;
+        this.local_start = 0L;
+        this.timezone = "";
     }
     
     public KeystrokeMetrics getMetrics(String fileName) {
 
         for (KeystrokeFileMetrics fileMetrics : sourceList) {
             if (fileMetrics.getFileName().equals(fileName)) {
+                // set the end time to files that are still unended
+                endPreviousModifiedFiles(fileName);
+                // return the file metrics
                 return fileMetrics.getMetrics();
             }
         }
+
+        SoftwareUtil.TimesData timesData = softwareUtil.getTimesData();
         
+        if (this.start == 0) {
+            this.start = timesData.now;
+            this.local_start = timesData.local_now;
+            this.timezone = timesData.timezone;
+            
+            // initialize the 5 minute timer to store the payload
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000 * 60);
+                    this.processKeystrokes();
+                } catch (InterruptedException e) {
+                    System.err.println(e);
+                }
+            }).start();
+        }
+
         // not found, create one
         KeystrokeFileMetrics fileMetrics = new KeystrokeFileMetrics(fileName);
+        fileMetrics.getMetrics().setStart(timesData.now);
+        fileMetrics.getMetrics().setLocal_start(timesData.local_now);
         sourceList.add(fileMetrics);
-        
+
         return fileMetrics.getMetrics();
+    }
+    
+    public void processKeystrokes() {
+        if (this.hasData()) {
+            // set the end time to any files that haven't ended
+            this.endUnendedFiles();
+            
+            String payload = this.getPayload();
+
+            // update the keystrokes and minutes value
+            OfflineManager.getInstance().incrementSessionSummaryData(1, keystrokes);
+
+            // save the data offline
+            softwareUtil.storePayload(payload);
+        }
+
+        this.resetData();
+        
+        SessionManager.fetchDailyKpmSessionInfo(false);
+    }
+
+    public void endPreviousModifiedFiles(String currentFileName) {
+        SoftwareUtil.TimesData timesData = softwareUtil.getTimesData();
+        for (KeystrokeFileMetrics fileMetrics : sourceList) {
+            if (fileMetrics.getFileName().equals(currentFileName)) {
+                fileMetrics.getMetrics().setEnd(0L);
+                fileMetrics.getMetrics().setLocal_end(0L);
+            } else if (fileMetrics.getMetrics().getEnd() == 0) {
+                fileMetrics.getMetrics().setEnd(timesData.now);
+                fileMetrics.getMetrics().setLocal_end(timesData.local_now);
+            }
+        }
+    }
+
+    public void endUnendedFiles() {
+        SoftwareUtil.TimesData timesData = softwareUtil.getTimesData();
+        for (KeystrokeFileMetrics fileMetrics : sourceList) {
+            if (fileMetrics.getMetrics().getEnd() == 0) {
+                fileMetrics.getMetrics().setEnd(timesData.now);
+                fileMetrics.getMetrics().setLocal_end(timesData.local_now);
+            }
+        }
     }
     
     public String getPayload() {
