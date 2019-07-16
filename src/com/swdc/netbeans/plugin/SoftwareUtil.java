@@ -106,9 +106,7 @@ public class SoftwareUtil {
     private static String SERVICE_NOT_AVAIL =
             "Our service is temporarily unavailable.\n\nPlease try again later.\n";
     
-    private static long lastDashboardFetchTime = 0;
-    
-    private final static long MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+    private static int lastDayOfMonth = 0;
     
     // netbeans plugin id
     public final static int PLUGIN_ID = 11;
@@ -754,13 +752,13 @@ public class SoftwareUtil {
         OfflineManager offlineMgr = OfflineManager.getInstance();
         String summaryInfoFile = this.getSummaryInfoFile(true);
         String dashboardFile = this.getCodeTimeDashboardFile();
-        long nowInSec = Math.round(System.currentTimeMillis() / 1000);
-        long diff = nowInSec - lastDashboardFetchTime;
+        
+        Calendar cal = Calendar.getInstance();
+        int dayOfMonth = cal.get(Calendar.DAY_OF_MONTH);
         Writer writer = null;
 
-        File f = new File(summaryInfoFile);
-        if (!f.exists() || lastDashboardFetchTime == 0 || diff >= MILLIS_PER_DAY) {
-            lastDashboardFetchTime = nowInSec;
+        if (lastDayOfMonth == 0 || lastDayOfMonth != dayOfMonth) {
+            lastDayOfMonth = dayOfMonth;
             String api = "/dashboard?linux=" + this.isLinux() + "&showToday=false";
             String dashboardSummary = this.makeApiCall(api, HttpGet.METHOD_NAME, null).getJsonStr();
             if (dashboardSummary == null || dashboardSummary.trim().isEmpty()) {
