@@ -82,6 +82,9 @@ public class OfflineManager {
     }
 
     public void updateStatusBarWithSummaryData(JsonObject sessionSummary) {
+        if (sessionSummary == null) {
+            return;
+        }
 
         int averageDailyMinutes = 0;
         if (sessionSummary.has("averageDailyMinutes")) {

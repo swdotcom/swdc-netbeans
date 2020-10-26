@@ -16,6 +16,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentEvent.ElementChange;
 import javax.swing.event.DocumentEvent.EventType;
+import javax.swing.text.AttributeSet;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
 import org.apache.commons.lang.StringUtils;
@@ -112,10 +113,11 @@ public class SoftwareEventManager {
         return keystrokeCount;
     }
 
-    private void updateFileInfoMetrics(Document document, DocumentEvent e, KeystrokeCount.FileInfo fileInfo, KeystrokeCount keystrokeCount) {
+    private void updateFileInfoMetrics(DocumentEvent e, KeystrokeCount.FileInfo fileInfo, KeystrokeCount keystrokeCount) {
+        int changeLength = e.getLength();
 
         ElementChange lineChange = e.getChange(lastDocument.getDefaultRootElement());
-        
+
         int linesAdded = 0;
         int linesRemoved = 0;
         if (lineChange != null) {
@@ -133,11 +135,13 @@ public class SoftwareEventManager {
         int numKeystrokes = 0;
         int numDeleteKeystrokes = 0;
         if (etype.equals(EventType.INSERT)) {
-            
+            // characters have been added
+            numKeystrokes = changeLength;
         } else if (etype.equals(EventType.REMOVE)) {
-            
-        } else if (etype.equals(EventType.CHANGE)) {
-            
+            // characters have been removed
+            numDeleteKeystrokes = changeLength;
+        } else {
+            // EventType.CHANGE;
         }
         
         String text = "";
@@ -288,14 +292,13 @@ public class SoftwareEventManager {
         KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
         if (StringUtils.isBlank(fileInfo.syntax)) {
             // get the grammar
-            String fileType = fileObj.getName();
-            if (fileType != null && !fileType.equals("")) {
-                fileInfo.syntax = fileType;
-            }
+            fileInfo.syntax = (fileName.contains(".")) ? fileName.substring(fileName.lastIndexOf(".") + 1) : "";
         }
         
         fileInfo.lines = SoftwareUtil.getLineCount(fileName);
-
+        fileInfo.length = lastDocument.getLength();
+        
+        updateFileInfoMetrics(e, fileInfo, keystrokeCount);
     }
 
     public void createKeystrokeCountWrapper(String projectName, String projectFilepath) {

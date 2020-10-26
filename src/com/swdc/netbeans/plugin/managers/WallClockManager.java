@@ -5,7 +5,6 @@
  */
 package com.swdc.netbeans.plugin.managers;
 
-import com.apple.eawt.Application;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;

@@ -102,7 +102,7 @@ public class Software extends ModuleInstall implements Runnable {
         setupEventListeners();
 
         // setup the kpm metrics info fetch (every minute)
-        setupScheduledKpmMetricsProcessor();
+        SessionManager.fetchDailyKpmSessionInfo();
         
         // setup offline batch processor (every 30 minutes)
         setupOfflineDataSendProcessor();
@@ -136,11 +136,6 @@ public class Software extends ModuleInstall implements Runnable {
         scheduler.scheduleAtFixedRate(handler, 1 /* 1 second */, everyThrityMin, TimeUnit.SECONDS);
     }
 
-    private void setupScheduledKpmMetricsProcessor() {
-        final Runnable handler = () -> SessionManager.fetchDailyKpmSessionInfo(false);
-        scheduler.scheduleAtFixedRate(handler, 15, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
-    }
-
     private void setupUserStatusProcessor() {
         final Runnable handler = () -> processUserStatus();
         scheduler.scheduleAtFixedRate(handler, 60, 90, TimeUnit.SECONDS);
@@ -166,35 +161,11 @@ public class Software extends ModuleInstall implements Runnable {
 
     private void processOfflineDataSend() {
         SoftwareUtil.sendOfflineData();
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(1000 * 10);
-                    SessionManager.fetchDailyKpmSessionInfo(true);
-                } catch (Exception e) {
-                    //
-                }
-            }
-        });
     }
 
     private void initializeUserInfo(boolean initializedUser) {
 
         SoftwareUtil.getUserStatus();
-
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(2000);
-                    SoftwareUtil.sendOfflineData();
-                    SessionManager.fetchDailyKpmSessionInfo(true);
-                } catch (InterruptedException e) {
-                    System.err.println(e);
-                }
-            }
-        });
 
         SoftwareUtil.sendHeartbeat("INITIALIZED");
     }
