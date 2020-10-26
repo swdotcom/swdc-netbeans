@@ -31,8 +31,6 @@ public class OfflineManager {
 
     private static OfflineManager instance = null;
 
-    private final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
-
     public SessionSummaryData sessionSummaryData = new SessionSummaryData();
 
     public static OfflineManager getInstance() {
@@ -74,8 +72,8 @@ public class OfflineManager {
     }
 
     public String getSessionSummaryFile() {
-        String file = softwareUtil.getSoftwareDir(true);
-        if (softwareUtil.isWindows()) {
+        String file = SoftwareUtil.getSoftwareDir(true);
+        if (SoftwareUtil.isWindows()) {
             file += "\\sessionSummary.json";
         } else {
             file += "/sessionSummary.json";
@@ -94,8 +92,8 @@ public class OfflineManager {
             currentDayMinutes = sessionSummary.get("currentDayMinutes").getAsInt();
         }
 
-        String currentDayTimeStr = softwareUtil.humanizeMinutes(currentDayMinutes);
-        String averageDailyMinutesTimeStr = softwareUtil.humanizeMinutes(averageDailyMinutes);
+        String currentDayTimeStr = SoftwareUtil.humanizeMinutes(currentDayMinutes);
+        String averageDailyMinutesTimeStr = SoftwareUtil.humanizeMinutes(averageDailyMinutes);
 
         SoftwareStatusBar.StatusBarType barType = currentDayMinutes > averageDailyMinutes
                 ? SoftwareStatusBar.StatusBarType.ROCKET
@@ -105,10 +103,10 @@ public class OfflineManager {
             msg += " | " + averageDailyMinutesTimeStr;
         }
 
-        softwareUtil.setStatusLineMessage(barType, msg,
+        SoftwareUtil.setStatusLineMessage(barType, msg,
                 "Code time today vs. your daily average. Click to see more from Code Time");
 
-        softwareUtil.fetchCodeTimeMetricsDashboard(sessionSummary);
+        SoftwareUtil.fetchCodeTimeMetricsDashboard(sessionSummary);
     }
 
     public void saveSessionSummaryToDisk() {
@@ -154,7 +152,7 @@ public class OfflineManager {
     public String getSessionSummaryInfoFileContent() {
         String content = null;
 
-        String sessionSummaryFile = softwareUtil.getSummaryInfoFile(true);
+        String sessionSummaryFile = SoftwareUtil.getSummaryInfoFile(true);
         File f = new File(sessionSummaryFile);
         if (f.exists()) {
             try {

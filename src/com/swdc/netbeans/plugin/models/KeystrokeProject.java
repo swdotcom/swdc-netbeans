@@ -4,7 +4,7 @@
  */
 package com.swdc.netbeans.plugin.models;
 
-import org.json.simple.JSONObject;
+import com.swdc.netbeans.plugin.managers.GitUtil;
 
 /**
  *
@@ -14,11 +14,28 @@ public class KeystrokeProject {
     private String name;
     private String directory;
     private String identifier;
-    private JSONObject resource = new JSONObject();
-    
+    private ResourceInfo resource = new ResourceInfo();
+
     public KeystrokeProject(String name, String directory) {
         this.name = name;
         this.directory = directory;
+        ResourceInfo resourceInfo = GitUtil.getResourceInfo(directory);
+        if (resourceInfo != null) {
+            this.resource.setIdentifier(resourceInfo.getIdentifier());
+            this.resource.setTag(resourceInfo.getTag());
+            this.resource.setBranch(resourceInfo.getBranch());
+            this.resource.setEmail(resourceInfo.getEmail());
+            this.identifier = resourceInfo.getIdentifier();
+        }
+    }
+
+    public KeystrokeProject cloneProject() {
+        KeystrokeProject p = new KeystrokeProject(this.name, this.directory);
+        p.setIdentifier(p.getIdentifier());
+        if (this.resource != null) {
+            p.setResource(this.resource.clone());
+        }
+        return p;
     }
 
     public String getName() {
@@ -37,19 +54,25 @@ public class KeystrokeProject {
         this.directory = directory;
     }
 
-    public String getIdentifier() {
-        return identifier;
-    }
-
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
     }
 
-    public JSONObject getResource() {
+    public String getIdentifier() { return identifier; }
+
+    public ResourceInfo getResource() {
         return resource;
     }
 
-    public void setResource(JSONObject resource) {
+    public void setResource(ResourceInfo resource) {
         this.resource = resource;
+    }
+
+    @Override
+    public String toString() {
+        return "KeystrokeProject{" +
+                "name='" + name + '\'' +
+                ", directory='" + directory + '\'' +
+                '}';
     }
 }

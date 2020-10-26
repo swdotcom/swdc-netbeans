@@ -6,6 +6,8 @@
 package com.swdc.netbeans.plugin.actions;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
+import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
+import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +55,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
     }
 
     private JComponent[] createMenu() {
-        SoftwareUtil.UserStatus userStatus = SoftwareUtil.getInstance().getUserStatus();
+        SoftwareUtil.UserStatus userStatus = SoftwareUtil.getUserStatus();
         List<JComponent> items = new ArrayList<>();
 
         items.add(toMenuItem(new CodeTimeDashboardAction()));
@@ -94,7 +96,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchWebDashboard();
+            SoftwareSessionManager.launchWebDashboard(UIInteractionType.keyboard);
         }
 
         @Override
@@ -111,7 +113,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchCodeTimeMetricsDashboard();
+            SoftwareUtil.launchCodeTimeMetricsDashboard();
         }
 
         @Override
@@ -128,7 +130,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchLogin();
+            SoftwareUtil.launchLogin("email");
         }
 
         @Override
@@ -145,7 +147,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchSoftwareTopForty();
+            SoftwareUtil.launchSoftwareTopForty();
         }
 
         @Override
@@ -162,7 +164,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().toggleStatusBar();
+            SoftwareUtil.toggleStatusBar(UIInteractionType.keyboard);
         }
 
         @Override

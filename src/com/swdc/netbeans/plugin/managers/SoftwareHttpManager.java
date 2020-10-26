@@ -63,7 +63,7 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
                     break;
             }
 
-            String jwtToken = (overridingJwt != null) ? overridingJwt : SoftwareUtil.getInstance().getItem("jwt");
+            String jwtToken = (overridingJwt != null) ? overridingJwt : FileManager.getItem("jwt");
             // obtain the jwt session token if we have it
             if (jwtToken != null) {
                 req.addHeader("Authorization", jwtToken);

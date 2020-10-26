@@ -6,6 +6,7 @@
 package com.swdc.netbeans.plugin.status;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
+import com.swdc.netbeans.plugin.managers.FileManager;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
@@ -62,7 +63,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
             statusLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    SoftwareUtil.getInstance().launchCodeTimeMetricsDashboard();
+                    SoftwareUtil.launchCodeTimeMetricsDashboard();
                 }
             });
         }
@@ -81,7 +82,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     }
 
     public void updateMessage(StatusBarType status, String text, String tooltip) {
-        String name = SoftwareUtil.getInstance().getItem("name");
+        String name = FileManager.getItem("name");
         
         if ( showStatusText ) {
             lastMsg = text;

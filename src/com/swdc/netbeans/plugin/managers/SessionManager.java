@@ -17,7 +17,6 @@ public class SessionManager {
     
     public static final Logger LOG = Logger.getLogger("SessionManager");
     
-    private static final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
     private static final OfflineManager offlineMgr = OfflineManager.getInstance();
     
     public static void fetchDailyKpmSessionInfo(boolean foreceRefresh) {
@@ -29,7 +28,7 @@ public class SessionManager {
             String sessionsApi = "/sessions/summary";
 
             // make an async call to get the kpm info
-            sessionSummary = softwareUtil.makeApiCall(sessionsApi, HttpGet.METHOD_NAME, null).getJsonObj();
+            sessionSummary = SoftwareUtil.makeApiCall(sessionsApi, HttpGet.METHOD_NAME, null).getJsonObj();
             if (sessionSummary != null) {
 
                 if (sessionSummary.has("currentDayMinutes")) {
@@ -48,7 +47,7 @@ public class SessionManager {
                 offlineMgr.setSessionSummaryData(currentDayMinutes, currentDayKeystrokes, averageDailyMinutes);
 
             } else {
-                softwareUtil.setStatusLineMessage(StatusBarType.NO_KPM, "Code Time", "Click to see more from Code Time");
+                SoftwareUtil.setStatusLineMessage(StatusBarType.NO_KPM, "Code Time", "Click to see more from Code Time");
             }
         }
         offlineMgr.updateStatusBarWithSummaryData(sessionSummary);
