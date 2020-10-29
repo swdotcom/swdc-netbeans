@@ -19,8 +19,9 @@ import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.managers.EventTrackerManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.OfflineManager;
-import com.swdc.netbeans.plugin.managers.SessionManager;
-import com.swdc.netbeans.plugin.managers.WallClockManager;
+import com.swdc.netbeans.plugin.managers.StatusBarManager;
+import com.swdc.netbeans.plugin.managers.TimeDataManager;
+import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileDetails;
 import com.swdc.netbeans.plugin.models.NetbeansProject;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
@@ -161,8 +162,6 @@ public class SoftwareUtil {
     
     public static final String UNTITLED_FILE = "Untitled";
     public static final String UNNAMED_PROJECT = "Unnamed";
-    
-    private static SoftwareStatusBar statusBar = new SoftwareStatusBar();
     
     private static boolean showStatusText = true;
     
@@ -430,7 +429,6 @@ public class SoftwareUtil {
         // when we are called (this interval is about 2s for a large response.)
         // So in theory we should be able to do somewhat better by interleaving
         // parsing and reading, but experiments didn't show any improvement.
-        //
         StringBuilder sb = new StringBuilder();
         InputStreamReader reader;
         reader = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
@@ -535,18 +533,6 @@ public class SoftwareUtil {
                         }
                     }
                     
-                    if (statusCode >= 400 && statusCode < 500 && jsonObj != null) {
-                        if (jsonObj.has("code")) {
-                            String code = jsonObj.get("code").getAsString();
-                            if (code != null && code.equals("DEACTIVATED")) {
-                                setStatusLineMessage(
-                                    StatusBarType.ALERT,
-                                    "Code Time",
-                                    "To see your coding data in Code Time, please reactivate your account.");
-                                softwareResponse.setDeactivated(true);
-                            }
-                        }
-                    }
                 }
             } catch (InterruptedException | ExecutionException e) {
                 String errorMessage = "Code Time: Unable to get the response from the http request, error: " + e.getMessage();
@@ -786,15 +772,6 @@ public class SoftwareUtil {
         return "";
     }
     
-    public static void updateTelementry(boolean telemetryOn) {
-        TELEMETRY_ON = telemetryOn;
-        if (!TELEMETRY_ON) {
-            setStatusLineMessage(StatusBarType.ALERT, "<S> Paused", "Enable metrics to resume");
-        } else {
-            setStatusLineMessage(StatusBarType.NO_KPM, "Code Time", "Click to log in to Code Time");
-        }
-    }
-    
     public static String humanizeMinutes(int minutes) {
         String str = "";
         if (minutes == 60) {
@@ -906,10 +883,6 @@ public class SoftwareUtil {
             legacyFile.delete();
         }
         
-    }
-
-    public static void setStatusLineMessage(final StatusBarType barType, final String statusMsg, final String tooltip) {
-        statusBar.updateMessage(barType, statusMsg, tooltip);
     }
     
     private static String getSingleLineResult(List<String> cmd, int maxLen) {
@@ -1071,24 +1044,7 @@ public class SoftwareUtil {
 
         boolean loggedIn = isLoggedOn(serverIsOnline);
 
-        
         currentUserStatus.loggedIn = loggedIn;
-        
-        if (loggedInCacheState != loggedIn) {
-            // logged in state changed
-            sendHeartbeat("STATE_CHANGE:LOGGED_IN:" + loggedIn);
-            // refetch kpm
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        SessionManager.fetchDailyKpmSessionInfo();
-                    } catch (Exception e) {
-                        System.err.println(e);
-                    }
-                }
-            });
-        }
 
         loggedInCacheState = loggedIn;
 
@@ -1527,7 +1483,7 @@ public class SoftwareUtil {
         String cta_text = !showStatusText ? "Show status bar metrics" : "Hide status bar metrics";
         showStatusText = !showStatusText;
 
-        WallClockManager.getInstance().dispatchStatusViewUpdate();
+        StatusBarManager.updateStatusBar();
 
         UIElementEntity elementEntity = new UIElementEntity();
         elementEntity.element_name = interactionType == UIInteractionType.click ? "ct_toggle_status_bar_metrics_btn" : "ct_toggle_status_bar_metrics_cmd";
@@ -1536,17 +1492,6 @@ public class SoftwareUtil {
         elementEntity.cta_text = cta_text;
         elementEntity.icon_name = interactionType == UIInteractionType.click ? "slash-eye" : null;
         EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
-    }
-    
-    public static void updateStatusBar(final String kpmIcon, final String kpmMsg, final String tooltip) {
-
-        // build the status bar text information
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                // TODO: show the status bar icon and number
-            }
-        });
     }
 
 }

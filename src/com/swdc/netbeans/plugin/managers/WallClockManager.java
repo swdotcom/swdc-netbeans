@@ -151,14 +151,8 @@ public class WallClockManager {
         if (!dispatching) {
             dispatching = true;
 
-            CodeTimeSummary ctSummary = TimeDataManager.getCodeTimeSummary();
-
-            String icon = SoftwareUtil.showingStatusText() ? "paw-grey.png" : "clock.png";
-            String currentDayTimeStr = SoftwareUtil.humanizeMinutes(ctSummary.activeCodeTimeMinutes);
-
             // STATUS BAR REFRESH
-            SoftwareUtil.updateStatusBar(
-                icon, currentDayTimeStr, "Code time today. Click to see more from Code Time.");
+            StatusBarManager.updateStatusBar();
 
             // TREE REFRESH
             CodeTimeTreeTopComponent.refreshTree();

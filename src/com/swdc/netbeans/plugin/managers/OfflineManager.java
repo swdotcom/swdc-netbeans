@@ -8,7 +8,6 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -79,37 +78,6 @@ public class OfflineManager {
             file += "/sessionSummary.json";
         }
         return file;
-    }
-
-    public void updateStatusBarWithSummaryData(JsonObject sessionSummary) {
-        if (sessionSummary == null) {
-            return;
-        }
-
-        int averageDailyMinutes = 0;
-        if (sessionSummary.has("averageDailyMinutes")) {
-            averageDailyMinutes = sessionSummary.get("averageDailyMinutes").getAsInt();
-        }
-        int currentDayMinutes = 0;
-        if (sessionSummary.has("currentDayMinutes")) {
-            currentDayMinutes = sessionSummary.get("currentDayMinutes").getAsInt();
-        }
-
-        String currentDayTimeStr = SoftwareUtil.humanizeMinutes(currentDayMinutes);
-        String averageDailyMinutesTimeStr = SoftwareUtil.humanizeMinutes(averageDailyMinutes);
-
-        SoftwareStatusBar.StatusBarType barType = currentDayMinutes > averageDailyMinutes
-                ? SoftwareStatusBar.StatusBarType.ROCKET
-                : SoftwareStatusBar.StatusBarType.NO_KPM;
-        String msg = currentDayTimeStr;
-        if (averageDailyMinutes > 0) {
-            msg += " | " + averageDailyMinutesTimeStr;
-        }
-
-        SoftwareUtil.setStatusLineMessage(barType, msg,
-                "Code time today vs. your daily average. Click to see more from Code Time");
-
-        SoftwareUtil.fetchCodeTimeMetricsDashboard(sessionSummary);
     }
 
     public void saveSessionSummaryToDisk() {

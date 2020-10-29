@@ -7,7 +7,7 @@ package com.swdc.netbeans.plugin;
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
 import com.swdc.netbeans.plugin.managers.RepoManager;
-import com.swdc.netbeans.plugin.managers.SessionManager;
+import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.Executors;
@@ -101,8 +101,7 @@ public class Software extends ModuleInstall implements Runnable {
         // setup the document change event listeners
         setupEventListeners();
 
-        // setup the kpm metrics info fetch (every minute)
-        SessionManager.fetchDailyKpmSessionInfo();
+        StatusBarManager.updateStatusBar();
         
         // setup offline batch processor (every 30 minutes)
         setupOfflineDataSendProcessor();
