@@ -218,4 +218,22 @@ public class SoftwareSessionManager {
         elementEntity.icon_name = interactionType == UIInteractionType.click ? "paw" : null;
         EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
     }
+    
+    public static void submitFeedback(UIInteractionType interactionType) {
+        String url = "mailto:cody@software.com";
+        try {
+            URL launchUrl = new URL(url);
+            HtmlBrowser.URLDisplayer.getDefault().showURL(launchUrl);
+        } catch (Exception e) {
+            log.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
+        }
+
+        UIElementEntity elementEntity = new UIElementEntity();
+        elementEntity.element_name = interactionType == UIInteractionType.click ? "ct_submit_feedback_btn" : "ct_submit_feedback_cmd";
+        elementEntity.element_location = interactionType == UIInteractionType.click ? "ct_menu_tree" : "ct_command_palette";
+        elementEntity.color = null;
+        elementEntity.cta_text = "Submit feedback";
+        elementEntity.icon_name = interactionType == UIInteractionType.click ? "text-bubble" : null;
+        EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
+    }
 }

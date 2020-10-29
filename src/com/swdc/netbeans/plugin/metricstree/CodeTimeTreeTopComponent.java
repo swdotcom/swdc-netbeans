@@ -13,16 +13,15 @@ import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.awt.Color;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreePath;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.settings.ConvertAsProperties;
@@ -104,9 +103,9 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         renderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
         renderer.setBorderSelectionColor(new Color(0,0,0,0));
         
-        codeTimeTree.addTreeSelectionListener(new TreeSelectionListener() {
+        codeTimeTree.addMouseListener(new MouseListener() {
             @Override
-            public void valueChanged(TreeSelectionEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) codeTimeTree.getLastSelectedPathComponent();
 
                 if (node == null) return;
@@ -115,19 +114,37 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
                     TreeHelper.handleClickEvent((MetricTreeNode)node);
                 }
                 
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Thread.sleep(1000);
-                            codeTimeTree.clearSelection();
-                        } catch (InterruptedException err){
-                            System.err.println(err);
-                        }
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        Thread.sleep(1000);
+                        codeTimeTree.clearSelection();
+                    } catch (InterruptedException err){
+                        System.err.println(err);
                     }
                 });
             }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                //
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                //
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                //
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+               //
+            }
         });
+        
         scrollPane.setViewportView(codeTimeTree);
         scrollPane.setVisible(true);
 

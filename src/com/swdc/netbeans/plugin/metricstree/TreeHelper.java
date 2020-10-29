@@ -8,6 +8,7 @@ package com.swdc.netbeans.plugin.metricstree;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import static com.swdc.netbeans.plugin.SoftwareUtil.LOG;
 import com.swdc.netbeans.plugin.managers.FileManager;
+import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
@@ -306,9 +307,14 @@ public class TreeHelper {
             case TOGGLE_METRICS_ID:
                 SoftwareUtil.toggleStatusBar(UIInteractionType.click);
                 break;
+            case ADVANCED_METRICS_ID:
+                SoftwareSessionManager.launchWebDashboard(UIInteractionType.click);
+                break;
             case SEND_FEEDBACK_ID:
+                SoftwareSessionManager.submitFeedback(UIInteractionType.click);
                 break;
             case LEARN_MORE_ID:
+                FileManager.openReadmeFile(UIInteractionType.click);
                 break;
             default:
                 break;
