@@ -6,14 +6,22 @@
 package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
+import com.swdc.netbeans.plugin.managers.SessionDataManager;
+import com.swdc.netbeans.plugin.managers.TimeDataManager;
+import com.swdc.netbeans.plugin.models.CodeTimeSummary;
+import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.MutableTreeNode;
+import javax.swing.tree.TreePath;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
@@ -46,6 +54,9 @@ import org.openide.util.NbBundle.Messages;
     "HINT_CodeTimeTreeWindowTopComponent=This is a Code Time window"
 })
 public final class CodeTimeTreeTopComponent extends TopComponent {
+    
+    private static final Map<String, List<ExpandState>> expandStateMap = new HashMap<>();
+
 
     public CodeTimeTreeTopComponent() {
         initComponents();
@@ -68,7 +79,14 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             menuRoot.add(node);
         }
         root.add(menuRoot);
+        
+        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
+        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
+        
+        dailyMetrics.add(TreeHelper.buildCodeTimeTree(codeTimeSummary, sessionSummary));
+        dailyMetrics.add(TreeHelper.buildActiveCodeTimeTree(codeTimeSummary, sessionSummary));
         root.add(dailyMetrics);
+        
         root.add(contributors);
         
         JTree codeTimeTree = new JTree(root);
@@ -109,6 +127,16 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         this.setVisible(true);
     }
     
+    public static class ExpandState {
+        public boolean expand = false;
+        public TreePath path = null;
+
+        public ExpandState(boolean expand, TreePath path) {
+            this.expand = expand;
+            this.path = path;
+        }
+    }
+    
     public static void refreshTree() {
         //
     }
@@ -119,6 +147,36 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             // ToolWindowManager.getInstance(project).getToolWindow("Code Time").show(null);
         }
     }
+    
+    public static void updateExpandState(String id, TreePath path, boolean expanded) {
+        ExpandState state = new ExpandState(expanded, path);
+        List<ExpandState> existingStates = expandStateMap.get(id);
+        if (existingStates == null) {
+            existingStates = new ArrayList<>();
+            existingStates.add(state);
+        } else {
+            boolean foundExisting = false;
+            for (ExpandState s : existingStates) {
+                String pathStr = s.path.toString();
+                String tPathStr = path.toString();
+                if (pathStr.equals(tPathStr)) {
+                    s.expand = expanded;
+                    foundExisting = true;
+                    break;
+                }
+            }
+            if (!foundExisting) {
+                existingStates.add(state);
+            }
+        }
+
+        expandStateMap.put(id, existingStates);
+    }
+
+    public static List<ExpandState> getExpandState(String id) {
+        return expandStateMap.get(id);
+    }
+
 
     /**
      * This method is called from within the constructor to initialize the form.

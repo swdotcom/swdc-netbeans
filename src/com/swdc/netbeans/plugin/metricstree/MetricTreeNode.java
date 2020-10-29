@@ -17,12 +17,30 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
     private String id;
     private String iconName;
     private Object data;
+    
+    public MetricTreeNode(String label) {
+        super(label);
+        this.id = label;
+        this.initModel();
+    }
+    
+    public MetricTreeNode(String label, String iconName) {
+        super(label);
+        this.id = label;
+        this.iconName = iconName;
+        this.initModel();
+    }
 
     public MetricTreeNode(String label, String iconName, String id) {
         super(label);
-        this.model = null;
         this.id = id;
         this.iconName = iconName;
+        this.initModel();
+    }
+    
+    private void initModel() {
+        DefaultTreeModel parentNodeModel = new DefaultTreeModel(this);
+        this.setModel(parentNodeModel);
     }
 
     public void setModel(DefaultTreeModel model) {
