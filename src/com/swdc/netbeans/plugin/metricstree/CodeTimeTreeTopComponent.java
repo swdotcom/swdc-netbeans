@@ -6,9 +6,8 @@
 package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.Color;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
@@ -55,14 +54,32 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
        
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Code Time");
-
-        List<MetricTreeNode> signupNodes = TreeHelper.buildSignupNodes();
-        for (MetricTreeNode node : signupNodes) {
-            root.add(node);
+        
+        List<MetricTreeNode> menuNodes = new ArrayList<>();
+        
+        menuNodes.addAll(TreeHelper.buildSignupNodes());
+        menuNodes.addAll(TreeHelper.buildMenuNodes());
+        
+        DefaultMutableTreeNode menuRoot = new DefaultMutableTreeNode("Menu");
+        DefaultMutableTreeNode dailyMetrics = new DefaultMutableTreeNode("Daily Metrics");
+        DefaultMutableTreeNode contributors = new DefaultMutableTreeNode("Contributors");
+        
+        for (MetricTreeNode node : menuNodes) {
+            menuRoot.add(node);
         }
+        root.add(menuRoot);
+        root.add(dailyMetrics);
+        root.add(contributors);
         
         JTree codeTimeTree = new JTree(root);
+        
+        codeTimeTree.setCellRenderer(new MetricTreeNodeRenderer());
+        MetricTreeNodeRenderer renderer = (MetricTreeNodeRenderer) codeTimeTree.getCellRenderer();
+        renderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
+        renderer.setBorderSelectionColor(new Color(0,0,0,0));
+        
         codeTimeTree.addTreeSelectionListener(new TreeSelectionListener() {
+            @Override
             public void valueChanged(TreeSelectionEvent e) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) codeTimeTree.getLastSelectedPathComponent();
 
@@ -71,11 +88,12 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
                 if (node instanceof MetricTreeNode) {
                     TreeHelper.handleClickEvent((MetricTreeNode)node);
                 }
+                
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            Thread.sleep(500);
+                            Thread.sleep(1000);
                             codeTimeTree.clearSelection();
                         } catch (InterruptedException err){
                             System.err.println(err);

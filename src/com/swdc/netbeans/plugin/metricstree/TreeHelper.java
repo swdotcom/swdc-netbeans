@@ -7,6 +7,7 @@ package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileManager;
+import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,9 +21,12 @@ public class TreeHelper {
     public static final String GITHIUB_SIGNUP_ID = "github";
     public static final String EMAIL_SIGNUP_ID = "email";
     public static final String LOGGED_IN_ID = "logged-in";
+    public static final String ADVANCED_METRICS_ID = "advanced_metrics";
+    public static final String TOGGLE_METRICS_ID = "toggle_metrics";
+    public static final String VIEW_SUMMARY_ID = "view_summary";
     
     public static List<MetricTreeNode> buildSignupNodes() {
-        List<MetricTreeNode> list = new ArrayList<MetricTreeNode>();
+        List<MetricTreeNode> list = new ArrayList<>();
         String name = FileManager.getItem("name");
         if (name == null || name.equals("")) {
             list.add(buildSignupNode("google"));
@@ -35,15 +39,15 @@ public class TreeHelper {
     }
     
     private static MetricTreeNode buildSignupNode(String type) {
-        String iconName = "envelope.svg";
+        String iconName = "icons8-envelope-16.png";
         String text = "Sign up with email";
         String id = EMAIL_SIGNUP_ID;
         if (type.equals("google")) {
-            iconName = "icons8-google.svg";
+            iconName = "google.png";
             text = "Sign up with Google";
             id = GOOGLE_SIGNUP_ID;
         } else if (type.equals("github")) {
-            iconName = "icons8-github.svg";
+            iconName = "github.png";
             text = "Sign up with GitHub";
             id = GITHIUB_SIGNUP_ID;
         }
@@ -54,15 +58,30 @@ public class TreeHelper {
     private static MetricTreeNode buildLoggedInNode() {
         String authType = FileManager.getItem("authType");
         String name = FileManager.getItem("name");
-        String iconName = "envelope.svg";
+        String iconName = "icons8-envelope-16.png";
         if ("google".equals(authType)) {
-            iconName = "icons8-google.svg";
+            iconName = "google.png";
         } else if ("github".equals(authType)) {
-            iconName = "icons8-github.svg";
+            iconName = "github.png";
         }
         
         MetricTreeNode node = new MetricTreeNode(name, iconName, LOGGED_IN_ID);
         return node;
+    }
+    
+    public static List<MetricTreeNode> buildMenuNodes() {
+        List<MetricTreeNode> list = new ArrayList<>();
+        
+        String toggleText = "Hide status bar metrics";
+        if (!SoftwareUtil.showingStatusText()) {
+            toggleText = "Show status bar metrics";
+        }
+        list.add(new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID));
+        list.add(new MetricTreeNode("See advanced metrics", "paw-grey.png", ADVANCED_METRICS_ID));
+        list.add(new MetricTreeNode("View summary", "dashboard.png", VIEW_SUMMARY_ID));
+        
+        
+        return list;
     }
     
     public static void handleClickEvent(MetricTreeNode node) {
@@ -72,6 +91,11 @@ public class TreeHelper {
             case EMAIL_SIGNUP_ID:
                 break;
             case LOGGED_IN_ID:
+                break;
+            case VIEW_SUMMARY_ID:
+                break;
+            case TOGGLE_METRICS_ID:
+                SoftwareUtil.toggleStatusBar(UIInteractionType.click);
                 break;
             default:
                 break;

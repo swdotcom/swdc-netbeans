@@ -16,12 +16,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentEvent.ElementChange;
 import javax.swing.event.DocumentEvent.EventType;
-import javax.swing.text.AttributeSet;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
 import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.lib.editor.util.swing.DocumentUtilities;
 import org.netbeans.modules.parsing.api.Source;
 import org.openide.filesystems.FileObject;
 
@@ -131,6 +131,8 @@ public class SoftwareEventManager {
             }
         }
         
+        String text = DocumentUtilities.getModificationText(e);
+        
         EventType etype = e.getType();
         int numKeystrokes = 0;
         int numDeleteKeystrokes = 0;
@@ -140,30 +142,12 @@ public class SoftwareEventManager {
         } else if (etype.equals(EventType.REMOVE)) {
             // characters have been removed
             numDeleteKeystrokes = changeLength;
-        } else {
-            // EventType.CHANGE;
         }
-        
-        String text = "";
-        String oldText = "";
-        
-//        String text = documentEvent.getNewFragment() != null ? documentEvent.getNewFragment().toString() : "";
-//        String oldText = documentEvent.getOldFragment() != null ? documentEvent.getOldFragment().toString() : "";
-//
-//        int new_line_count = document.getLineCount();
-//        fileInfo.length = document.getTextLength();
-//
-//        // this will give us the positive char change length
-//        int numKeystrokes = documentEvent.getNewLength();
-//        // this will tell us delete chars
-//        int numDeleteKeystrokes = documentEvent.getOldLength();
 
         // check if its an auto indent
         boolean hasAutoIndent = text.matches("^\\s{2,4}$") || TAB_PATTERN.matcher(text).find();
         boolean newLineAutoIndent = text.matches("^\n\\s{2,4}$") || NEW_LINE_TAB_PATTERN.matcher(text).find();
 
-        // update the deletion keystrokes if there are lines removed
-        numDeleteKeystrokes = numDeleteKeystrokes >= linesRemoved ? numDeleteKeystrokes - linesRemoved : numDeleteKeystrokes;
 
         // event updates
         if (newLineAutoIndent) {
@@ -292,7 +276,7 @@ public class SoftwareEventManager {
         KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
         if (StringUtils.isBlank(fileInfo.syntax)) {
             // get the grammar
-            fileInfo.syntax = (fileName.contains(".")) ? fileName.substring(fileName.lastIndexOf(".") + 1) : "";
+            fileInfo.syntax = DocumentUtilities.getMimeType(lastDocument);
         }
         
         fileInfo.lines = SoftwareUtil.getLineCount(fileName);

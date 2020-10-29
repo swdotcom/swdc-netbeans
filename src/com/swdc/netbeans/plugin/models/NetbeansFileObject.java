@@ -35,6 +35,10 @@ public class NetbeansFileObject extends FileObject {
     public String getDirectory() {
         return this.directory;
     }
+    
+    public String getPath() {
+        return this.directory;
+    }
 
     @Override
     public String getName() {
