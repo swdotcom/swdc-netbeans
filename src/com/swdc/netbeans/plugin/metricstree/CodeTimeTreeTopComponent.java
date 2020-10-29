@@ -6,9 +6,11 @@
 package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
+import com.swdc.netbeans.plugin.managers.FileAggregateDataManager;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
+import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.awt.Color;
 import java.util.ArrayList;
@@ -73,7 +75,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         
         DefaultMutableTreeNode menuRoot = new DefaultMutableTreeNode("Menu");
         DefaultMutableTreeNode dailyMetrics = new DefaultMutableTreeNode("Daily Metrics");
-        DefaultMutableTreeNode contributors = new DefaultMutableTreeNode("Contributors");
         
         for (MetricTreeNode node : menuNodes) {
             menuRoot.add(node);
@@ -82,12 +83,19 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
+        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
         
-        dailyMetrics.add(TreeHelper.buildCodeTimeTree(codeTimeSummary, sessionSummary));
+        MetricTreeNode codeTimeTreeNode = TreeHelper.buildCodeTimeTree(codeTimeSummary);
+        dailyMetrics.add(codeTimeTreeNode);
         dailyMetrics.add(TreeHelper.buildActiveCodeTimeTree(codeTimeSummary, sessionSummary));
-        root.add(dailyMetrics);
+        dailyMetrics.add(TreeHelper.buildLinesAddedTree(sessionSummary));
+        dailyMetrics.add(TreeHelper.buildLinesRemovedTree(sessionSummary));
+        dailyMetrics.add(TreeHelper.buildKeystrokesTree(sessionSummary));
+        dailyMetrics.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
+        dailyMetrics.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
+        dailyMetrics.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
         
-        root.add(contributors);
+        root.add(dailyMetrics);
         
         JTree codeTimeTree = new JTree(root);
         

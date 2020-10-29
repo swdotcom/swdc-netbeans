@@ -10,14 +10,15 @@ import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import javax.swing.tree.DefaultMutableTreeNode;
 
 public class MetricTree extends JTree {
 
     public String id;
     public boolean expandState = false;
 
-    public MetricTree(TreeModel newModel) {
-        super(newModel);
+    public MetricTree(String label) {
+        super(new DefaultMutableTreeNode(label));
     }
 
     @Override

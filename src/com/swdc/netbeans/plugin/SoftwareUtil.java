@@ -49,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -817,6 +818,17 @@ public class SoftwareUtil {
             str = minutes + " min";
         }
         return str;
+    }
+    
+    public static String humanizeDoubleNumbers(double number) {
+        NumberFormat nf = NumberFormat.getInstance();
+        nf.setMinimumFractionDigits(2);
+        return nf.format(number);
+    }
+
+    public static String humanizeLongNumbers(long number) {
+        NumberFormat nf = NumberFormat.getInstance();
+        return nf.format(number);
     }
     
     public static void launchSoftwareTopForty() {

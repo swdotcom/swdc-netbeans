@@ -9,6 +9,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 
 public class MetricTreeNode extends DefaultMutableTreeNode {
 
@@ -75,5 +76,10 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
 
     public void setData(Object obj) {
         this.data = obj;
+    }
+    
+    public TreePath getNodeTreePath() {
+        TreePath p = new TreePath(model.getPathToRoot(this));
+        return p;
     }
 }

@@ -15,12 +15,18 @@ import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.event.MouseEvent;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
+import org.apache.commons.lang.StringUtils;
 import org.openide.awt.HtmlBrowser;
 
 /**
@@ -103,7 +109,7 @@ public class TreeHelper {
     }
     
     public static MetricTreeNode buildActiveCodeTimeTree(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
-        MetricTreeNode activeCodeTime = new MetricTreeNode("Active code time");
+        MetricTreeNode treeNode = new MetricTreeNode("Active code time");
         
         String min = SoftwareUtil.humanizeMinutes(codeTimeSummary.activeCodeTimeMinutes);
         String avg = SoftwareUtil.humanizeMinutes((int) sessionSummary.getAverageDailyMinutes());
@@ -111,24 +117,134 @@ public class TreeHelper {
         
         String dayStr = formatDay.format(new Date());
         
-        activeCodeTime.add(new MetricTreeNode("Today: " + min, "rocket.png"));
+        treeNode.add(new MetricTreeNode("Today: " + min, "rocket.png"));
         String avgIconName = sessionSummary.getAverageDailyMinutes() < sessionSummary.getCurrentDayMinutes() ? "bolt.png" : "bolt-grey.png";
-        activeCodeTime.add(new MetricTreeNode("Your average (" + dayStr + "): " + avg, avgIconName));
-        activeCodeTime.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvg, "global-grey.svg"));
+        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avg, avgIconName));
+        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvg, "global-grey.svg"));
         
-        return activeCodeTime;
+        return treeNode;
     }
     
-    public static MetricTreeNode buildCodeTimeTree(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
-        MetricTreeNode codeTime = new MetricTreeNode("Code time");
+    public static MetricTreeNode buildCodeTimeTree(CodeTimeSummary codeTimeSummary) {
+        MetricTreeNode treeNode = new MetricTreeNode("Code time");
         
         String min = SoftwareUtil.humanizeMinutes(codeTimeSummary.codeTimeMinutes);
-        
+        treeNode.add(new MetricTreeNode("Today: " + min, "rocket.png"));
+
+        return treeNode;
+    }
+    
+    public static MetricTreeNode buildLinesAddedTree(SessionSummary sessionSummary) {
         String dayStr = formatDay.format(new Date());
         
-        codeTime.add(new MetricTreeNode("Today: " + min, "rocket.png"));
+        // create the lines added nodes
+        MetricTreeNode treeNode = new MetricTreeNode("Lines added");
+        String linesAdded = SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayLinesAdded());
+        String avgLinesAdded = SoftwareUtil.humanizeLongNumbers(sessionSummary.getAverageLinesAdded());
+        String globalAvgLinesAdded = SoftwareUtil.humanizeLongNumbers(sessionSummary.getGlobalAverageLinesAdded());
+        treeNode.add(new MetricTreeNode("Today: " + linesAdded, "rocket.png"));
+        String avgIconName = sessionSummary.getAverageLinesAdded() < sessionSummary.getCurrentDayLinesAdded() ? "bolt.png" : "bolt-grey.png";
+        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgLinesAdded, avgIconName));
+        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvgLinesAdded, "global-grey.png"));
 
-        return codeTime;
+        return treeNode;
+    }
+
+    public static MetricTreeNode buildLinesRemovedTree(SessionSummary sessionSummary) {
+        String dayStr = formatDay.format(new Date());
+        // create the lines removed nodes
+        MetricTreeNode treeNode = new MetricTreeNode("Lines removed");
+        String linesRemoved = SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayLinesRemoved());
+        String avgLinesRemoved = SoftwareUtil.humanizeLongNumbers(sessionSummary.getAverageLinesRemoved());
+        String globalAvgLinesRemoved = SoftwareUtil.humanizeLongNumbers(sessionSummary.getGlobalAverageLinesAdded());
+        treeNode.add(new MetricTreeNode("Today: " + linesRemoved, "rocket.png"));
+        String avgIconName = sessionSummary.getAverageLinesRemoved() < sessionSummary.getCurrentDayLinesRemoved() ? "bolt.svg" : "bolt-grey.png";
+        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgLinesRemoved, avgIconName));
+        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvgLinesRemoved, "global-grey.png"));
+        return treeNode;
+    }
+
+    public static MetricTreeNode buildKeystrokesTree(SessionSummary sessionSummary) {
+        String dayStr = formatDay.format(new Date());
+        // create the keystrokes nodes
+        MetricTreeNode treeNode = new MetricTreeNode("Keystrokes");
+        String keystrokes = SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayKeystrokes());
+        String avgKeystrokes = SoftwareUtil.humanizeLongNumbers(sessionSummary.getAverageDailyKeystrokes());
+        String globalKeystrokes = SoftwareUtil.humanizeLongNumbers(sessionSummary.getGlobalAverageDailyKeystrokes());
+        treeNode.add(new MetricTreeNode("Today: " + keystrokes, "rocket.png"));
+        String avgIconName = sessionSummary.getAverageDailyKeystrokes() < sessionSummary.getCurrentDayKeystrokes() ? "bolt.png" : "bolt-grey.png";
+        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgKeystrokes, avgIconName));
+        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalKeystrokes, "global-grey.png"));
+        return treeNode;
+    }
+    
+    public static MetricTreeNode buildTopKeystrokesFilesTree(Map<String, FileChangeInfo> fileChangeInfoMap) {
+        return buildTopFilesTree("Top files by keystrokes", "keystrokes", fileChangeInfoMap);
+    }
+
+    public static MetricTreeNode buildTopKpmFilesTree(Map<String, FileChangeInfo> fileChangeInfoMap) {
+        return buildTopFilesTree("Top files by KPM", "kpm", fileChangeInfoMap);
+    }
+
+    public static MetricTreeNode buildTopCodeTimeFilesTree(Map<String, FileChangeInfo> fileChangeInfoMap) {
+        return buildTopFilesTree("Top files by code time", "codetime", fileChangeInfoMap);
+    }
+    
+    private static MetricTreeNode buildTopFilesTree(String parentName, String sortBy, Map<String, FileChangeInfo> fileChangeInfoMap) {
+        MetricTreeNode treeNode = new MetricTreeNode(parentName);
+        if (fileChangeInfoMap.size() == 0) {
+            return null;
+        }
+        // build the most edited files nodes
+        List<MetricTreeNode> nodes = new ArrayList<>();
+        // sort the fileChangeInfoMap based on keystrokes
+        List<Map.Entry<String, FileChangeInfo>> entryList = null;
+
+        if (sortBy.equals("kpm")) {
+            entryList = sortByKpm(fileChangeInfoMap);
+        } else if (sortBy.equals("keystrokes")) {
+            entryList = sortByKeystrokes(fileChangeInfoMap);
+        } else if (sortBy.equals("codetime")) {
+            entryList = sortByFileSeconds(fileChangeInfoMap);
+        }
+
+        int count = 0;
+        // go from the end
+        for (int i = entryList.size() - 1; i >= 0; i--) {
+            if (count >= 3) {
+                break;
+            }
+            Map.Entry<String, FileChangeInfo> fileChangeInfoEntry = entryList.get(i);
+            String name = fileChangeInfoEntry.getValue().name;
+            if (StringUtils.isBlank(name)) {
+                Path path = Paths.get(fileChangeInfoEntry.getKey());
+                if (path != null) {
+                    Path fileName = path.getFileName();
+                    if (fileName != null) {
+                        name = fileName.toString();
+                    } else {
+                        name = "Untitled";
+                    }
+                }
+            }
+
+            String val = "";
+            if (sortBy.equals("kpm")) {
+                val = SoftwareUtil.humanizeLongNumbers(fileChangeInfoEntry.getValue().kpm);
+            } else if (sortBy.equals("keystrokes")) {
+                val = SoftwareUtil.humanizeLongNumbers(fileChangeInfoEntry.getValue().keystrokes);
+            } else if (sortBy.equals("codetime")) {
+                val = SoftwareUtil.humanizeMinutes((int) (fileChangeInfoEntry.getValue().duration_seconds / 60));
+            }
+
+            String label = name + " | " + val;
+            MetricTreeNode editedFileNode = new MetricTreeNode(label, "files.png");
+            editedFileNode.setData(fileChangeInfoEntry.getValue());
+            treeNode.add(editedFileNode);
+            count++;
+        }
+
+        return treeNode;
     }
 
     private static void launchFileClick(MouseEvent e) {
@@ -197,6 +313,59 @@ public class TreeHelper {
             default:
                 break;
         }
+    }
+    
+    private static List<Map.Entry<String, FileChangeInfo>> sortByKpm(Map<String, FileChangeInfo> fileChangeInfoMap) {
+        List<Map.Entry<String, FileChangeInfo>> entryList = new ArrayList<Map.Entry<String, FileChangeInfo>>(fileChangeInfoMap.entrySet());
+        // natural ASC order
+        Collections.sort(
+                entryList, new Comparator<Map.Entry<String, FileChangeInfo>>() {
+                    @Override
+                    public int compare(Map.Entry<String, FileChangeInfo> entryA,
+                                       Map.Entry<String, FileChangeInfo> entryB) {
+
+                        Long a = entryA.getValue().kpm;
+                        Long b = entryB.getValue().kpm;
+                        return a.compareTo(b);
+                    }
+                }
+        );
+        return entryList;
+    }
+
+    private static List<Map.Entry<String, FileChangeInfo>> sortByKeystrokes(Map<String, FileChangeInfo> fileChangeInfoMap) {
+        List<Map.Entry<String, FileChangeInfo>> entryList = new ArrayList<Map.Entry<String, FileChangeInfo>>(fileChangeInfoMap.entrySet());
+        // natural ASC order
+        Collections.sort(
+                entryList, new Comparator<Map.Entry<String, FileChangeInfo>>() {
+                    @Override
+                    public int compare(Map.Entry<String, FileChangeInfo> entryA,
+                                       Map.Entry<String, FileChangeInfo> entryB) {
+
+                        Long a = entryA.getValue().keystrokes;
+                        Long b = entryB.getValue().keystrokes;
+                        return a.compareTo(b);
+                    }
+                }
+        );
+        return entryList;
+    }
+
+    private static List<Map.Entry<String, FileChangeInfo>> sortByFileSeconds(Map<String, FileChangeInfo> fileChangeInfoMap) {
+        List<Map.Entry<String, FileChangeInfo>> entryList = new ArrayList<Map.Entry<String, FileChangeInfo>>(fileChangeInfoMap.entrySet());
+        // natural ASC order
+        Collections.sort(
+                entryList, new Comparator<Map.Entry<String, FileChangeInfo>>() {
+                    @Override
+                    public int compare(Map.Entry<String, FileChangeInfo> entryA,
+                                       Map.Entry<String, FileChangeInfo> entryB) {
+                        Long a = entryA.getValue().duration_seconds;
+                        Long b = entryB.getValue().duration_seconds;
+                        return a.compareTo(b);
+                    }
+                }
+        );
+        return entryList;
     }
     
 }
