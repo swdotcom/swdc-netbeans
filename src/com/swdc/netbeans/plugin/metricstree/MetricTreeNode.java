@@ -20,28 +20,44 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
     private Object data;
     private boolean expanded = false;
     private boolean leaf = false;
+    private boolean separator = false;
+    private String label;
+    
+    public MetricTreeNode(boolean isSeparator) {
+        this.separator = isSeparator;
+        this.init(null, "separator", null, true);
+    }
 
     public MetricTreeNode(String label, boolean isLeaf) {
-        super(label);
-        this.init(label, null, isLeaf);
+        this.init(label, label, null, isLeaf);
     }
 
     public MetricTreeNode(String label, String iconName, boolean isLeaf) {
-        super(label);
-        this.init(label, iconName, isLeaf);
+        this.init(label, label, iconName, isLeaf);
     }
 
     public MetricTreeNode(String label, String iconName, String id, boolean isLeaf) {
-        super(label);
-        this.init(id, iconName, isLeaf);
+        this.init(label, id, iconName, isLeaf);
     }
     
-    private void init(String id, String iconName, boolean isLeaf) {
+    private void init(String label, String id, String iconName, boolean isLeaf) {
+        this.label = label;
         this.id = id;
         this.iconName = iconName;
         this.leaf = isLeaf;
         this.expanded = !isLeaf;
         this.initModel();
+    }
+    
+    public void updateLabel(String label) {
+        this.label = label;
+        if (id.equals("toggle_metrics")) {
+            System.out.println("label: " + label);
+        }
+    }
+    
+    public boolean isSeparator() {
+        return separator;
     }
 
     public boolean isExpanded() {
@@ -85,6 +101,9 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
     }
 
     public String getIconName() {
+        if (isSeparator()) {
+            return "blue-line-96.png";
+        }
         return iconName;
     }
 
@@ -99,5 +118,13 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
     public TreePath getNodeTreePath() {
         TreePath p = new TreePath(model.getPathToRoot(this));
         return p;
+    }
+    
+    @Override
+    public String toString() {
+        if (id.equals("toggle_metrics")) {
+            System.out.println("label: " + label);
+        }
+        return label;
     }
 }

@@ -24,13 +24,15 @@ public class IconTreeCellRenderer extends DefaultTreeCellRenderer {
             int row,
             boolean hasFocus) {
 
-        super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, true);
+        Component comp = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, true);
         
         this.setBorderSelectionColor(null);
 
         Icon icon = null;
         if (value instanceof MetricTreeNode) {
-            String iconName = ((MetricTreeNode)value).getIconName();
+            MetricTreeNode node = (MetricTreeNode)value;
+            
+            String iconName = node.getIconName();
             if (iconName != null) {
                 ImageIcon imageIcon = createImageIcon(iconName, "");
                 if (imageIcon != null) {
@@ -43,7 +45,7 @@ public class IconTreeCellRenderer extends DefaultTreeCellRenderer {
             setIcon(icon);
         }
 
-        return this;
+        return comp;
     }
     
     public ImageIcon createImageIcon(String iconName, String description) {

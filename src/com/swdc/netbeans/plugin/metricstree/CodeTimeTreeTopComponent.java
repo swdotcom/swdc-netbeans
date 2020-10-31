@@ -9,21 +9,21 @@ import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileAggregateDataManager;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
+import static com.swdc.netbeans.plugin.metricstree.MetricTree.LOG;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
-import java.awt.Color;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.swing.JTree;
-import javax.swing.SwingUtilities;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.settings.ConvertAsProperties;
@@ -57,15 +57,21 @@ import org.openide.util.NbBundle.Messages;
     "HINT_CodeTimeTreeWindowTopComponent=This is a Code Time window"
 })
 public final class CodeTimeTreeTopComponent extends TopComponent {
+    
+    public static final Logger LOG = Logger.getLogger("CodeTimeTreeTopComponent");
 
     private static final Map<String, List<ExpandState>> expandStateMap = new HashMap<>();
+    
+    private static MetricTree metricTree;
 
     public CodeTimeTreeTopComponent() {
         initComponents();
         setName(Bundle.CTL_CodeTimeTreeWindowTopComponent());
         setToolTipText(Bundle.HINT_CodeTimeTreeWindowTopComponent());
+        
+        metricTree = buildCodeTimeTreeView();
 
-        scrollPane.setViewportView(buildCodeTimeTreeView());
+        scrollPane.setViewportView(metricTree);
         scrollPane.setVisible(true);
 
         this.updateUI();
@@ -81,6 +87,53 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             this.expand = expand;
             this.path = path;
         }
+    }
+    
+    public static void updateMetrics(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
+        
+        // update the toggle node label
+        String toggleText = "Hide status bar metrics";
+        if (!SoftwareUtil.showingStatusText()) {
+            toggleText = "Show status bar metrics";
+        }
+        
+        MetricTreeNode toggleNode = findNodeById(TreeHelper.TOGGLE_METRICS_ID);
+        if (toggleNode != null) {
+            toggleNode.updateLabel(toggleText);
+        }
+        
+        if (codeTimeSummary != null) {
+            // the code time today metric can be updated
+        }
+        
+        if (codeTimeSummary != null && sessionSummary != null) {
+            // all of the other metrics can be updated
+        }
+        
+    }
+    
+    private static MetricTreeNode findNodeById(String id) {
+        try {
+            DefaultTreeModel model = (DefaultTreeModel) metricTree.getModel();
+
+            DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) model.getRoot();
+            
+            if (treeNode != null) {
+                Enumeration<TreeNode> nodes = treeNode.children();
+                if (nodes != null) {
+                    while (nodes.hasMoreElements()) {
+                        MetricTreeNode node = (MetricTreeNode) nodes.nextElement();
+                        if (node != null && node.getId().equals(id)) {
+                            return node;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Find node by ID error: {0}", e.toString());
+        }
+        
+        return null;
     }
 
     public static void refreshTree() {
@@ -170,7 +223,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         // TODO read your settings according to their version
     }
 
-    private JTree buildCodeTimeTreeView() {
+    private MetricTree buildCodeTimeTreeView() {
         MetricTree tree = new MetricTree(makeMetricNodeModel());
 
         tree.setCellRenderer(new IconTreeCellRenderer());
@@ -194,11 +247,12 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             root.add(node);
         }
         
-        // root.add(TreeHelper.getSeparator());
+        root.add(new MetricTreeNode(true));
         
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
         Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
+
 
         root.add(TreeHelper.buildCodeTimeTree(codeTimeSummary));
         root.add(TreeHelper.buildActiveCodeTimeTree(codeTimeSummary, sessionSummary));
@@ -210,90 +264,5 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         root.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
         
         return new DefaultTreeModel(root);
-    }
-
-    private JTree getCodeTimeTree() {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Code Time");
-
-        List<MetricTreeNode> menuNodes = new ArrayList<>();
-
-        menuNodes.addAll(TreeHelper.buildSignupNodes());
-        menuNodes.addAll(TreeHelper.buildMenuNodes());
-
-        DefaultMutableTreeNode menuRoot = new DefaultMutableTreeNode("Menu");
-        DefaultMutableTreeNode dailyMetrics = new DefaultMutableTreeNode("Daily Metrics");
-
-        for (MetricTreeNode node : menuNodes) {
-            menuRoot.add(node);
-        }
-        root.add(menuRoot);
-
-        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
-        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
-        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
-
-        MetricTreeNode codeTimeTreeNode = TreeHelper.buildCodeTimeTree(codeTimeSummary);
-        dailyMetrics.add(codeTimeTreeNode);
-        dailyMetrics.add(TreeHelper.buildActiveCodeTimeTree(codeTimeSummary, sessionSummary));
-        dailyMetrics.add(TreeHelper.buildLinesAddedTree(sessionSummary));
-        dailyMetrics.add(TreeHelper.buildLinesRemovedTree(sessionSummary));
-        dailyMetrics.add(TreeHelper.buildKeystrokesTree(sessionSummary));
-        dailyMetrics.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
-        dailyMetrics.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
-        dailyMetrics.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
-
-        root.add(dailyMetrics);
-
-        JTree codeTimeTree = new JTree(root);
-
-        codeTimeTree.setCellRenderer(new MetricTreeNodeRenderer());
-        MetricTreeNodeRenderer renderer = (MetricTreeNodeRenderer) codeTimeTree.getCellRenderer();
-        renderer.setBackgroundNonSelectionColor(new Color(0, 0, 0, 0));
-        renderer.setBorderSelectionColor(new Color(0, 0, 0, 0));
-
-        codeTimeTree.addMouseListener(new MouseListener() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) codeTimeTree.getLastSelectedPathComponent();
-
-                if (node == null) {
-                    return;
-                }
-
-                if (node instanceof MetricTreeNode) {
-                    TreeHelper.handleClickEvent((MetricTreeNode) node);
-                }
-
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        Thread.sleep(1000);
-                        codeTimeTree.clearSelection();
-                    } catch (InterruptedException err) {
-                        System.err.println(err);
-                    }
-                });
-            }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-                //
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                //
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                //
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                //
-            }
-        });
-        return codeTimeTree;
     }
 }

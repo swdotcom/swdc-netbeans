@@ -6,7 +6,6 @@
 package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import static com.swdc.netbeans.plugin.SoftwareUtil.LOG;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
@@ -25,9 +24,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JSeparator;
 import org.apache.commons.lang.StringUtils;
 import org.openide.awt.HtmlBrowser;
@@ -37,6 +38,8 @@ import org.openide.awt.HtmlBrowser;
  * @author xavierluiz
  */
 public class TreeHelper {
+    
+    public static final Logger LOG = Logger.getLogger("TreeHelper");
     
     public static final String GOOGLE_SIGNUP_ID = "google";
     public static final String GITHIUB_SIGNUP_ID = "github";
@@ -49,7 +52,9 @@ public class TreeHelper {
     public static final String VIEW_SUMMARY_ID = "view_summary";
     public static final String CODETIME_TODAY_ID = "codetime_today";
 
-    private static SimpleDateFormat formatDay = new SimpleDateFormat("EEE");
+    private static final SimpleDateFormat formatDay = new SimpleDateFormat("EEE");
+    
+    private static final Map<String, MetricTreeNode> nodeMap = new HashMap<>();
     
     public static List<MetricTreeNode> buildSignupNodes() {
         List<MetricTreeNode> list = new ArrayList<>();
@@ -78,6 +83,7 @@ public class TreeHelper {
             id = GITHIUB_SIGNUP_ID;
         }
         MetricTreeNode node = new MetricTreeNode(text, iconName, id, true);
+        nodeMap.put(node.getId(), node);
         return node;
     }
     
@@ -92,6 +98,7 @@ public class TreeHelper {
         }
         
         MetricTreeNode node = new MetricTreeNode(name, iconName, LOGGED_IN_ID, true);
+        nodeMap.put(node.getId(), node);
         return node;
     }
     
@@ -102,7 +109,11 @@ public class TreeHelper {
         if (!SoftwareUtil.showingStatusText()) {
             toggleText = "Show status bar metrics";
         }
-        list.add(new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID, true));
+        
+        MetricTreeNode toggleNode = new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID, true);
+        nodeMap.put(toggleNode.getId(), toggleNode);
+        
+        list.add(toggleNode);
         list.add(new MetricTreeNode("Learn more", "readme.png", LEARN_MORE_ID, true));
         list.add(new MetricTreeNode("Submit feedback", "message.png", SEND_FEEDBACK_ID, true));
         list.add(new MetricTreeNode("See advanced metrics", "paw-grey.png", ADVANCED_METRICS_ID, true));
@@ -125,6 +136,8 @@ public class TreeHelper {
         treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avg, avgIconName, true));
         treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvg, "global-grey.svg", true));
         
+        nodeMap.put(treeNode.getId(), treeNode);
+        
         return treeNode;
     }
     
@@ -133,6 +146,8 @@ public class TreeHelper {
         
         String min = SoftwareUtil.humanizeMinutes(codeTimeSummary.codeTimeMinutes);
         treeNode.add(new MetricTreeNode("Today: " + min, "rocket.png", true));
+        
+        nodeMap.put(treeNode.getId(), treeNode);
 
         return treeNode;
     }
@@ -149,6 +164,8 @@ public class TreeHelper {
         String avgIconName = sessionSummary.getAverageLinesAdded() < sessionSummary.getCurrentDayLinesAdded() ? "bolt.png" : "bolt-grey.png";
         treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgLinesAdded, avgIconName, true));
         treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvgLinesAdded, "global-grey.png", true));
+        
+        nodeMap.put(treeNode.getId(), treeNode);
 
         return treeNode;
     }
@@ -164,6 +181,9 @@ public class TreeHelper {
         String avgIconName = sessionSummary.getAverageLinesRemoved() < sessionSummary.getCurrentDayLinesRemoved() ? "bolt.svg" : "bolt-grey.png";
         treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgLinesRemoved, avgIconName, true));
         treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvgLinesRemoved, "global-grey.png", true));
+        
+        nodeMap.put(treeNode.getId(), treeNode);
+        
         return treeNode;
     }
 
@@ -178,6 +198,9 @@ public class TreeHelper {
         String avgIconName = sessionSummary.getAverageDailyKeystrokes() < sessionSummary.getCurrentDayKeystrokes() ? "bolt.png" : "bolt-grey.png";
         treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgKeystrokes, avgIconName, true));
         treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalKeystrokes, "global-grey.png", true));
+        
+        nodeMap.put(treeNode.getId(), treeNode);
+        
         return treeNode;
     }
     
@@ -246,6 +269,8 @@ public class TreeHelper {
             treeNode.add(editedFileNode);
             count++;
         }
+        
+        nodeMap.put(treeNode.getId(), treeNode);
 
         return treeNode;
     }
@@ -308,6 +333,7 @@ public class TreeHelper {
                 break;
             case TOGGLE_METRICS_ID:
                 SoftwareUtil.toggleStatusBar(UIInteractionType.click);
+                CodeTimeTreeTopComponent.updateMetrics(null, null);
                 break;
             case ADVANCED_METRICS_ID:
                 SoftwareSessionManager.launchWebDashboard(UIInteractionType.click);
