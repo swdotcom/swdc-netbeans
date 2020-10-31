@@ -56,9 +56,9 @@ public class SoftwareSessionManager {
     public static String getReadmeFile() {
         String file = getSoftwareDir(true);
         if (SoftwareUtil.isWindows()) {
-            file += "\\jetbrainsCt_README.txt";
+            file += "\\netbeansCt_README.txt";
         } else {
-            file += "/jetbrainsCt_README.txt";
+            file += "/netbeansCt_README.txt";
         }
         return file;
     }
@@ -147,8 +147,6 @@ public class SoftwareSessionManager {
             Object[] options = { "OK" };
             JOptionPane.showOptionDialog(null, infoMsg, "Code Time Setup Complete", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
                     null, options, options[0]);
-            FileManager.sendOfflineData();
-
         }
     }
 

@@ -5,14 +5,17 @@
 package com.swdc.netbeans.plugin;
 
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
+import com.swdc.netbeans.plugin.managers.EventTrackerManager;
+import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
 import com.swdc.netbeans.plugin.managers.RepoManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
+import com.swdc.netbeans.plugin.managers.WallClockManager;
+import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -97,19 +100,38 @@ public class Software extends ModuleInstall implements Runnable {
 
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
         LOG.log(Level.INFO, "Code Time: Loaded v{0}", SoftwareUtil.getVersion());
+        
+        // initialize the tracker
+        EventTrackerManager.getInstance().init();
+
+        // send the activate event
+        EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
+        
+        String readmeDisplayed = FileManager.getItem("netbeans_CtReadme");
+        if (readmeDisplayed == null || Boolean.valueOf(readmeDisplayed) == false) {
+            // send an initial plugin payload
+            FileManager.openReadmeFile(UIInteractionType.keyboard);
+            FileManager.setItem("netbeans_CtReadme", "true");
+        }
+
 
         // setup the document change event listeners
         setupEventListeners();
 
         StatusBarManager.updateStatusBar();
+
+        // send the init heartbeat
+        SwingUtilities.invokeLater(() -> {
+            try {
+                Thread.sleep(5000);
+                SoftwareUtil.sendHeartbeat("INITIALIZED");
+            } catch (InterruptedException e) {
+                System.err.println(e);
+            }
+        });
         
-        // setup offline batch processor (every 30 minutes)
-        setupOfflineDataSendProcessor();
-
-        setupUserStatusProcessor();
-
-        // check the user auth status and send any offline data
-        bootstrapStatus(initializedUser);
+        // initialize the wallclock manager
+        WallClockManager.getInstance().updateSessionSummaryFromServer();
     }
 
     /**
@@ -127,46 +149,6 @@ public class Software extends ModuleInstall implements Runnable {
         };
 
         EditorRegistry.addPropertyChangeListener(l);
-    }
-
-    private void setupOfflineDataSendProcessor() {
-        final Runnable handler = () -> processOfflineDataSend();
-        long everyThrityMin = ONE_MINUTE_SECONDS * 30;
-        scheduler.scheduleAtFixedRate(handler, 1 /* 1 second */, everyThrityMin, TimeUnit.SECONDS);
-    }
-
-    private void setupUserStatusProcessor() {
-        final Runnable handler = () -> processUserStatus();
-        scheduler.scheduleAtFixedRate(handler, 60, 90, TimeUnit.SECONDS);
-    }
-
-    private void bootstrapStatus(boolean initializedUser) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(5000);
-                    initializeUserInfo(initializedUser);
-                } catch (InterruptedException e) {
-                    System.err.println(e);
-                }
-            }
-        });
-    }
-
-    private void processUserStatus() {
-        SoftwareUtil.getUserStatus();
-    }
-
-    private void processOfflineDataSend() {
-        SoftwareUtil.sendOfflineData();
-    }
-
-    private void initializeUserInfo(boolean initializedUser) {
-
-        SoftwareUtil.getUserStatus();
-
-        SoftwareUtil.sendHeartbeat("INITIALIZED");
     }
 
     protected void showOfflinePrompt() {

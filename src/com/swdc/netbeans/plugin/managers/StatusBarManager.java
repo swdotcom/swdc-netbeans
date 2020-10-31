@@ -24,7 +24,8 @@ public class StatusBarManager {
 
         SoftwareStatusBar.StatusBarType barType = SoftwareUtil.showingStatusText()
                 ? SoftwareStatusBar.StatusBarType.PAW : SoftwareStatusBar.StatusBarType.OFF;
-        String currentDayTimeStr = SoftwareUtil.humanizeMinutes(ctSummary.activeCodeTimeMinutes);
+        String currentDayTimeStr = SoftwareUtil.showingStatusText()
+                ? SoftwareUtil.humanizeMinutes(ctSummary.activeCodeTimeMinutes) : "";
         
         StatusBarManager.setStatusLineMessage(barType, currentDayTimeStr, "Code time today. Click to see more from Code Time.");
     }

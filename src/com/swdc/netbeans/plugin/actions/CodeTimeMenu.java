@@ -55,14 +55,14 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
     }
 
     private JComponent[] createMenu() {
-        SoftwareUtil.UserStatus userStatus = SoftwareUtil.getUserStatus();
+        boolean loggedIn = SoftwareUtil.getUserLoginState();
         List<JComponent> items = new ArrayList<>();
 
         items.add(toMenuItem(new CodeTimeDashboardAction()));
         items.add(toMenuItem(new CodeTimeTop40Action()));
         items.add(toMenuItem(new WebDashboardAction()));
 
-        if (!userStatus.loggedIn) {
+        if (!loggedIn) {
             // not logged in, show the login and signup menu items
             items.add(toMenuItem(new CodeTimeLoginAction()));
         }

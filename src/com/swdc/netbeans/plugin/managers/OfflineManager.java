@@ -109,13 +109,13 @@ public class OfflineManager {
                 byte[] encoded = Files.readAllBytes(Paths.get(sessionSummaryFile));
                 String content = new String(encoded, Charset.defaultCharset());
                 // json parse it
-                data = SoftwareUtil.jsonParser.parse(content).getAsJsonObject();
+                data = SoftwareUtil.readAsJsonObject(content);
             } catch (JsonSyntaxException | IOException e) {
                 LOG.log(Level.SEVERE, "Code Time: Error trying to read and json parse the session file.", e);
             }
         } else {
             String jsonStr = SoftwareUtil.gson.toJson(new SessionSummaryData());
-            data = (JsonObject) SoftwareUtil.jsonParser.parse(jsonStr);
+            data = SoftwareUtil.readAsJsonObject(jsonStr);
         }
         return data;
     }

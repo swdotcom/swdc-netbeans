@@ -8,9 +8,7 @@ package com.swdc.netbeans.plugin.metricstree;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
-import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
-import com.swdc.netbeans.plugin.models.SessionSummary;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.Color;
 import java.awt.event.MouseEvent;
@@ -23,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -188,59 +185,59 @@ public class TreeHelper {
     
     private static MetricTreeNode buildTopFilesTree(String parentName, String sortBy, Map<String, FileChangeInfo> fileChangeInfoMap) {
         MetricTreeNode treeNode = new MetricTreeNode(parentName, null, null);
-        if (fileChangeInfoMap.isEmpty()) {
-            return null;
-        }
+
         // build the most edited files nodes
         // sort the fileChangeInfoMap based on keystrokes
         List<Map.Entry<String, FileChangeInfo>> entryList = null;
 
-        if (sortBy.equals("kpm")) {
-            entryList = sortByKpm(fileChangeInfoMap);
-        } else if (sortBy.equals("keystrokes")) {
-            entryList = sortByKeystrokes(fileChangeInfoMap);
-        } else if (sortBy.equals("codetime")) {
-            entryList = sortByFileSeconds(fileChangeInfoMap);
-        }
-        
-        if (entryList == null) {
-            return null;
-        }
-
-        int count = 0;
-        // go from the end
-        for (int i = entryList.size() - 1; i >= 0; i--) {
-            if (count >= 3) {
-                break;
+        if (!fileChangeInfoMap.isEmpty()) {
+            if (sortBy.equals("kpm")) {
+                entryList = sortByKpm(fileChangeInfoMap);
+            } else if (sortBy.equals("keystrokes")) {
+                entryList = sortByKeystrokes(fileChangeInfoMap);
+            } else if (sortBy.equals("codetime")) {
+                entryList = sortByFileSeconds(fileChangeInfoMap);
             }
-            Map.Entry<String, FileChangeInfo> fileChangeInfoEntry = entryList.get(i);
-            String name = fileChangeInfoEntry.getValue().name;
-            if (StringUtils.isBlank(name)) {
-                Path path = Paths.get(fileChangeInfoEntry.getKey());
-                if (path != null) {
-                    Path fileName = path.getFileName();
-                    if (fileName != null) {
-                        name = fileName.toString();
-                    } else {
-                        name = "Untitled";
+            
+            int count = 0;
+            // go from the end
+            for (int i = entryList.size() - 1; i >= 0; i--) {
+                if (count >= 3) {
+                    break;
+                }
+                Map.Entry<String, FileChangeInfo> fileChangeInfoEntry = entryList.get(i);
+                String name = fileChangeInfoEntry.getValue().name;
+                if (StringUtils.isBlank(name)) {
+                    Path path = Paths.get(fileChangeInfoEntry.getKey());
+                    if (path != null) {
+                        Path fileName = path.getFileName();
+                        if (fileName != null) {
+                            name = fileName.toString();
+                        } else {
+                            name = "Untitled";
+                        }
                     }
                 }
-            }
 
-            String val = "";
-            if (sortBy.equals("kpm")) {
-                val = SoftwareUtil.humanizeLongNumbers(fileChangeInfoEntry.getValue().kpm);
-            } else if (sortBy.equals("keystrokes")) {
-                val = SoftwareUtil.humanizeLongNumbers(fileChangeInfoEntry.getValue().keystrokes);
-            } else if (sortBy.equals("codetime")) {
-                val = SoftwareUtil.humanizeMinutes((int) (fileChangeInfoEntry.getValue().duration_seconds / 60));
-            }
+                String val = "";
+                if (sortBy.equals("kpm")) {
+                    val = SoftwareUtil.humanizeLongNumbers(fileChangeInfoEntry.getValue().kpm);
+                } else if (sortBy.equals("keystrokes")) {
+                    val = SoftwareUtil.humanizeLongNumbers(fileChangeInfoEntry.getValue().keystrokes);
+                } else if (sortBy.equals("codetime")) {
+                    val = SoftwareUtil.humanizeMinutes((int) (fileChangeInfoEntry.getValue().duration_seconds / 60));
+                }
 
-            String label = name + " | " + val;
-            MetricTreeNode editedFileNode = new MetricTreeNode(label, "files.png", null);
-            editedFileNode.setData(fileChangeInfoEntry.getValue());
-            treeNode.add(editedFileNode);
-            count++;
+                String label = name + " | " + val;
+                MetricTreeNode editedFileNode = new MetricTreeNode(label, "files.png", null);
+                editedFileNode.setData(fileChangeInfoEntry.getValue());
+                treeNode.add(editedFileNode);
+                count++;
+            }
+        } else {
+            entryList = new ArrayList<Map.Entry<String, FileChangeInfo>>(fileChangeInfoMap.entrySet());
+            MetricTreeNode node = new MetricTreeNode("<empty>", "files.png", null);
+            treeNode.add(node);
         }
 
         return treeNode;

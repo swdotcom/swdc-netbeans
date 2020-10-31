@@ -316,9 +316,12 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         root.add(TreeHelper.buildLinesAddedTree(mLabels));
         root.add(TreeHelper.buildLinesRemovedTree(mLabels));
         root.add(TreeHelper.buildKeystrokesTree(mLabels));
-        root.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
-        root.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
-        root.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
+        
+        if (fileChangeInfoMap != null) {
+            root.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
+            root.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
+            root.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
+        }
         
         return new DefaultTreeModel(root);
     }

@@ -27,7 +27,6 @@ import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -139,8 +138,6 @@ public class SoftwareUtil {
     private final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
     public static HttpClient httpClient;
     public static HttpClient pingClient;
-
-    public static JsonParser jsonParser = new JsonParser();
     
     private static final long DAYS_IN_SECONDS = 60 * 60 * 24;
     
@@ -259,26 +256,6 @@ public class SoftwareUtil {
         String jwt = FileManager.getItem("jwt");
         return (jwt != null && !jwt.equals(""));
     }
-
-    private static JsonObject getSoftwareSessionAsJson() {
-        JsonObject data = null;
-
-        String sessionFile = getSoftwareSessionFile(true);
-        File f = new File(sessionFile);
-        if (f.exists()) {
-            try {
-                byte[] encoded = Files.readAllBytes(Paths.get(sessionFile));
-                String content = new String(encoded, Charset.defaultCharset());
-                if (content != null) {
-                    // json parse it
-                    data = jsonParser.parse(content).getAsJsonObject();
-                }
-            } catch (JsonSyntaxException | IOException e) {
-                LOG.log(Level.WARNING, "Code Time: Error trying to read and json parse the session file.{0}", e.getMessage());
-            }
-        }
-        return (data == null) ? new JsonObject() : data;
-    }
     
     public static String getSummaryInfoFile(boolean autoCreate) {
         String file = getSoftwareDir(autoCreate);
@@ -328,28 +305,6 @@ public class SoftwareUtil {
             file += "/netbeansCt_README.txt";
         }
         return file;
-    }
-
-    public static void storePayload(String payload) {
-        if (payload == null || payload.length() == 0) {
-            return;
-        }
-        if (isWindows()) {
-            payload += "\r\n";
-        } else {
-            payload += "\n";
-        }
-        String dataStoreFile = getSoftwareDataStoreFile();
-        File f = new File(dataStoreFile);
-        try {
-            Writer output;
-            output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
-            output.append(payload);
-            output.close();
-            LOG.log(Level.INFO, "Code Time: stored kpm metrics: {0}", payload);
-        } catch (IOException e) {
-            LOG.log(Level.WARNING, "Code Time: Error appending to the Software data store file, error: {0}", e.getMessage());
-        }
     }
 
     public static String getUserHomeDir() {
@@ -502,7 +457,7 @@ public class SoftwareUtil {
                             
                             if (jsonStr != null && !isPlainText) {
                                 LOG.log(Level.INFO, "Sofware.com: API response {0}", jsonStr);
-                                Object jsonEl = jsonParser.parse(jsonStr);
+                                Object jsonEl = SoftwareUtil.readAsJsonObject(jsonStr);
                                 
                                 if (jsonEl instanceof JsonElement) {
                                     try {
@@ -538,128 +493,6 @@ public class SoftwareUtil {
         }
 
         return softwareResponse;
-    }
-    
-    public static boolean getUserLoginState() {
-        String pluginjwt = FileManager.getItem("jwt");
-
-        JsonObject userObj = getUser();
-        if (userObj != null && userObj.has("email")) {
-            // check if the email is valid
-            String email = userObj.get("email").getAsString();
-            if (validateEmail(email)) {
-                FileManager.setItem("jwt", userObj.get("plugin_jwt").getAsString());
-                FileManager.setItem("name", email);
-                return true;
-            }
-        }
-
-        String api = "/users/plugin/state";
-        SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, pluginjwt);
-        if (resp.isOk()) {
-            // check if we have the data and jwt
-            // resp.data.jwt and resp.data.user
-            // then update the session.json for the jwt
-            JsonObject data = resp.getJsonObj();
-            String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
-            // check if we have any data
-            if (state.equals("OK")) {
-                String dataJwt = data.get("jwt").getAsString();
-                FileManager.setItem("jwt", dataJwt);
-                String dataEmail = data.get("email").getAsString();
-                if (dataEmail != null) {
-                    FileManager.setItem("name", dataEmail);
-                }
-                return true;
-            }
-        }
-
-        return false;
-    }
-    
-    private static JsonObject getUser() {
-        String jwt = FileManager.getItem("jwt");
-        String api = "/users/me";
-        SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
-        if (resp.isOk()) {
-            // check if we have the data and jwt
-            // resp.data.jwt and resp.data.user
-            // then update the session.json for the jwt
-            JsonObject obj = resp.getJsonObj();
-            if (obj != null && obj.has("data")) {
-                return obj.get("data").getAsJsonObject();
-            }
-        }
-        return null;
-    }
-
-    public static void sendOfflineData() {
-        boolean isOnline = isServerOnline();
-        if (!isOnline) {
-            return;
-        }
-                
-        String dataStoreFile = getSoftwareDataStoreFile();
-        File f = new File(dataStoreFile);
-
-        if (f.exists()) {
-            // JsonArray jsonArray = new JsonArray();
-            StringBuilder sb = new StringBuilder();
-            try {
-                FileInputStream fis = new FileInputStream(f);
-
-                try ( //Construct BufferedReader from InputStreamReader
-                    BufferedReader br = new BufferedReader(new InputStreamReader(fis))) {
-                    String line = null;
-                    while ((line = br.readLine()) != null) {
-                        if (line.length() > 0) {
-                            sb.append(line).append(",");
-                        }
-                    }
-                }
-
-                if (sb.length() > 0) {
-                    String payloads = sb.toString();
-                    payloads = payloads.substring(0, payloads.lastIndexOf(","));
-                    payloads = "[" + payloads + "]";
-                    
-                    JsonArray jsonArray = (JsonArray) SoftwareUtil.jsonParser.parse(payloads);
-                    
-                    // delete the file
-                    deleteFile(dataStoreFile);
-
-                    JsonArray batch = new JsonArray();
-                    // go through the array about 50 at a time
-                    for (int i = 0; i < jsonArray.size(); i++) {
-                        batch.add(jsonArray.get(i));
-                        if (i > 0 && i % 50 == 0) {
-                            String payloadData = SoftwareUtil.gson.toJson(batch);
-                            SoftwareResponse resp
-                                    = makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloadData);
-                            if (!resp.isOk()) {
-                                // add these back to the offline file
-                                LOG.log(Level.INFO, "Code Time: Unable to send batch data: {0}", resp.getErrorMessage());
-                            }
-                            batch = new JsonArray();
-                        }
-                    }
-                    if (batch.size() > 0) {
-                        String payloadData = SoftwareUtil.gson.toJson(batch);
-                        SoftwareResponse resp
-                                = makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloadData);
-                        if (!resp.isOk()) {
-                            // add these back to the offline file
-                            LOG.log(Level.INFO, "Code Time: Unable to send batch data: {0}", resp.getErrorMessage());
-                        }
-                    }
-                    
-                } else {
-                    LOG.log(Level.INFO, "Code Time: No offline data to send");
-                }
-            } catch (IOException e) {
-                LOG.log(Level.WARNING, "Code Time: Error trying to read and send offline data, error: {0}", e.getMessage());
-            }
-        }
     }
 
     private static void deleteFile(String file) {
@@ -972,79 +805,57 @@ public class SoftwareUtil {
         return null;
     }
     
-    private static JsonObject getUser(boolean serverIsOnline) {
-        String jwt = FileManager.getItem("jwt");
-        if (serverIsOnline) {
-            String api = "/users/me";
-            SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
-            if (resp.isOk()) {
-                // check if we have the data and jwt
-                // resp.data.jwt and resp.data.user
-                // then update the session.json for the jwt
-                JsonObject obj = resp.getJsonObj();
-                if (obj != null && obj.has("data")) {
-                    return obj.get("data").getAsJsonObject();
+    public static boolean getUserLoginState() {
+        String pluginjwt = FileManager.getItem("jwt");
+
+        JsonObject userObj = getUser();
+        if (userObj != null && userObj.has("email") && userObj.has("registered")) {
+            // check if the email is valid
+            int registered = userObj.get("registered").getAsInt();
+            if (registered == 1) {
+                FileManager.setItem("jwt", userObj.get("plugin_jwt").getAsString());
+                FileManager.setItem("name", userObj.get("email").getAsString());
+                return true;
+            }
+        }
+
+        String api = "/users/plugin/state";
+        SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, pluginjwt);
+        if (resp.isOk()) {
+            // check if we have the data and jwt
+            // resp.data.jwt and resp.data.user
+            // then update the session.json for the jwt
+            JsonObject data = resp.getJsonObj();
+            String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
+            // check if we have any data
+            if (state.equals("OK")) {
+                String dataJwt = data.get("jwt").getAsString();
+                FileManager.setItem("jwt", dataJwt);
+                String dataEmail = data.get("email").getAsString();
+                if (dataEmail != null) {
+                    FileManager.setItem("name", dataEmail);
                 }
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
+    private static JsonObject getUser() {
+        String jwt = FileManager.getItem("jwt");
+        String api = "/users/me";
+        SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+        if (resp.isOk()) {
+            // check if we have the data and jwt
+            // resp.data.jwt and resp.data.user
+            // then update the session.json for the jwt
+            JsonObject obj = resp.getJsonObj();
+            if (obj != null && obj.has("data")) {
+                return obj.get("data").getAsJsonObject();
             }
         }
         return null;
-    }
-
-    private static boolean isLoggedOn(boolean serverIsOnline) {
-        String jwt = FileManager.getItem("jwt");
-        if (serverIsOnline) {
-            JsonObject userObj = getUser(serverIsOnline);
-            if (userObj != null && userObj.has("email")) {
-                // check if the email is valid
-                String email = userObj.get("email").getAsString();
-                if (validateEmail(email)) {
-                    FileManager.setItem("jwt", userObj.get("plugin_jwt").getAsString());
-                    FileManager.setItem("name", email);
-                    return true;
-                }
-            }
-            String api = "/users/plugin/state";
-            SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
-            if (resp.isOk()) {
-                // check if we have the data and jwt
-                // resp.data.jwt and resp.data.user
-                // then update the session.json for the jwt
-                JsonObject data = resp.getJsonObj();
-                // check if we have any data
-                String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
-                if (state.equals("OK")) {
-                    String dataJwt = data.get("jwt").getAsString();
-                    FileManager.setItem("jwt", dataJwt);
-                    String dataEmail = data.get("email").getAsString();
-                    if (dataEmail != null) {
-                        FileManager.setItem("name", dataEmail);
-                    }
-                    return true;
-                } else if (state.equals("NOT_FOUND")) {
-                    FileManager.setItem("jwt", null);
-                }
-            }
-        }
-        FileManager.setItem("name", null);
-        return false;
-    }
-
-    public static UserStatus getUserStatus() {
-        UserStatus currentUserStatus = new UserStatus();
-        if (loggedInCacheState) {
-            currentUserStatus.loggedIn = true;
-            return currentUserStatus;
-        }
-        
-        boolean serverIsOnline = isServerOnline();
-
-        boolean loggedIn = isLoggedOn(serverIsOnline);
-
-        currentUserStatus.loggedIn = loggedIn;
-
-        loggedInCacheState = loggedIn;
-
-        return currentUserStatus;
     }
     
     public static void sendHeartbeat(String reason) {
@@ -1071,9 +882,9 @@ public class SoftwareUtil {
     }
     
     protected static void lazilyFetchUserStatus(int retryCount) {
-        UserStatus userStatus = getUserStatus();
+        boolean loggedOn = getUserLoginState();
 
-        if (!userStatus.loggedIn && retryCount > 0) {
+        if (!loggedOn && retryCount > 0) {
             final int newRetryCount = retryCount - 1;
             SwingUtilities.invokeLater(() -> {
                 try {

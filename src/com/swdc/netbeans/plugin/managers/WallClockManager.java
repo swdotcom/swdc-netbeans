@@ -60,17 +60,13 @@ public class WallClockManager {
 
     public void newDayChecker() {
         if (SoftwareUtil.isNewDay()) {
-            // send the payloads
-            FileManager.sendOfflineData();
 
             // clear the last payload we have in memory
             FileManager.clearLastSavedKeystrokeStats();
 
-            // send the time data
-            TimeDataManager.sendOfflineTimeData();
-
             // clear the wc time and the session summary and the file change info summary
             clearWcTime();
+            
             SessionDataManager.clearSessionSummaryData();
             TimeDataManager.clearTimeDataSummary();
             FileAggregateDataManager.clearFileChangeInfoSummaryData();

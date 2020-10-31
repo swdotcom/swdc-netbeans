@@ -246,11 +246,6 @@ public class KeystrokeCount {
                 // send the event to the event tracker
                 EventTrackerManager.getInstance().trackCodeTimeEvent(this);
 
-                final String payload = SoftwareUtil.gson.toJson(this);
-
-                // store to send later
-                FileManager.storePayload(payload);
-
                 // refresh the code time tree view
                 WallClockManager.getInstance().dispatchStatusViewUpdate();
 
