@@ -41,7 +41,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     public static enum StatusBarType {
         PAW("com/swdc/netbeans/plugin/assets/paw-grey.png"),
         ROCKET("com/swdc/netbeans/plugin/assets/rocket.png"),
-        OFF("com/swdc/netbeans/plugin/assets/clock.png");
+        OFF("com/swdc/netbeans/plugin/assets/status-clock.png");
 
         private Icon icon;
 
@@ -79,25 +79,15 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     public void updateMessage(StatusBarType status, String text, String tooltip) {
         String name = FileManager.getItem("name");
         
-        if ( showStatusText ) {
-            lastMsg = text;
-            lastTooltip = tooltip;
-            lastStatusType = status;
-            statusLabel.setText(text + " ");
-        }
-        
-        if (tooltip != null && name != null && !name.equals("")) {
+        tooltip = tooltip == null ? "" : tooltip;
+        if (name != null && !name.equals("")) {
             tooltip += " (" + name + ")";
         }
-        
-        if (!showStatusText) {
-            tooltip = lastMsg + " | " + tooltip;
-            status = StatusBarType.OFF;
-            statusLabel.setText(" ");
-        }
-        
+
+        text = text == null ? " " : text + " ";
         
         statusLabel.setToolTipText(tooltip);
+        statusLabel.setText(text);
         switch (status) {
             case ROCKET:
                 statusLabel.setIcon(StatusBarType.ROCKET.icon);

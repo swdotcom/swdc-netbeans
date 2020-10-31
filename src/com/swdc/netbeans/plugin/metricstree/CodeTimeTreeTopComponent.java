@@ -88,65 +88,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         }
     }
     
-    public static void updateMetrics(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
-        
-        // update the toggle node label
-        String toggleText = "Hide status bar metrics";
-        if (!SoftwareUtil.showingStatusText()) {
-            toggleText = "Show status bar metrics";
-        }
-        
-        updateNodeLabel(findNodeById(TreeHelper.TOGGLE_METRICS_ID), toggleText);
-        
-        MetricLabels mLabels = new MetricLabels();
-        mLabels.updateLabels(codeTimeSummary, sessionSummary);
-        
-        if (codeTimeSummary != null && sessionSummary != null) {
-            updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID), mLabels.activeCodeTimeGlobalAvg);
-            
-            MetricTreeNode activeCodeTimeAvgNode = findNodeById(TreeHelper.ACTIVE_CODETIME_AVG_TODAY_ID);
-            updateNodeLabel(activeCodeTimeAvgNode, mLabels.activeCodeTimeAvg);
-            updateNodeIconName(activeCodeTimeAvgNode, mLabels.activeCodeTimeAvgIcon);
-            
-            updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_TODAY_ID), mLabels.activeCodeTime);
-            
-            updateNodeLabel(findNodeById(TreeHelper.CODETIME_TODAY_ID), mLabels.codeTime);
-        }
-        
-        if (sessionSummary != null) {
-            // all of the other metrics can be updated
-            // LINES DELETED
-            updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_GLOBAL_AVG_TODAY_ID), mLabels.linesRemovedGlobalAvg);
-            
-            MetricTreeNode linesDeletedAvgNode = findNodeById(TreeHelper.LINES_DELETED_AVG_TODAY_ID);
-            updateNodeLabel(linesDeletedAvgNode, mLabels.linesRemovedAvg);
-            updateNodeIconName(linesDeletedAvgNode, mLabels.linesRemovedAvgIcon);
-            
-            updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_TODAY_ID), mLabels.linesRemoved);
-            
-            // LINES ADDED
-            updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_GLOBAL_AVG_TODAY_ID), mLabels.linesAddedGlobalAvg);
-            
-            MetricTreeNode linesAddedAvgNode = findNodeById(TreeHelper.LINES_ADDED_AVG_TODAY_ID);
-            updateNodeLabel(linesAddedAvgNode, mLabels.linesAddedAvg);
-            updateNodeIconName(linesAddedAvgNode, mLabels.linesAddedAvgIcon);
-            
-            updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_TODAY_ID), mLabels.linesAdded);
-            
-            // KEYSTROKES
-            updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_GLOBAL_AVG_TODAY_ID), mLabels.keystrokesGlobalAvg);
-            
-            MetricTreeNode keystrokesAvgNode = findNodeById(TreeHelper.KEYSTROKES_AVG_TODAY_ID);
-            updateNodeLabel(keystrokesAvgNode, mLabels.keystrokesAvg);
-            updateNodeIconName(keystrokesAvgNode, mLabels.keystrokesAvgIcon);
-            
-            updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_TODAY_ID), mLabels.keystrokes);
-        }
-        
-        metricTree.updateUI();
-        
-    }
-    
     private static void updateNodeLabel(MetricTreeNode node, String label) {
         if (node != null) {
             node.updateLabel(label);
@@ -192,7 +133,11 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     }
 
     public static void refreshTree() {
-        //
+        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
+        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
+        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
+        
+        updateMetrics(codeTimeSummary, sessionSummary);
     }
 
     public static void openTree() {
@@ -324,5 +269,63 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         }
         
         return new DefaultTreeModel(root);
+    }
+    
+    public static void updateMetrics(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
+        
+        // update the toggle node label
+        String toggleText = "Hide status bar metrics";
+        if (!SoftwareUtil.showingStatusText()) {
+            toggleText = "Show status bar metrics";
+        }
+        
+        updateNodeLabel(findNodeById(TreeHelper.TOGGLE_METRICS_ID), toggleText);
+        
+        MetricLabels mLabels = new MetricLabels();
+        mLabels.updateLabels(codeTimeSummary, sessionSummary);
+        
+        if (codeTimeSummary != null && sessionSummary != null) {
+            updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID), mLabels.activeCodeTimeGlobalAvg);
+            
+            MetricTreeNode activeCodeTimeAvgNode = findNodeById(TreeHelper.ACTIVE_CODETIME_AVG_TODAY_ID);
+            updateNodeLabel(activeCodeTimeAvgNode, mLabels.activeCodeTimeAvg);
+            updateNodeIconName(activeCodeTimeAvgNode, mLabels.activeCodeTimeAvgIcon);
+            
+            updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_TODAY_ID), mLabels.activeCodeTime);
+            
+            updateNodeLabel(findNodeById(TreeHelper.CODETIME_TODAY_ID), mLabels.codeTime);
+        }
+        
+        if (sessionSummary != null) {
+            // all of the other metrics can be updated
+            // LINES DELETED
+            updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_GLOBAL_AVG_TODAY_ID), mLabels.linesRemovedGlobalAvg);
+            
+            MetricTreeNode linesDeletedAvgNode = findNodeById(TreeHelper.LINES_DELETED_AVG_TODAY_ID);
+            updateNodeLabel(linesDeletedAvgNode, mLabels.linesRemovedAvg);
+            updateNodeIconName(linesDeletedAvgNode, mLabels.linesRemovedAvgIcon);
+            
+            updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_TODAY_ID), mLabels.linesRemoved);
+            
+            // LINES ADDED
+            updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_GLOBAL_AVG_TODAY_ID), mLabels.linesAddedGlobalAvg);
+            
+            MetricTreeNode linesAddedAvgNode = findNodeById(TreeHelper.LINES_ADDED_AVG_TODAY_ID);
+            updateNodeLabel(linesAddedAvgNode, mLabels.linesAddedAvg);
+            updateNodeIconName(linesAddedAvgNode, mLabels.linesAddedAvgIcon);
+            
+            updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_TODAY_ID), mLabels.linesAdded);
+            
+            // KEYSTROKES
+            updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_GLOBAL_AVG_TODAY_ID), mLabels.keystrokesGlobalAvg);
+            
+            MetricTreeNode keystrokesAvgNode = findNodeById(TreeHelper.KEYSTROKES_AVG_TODAY_ID);
+            updateNodeLabel(keystrokesAvgNode, mLabels.keystrokesAvg);
+            updateNodeIconName(keystrokesAvgNode, mLabels.keystrokesAvgIcon);
+            
+            updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_TODAY_ID), mLabels.keystrokes);
+        }
+        
+        metricTree.updateUI();
     }
 }
