@@ -190,7 +190,6 @@ public class TreeHelper {
         // build the most edited files nodes
         // sort the fileChangeInfoMap based on keystrokes
         List<Map.Entry<String, FileChangeInfo>> entryList = null;
-
         if (!fileChangeInfoMap.isEmpty()) {
             if (sortBy.equals("kpm")) {
                 entryList = sortByKpm(fileChangeInfoMap);
@@ -198,8 +197,12 @@ public class TreeHelper {
                 entryList = sortByKeystrokes(fileChangeInfoMap);
             } else if (sortBy.equals("codetime")) {
                 entryList = sortByFileSeconds(fileChangeInfoMap);
+            } else {
+                entryList = new ArrayList<>(fileChangeInfoMap.entrySet());
             }
-            
+        }
+        
+        if (entryList != null && entryList.size() > 0) {
             int count = 0;
             // go from the end
             for (int i = entryList.size() - 1; i >= 0; i--) {
@@ -236,7 +239,6 @@ public class TreeHelper {
                 count++;
             }
         } else {
-            entryList = new ArrayList<Map.Entry<String, FileChangeInfo>>(fileChangeInfoMap.entrySet());
             MetricTreeNode node = new MetricTreeNode("<empty>", "files.png", null);
             treeNode.add(node);
         }

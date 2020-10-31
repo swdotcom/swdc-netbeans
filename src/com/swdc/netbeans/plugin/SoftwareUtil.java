@@ -705,7 +705,6 @@ public class SoftwareUtil {
         if (legacyFile.exists()) {
             legacyFile.delete();
         }
-        
     }
     
     private static String getSingleLineResult(List<String> cmd, int maxLen) {
@@ -1222,7 +1221,16 @@ public class SoftwareUtil {
     }
     
     public static void launchFile(String fsPath) {
-        // TODO: launch file in text editor
+        File f = new File(fsPath);
+        
+        try {
+            // open the file in the editor
+            FileObject fo = FileUtil.createData(f);
+            DataObject d = DataObject.find(fo);
+            NbDocument.openDocument(d, PLUGIN_ID, Line.ShowOpenType.OPEN, Line.ShowVisibilityType.FOCUS);
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
+        }
     }
     
     public static boolean showingStatusText() {
