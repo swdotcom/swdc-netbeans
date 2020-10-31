@@ -19,41 +19,31 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
     private String iconName;
     private Object data;
     private boolean expanded = false;
-    private boolean leaf = false;
     private boolean separator = false;
     private String label;
     
     public MetricTreeNode(boolean isSeparator) {
         this.separator = isSeparator;
-        this.init(null, "separator", null, true);
+        this.init("", null, "separator");
     }
 
-    public MetricTreeNode(String label, boolean isLeaf) {
-        this.init(label, label, null, isLeaf);
-    }
-
-    public MetricTreeNode(String label, String iconName, boolean isLeaf) {
-        this.init(label, label, iconName, isLeaf);
-    }
-
-    public MetricTreeNode(String label, String iconName, String id, boolean isLeaf) {
-        this.init(label, id, iconName, isLeaf);
+    public MetricTreeNode(String label, String iconName, String id) {
+        this.init(label, iconName, id);
     }
     
-    private void init(String label, String id, String iconName, boolean isLeaf) {
+    private void init(String label, String iconName, String nodeId) {
         this.label = label;
-        this.id = id;
+        this.id = nodeId == null ? "" : nodeId;
         this.iconName = iconName;
-        this.leaf = isLeaf;
-        this.expanded = !isLeaf;
         this.initModel();
     }
     
     public void updateLabel(String label) {
         this.label = label;
-        if (id.equals("toggle_metrics")) {
-            System.out.println("label: " + label);
-        }
+    }
+    
+    public void updateIconName(String iconName) {
+        this.iconName = iconName;
     }
     
     public boolean isSeparator() {
@@ -69,7 +59,7 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
     }
 
     public boolean isLeaf() {
-        return leaf;
+        return getChildCount() == 0;
     }
 
     private void initModel() {
@@ -122,9 +112,6 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
     
     @Override
     public String toString() {
-        if (id.equals("toggle_metrics")) {
-            System.out.println("label: " + label);
-        }
         return label;
     }
 }

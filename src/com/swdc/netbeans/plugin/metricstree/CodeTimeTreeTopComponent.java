@@ -96,22 +96,67 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             toggleText = "Show status bar metrics";
         }
         
-        MetricTreeNode toggleNode = findNodeById(TreeHelper.TOGGLE_METRICS_ID);
-        if (toggleNode != null) {
-            toggleNode.updateLabel(toggleText);
-            
-        }
+        updateNodeLabel(findNodeById(TreeHelper.TOGGLE_METRICS_ID), toggleText);
         
-        if (codeTimeSummary != null) {
-            // the code time today metric can be updated
-        }
+        MetricLabels mLabels = new MetricLabels();
+        mLabels.updateLabels(codeTimeSummary, sessionSummary);
         
         if (codeTimeSummary != null && sessionSummary != null) {
+            updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID), mLabels.activeCodeTimeGlobalAvg);
+            
+            MetricTreeNode activeCodeTimeAvgNode = findNodeById(TreeHelper.ACTIVE_CODETIME_AVG_TODAY_ID);
+            updateNodeLabel(activeCodeTimeAvgNode, mLabels.activeCodeTimeAvg);
+            updateNodeIconName(activeCodeTimeAvgNode, mLabels.activeCodeTimeAvgIcon);
+            
+            updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_TODAY_ID), mLabels.activeCodeTime);
+            
+            updateNodeLabel(findNodeById(TreeHelper.CODETIME_TODAY_ID), mLabels.codeTime);
+        }
+        
+        if (sessionSummary != null) {
             // all of the other metrics can be updated
+            // LINES DELETED
+            updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_GLOBAL_AVG_TODAY_ID), mLabels.linesRemovedGlobalAvg);
+            
+            MetricTreeNode linesDeletedAvgNode = findNodeById(TreeHelper.LINES_DELETED_AVG_TODAY_ID);
+            updateNodeLabel(linesDeletedAvgNode, mLabels.linesRemovedAvg);
+            updateNodeIconName(linesDeletedAvgNode, mLabels.linesRemovedAvgIcon);
+            
+            updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_TODAY_ID), mLabels.linesRemoved);
+            
+            // LINES ADDED
+            updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_GLOBAL_AVG_TODAY_ID), mLabels.linesAddedGlobalAvg);
+            
+            MetricTreeNode linesAddedAvgNode = findNodeById(TreeHelper.LINES_ADDED_AVG_TODAY_ID);
+            updateNodeLabel(linesAddedAvgNode, mLabels.linesAddedAvg);
+            updateNodeIconName(linesAddedAvgNode, mLabels.linesAddedAvgIcon);
+            
+            updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_TODAY_ID), mLabels.linesAdded);
+            
+            // KEYSTROKES
+            updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_GLOBAL_AVG_TODAY_ID), mLabels.keystrokesGlobalAvg);
+            
+            MetricTreeNode keystrokesAvgNode = findNodeById(TreeHelper.KEYSTROKES_AVG_TODAY_ID);
+            updateNodeLabel(keystrokesAvgNode, mLabels.keystrokesAvg);
+            updateNodeIconName(keystrokesAvgNode, mLabels.keystrokesAvgIcon);
+            
+            updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_TODAY_ID), mLabels.keystrokes);
         }
         
         metricTree.updateUI();
         
+    }
+    
+    private static void updateNodeLabel(MetricTreeNode node, String label) {
+        if (node != null) {
+            node.updateLabel(label);
+        }
+    }
+    
+    private static void updateNodeIconName(MetricTreeNode node, String iconName) {
+        if (node != null) {
+            node.updateIconName(iconName);
+        }
     }
     
     private static MetricTreeNode findNodeById(String id) {
@@ -127,6 +172,14 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
                         MetricTreeNode node = (MetricTreeNode) nodes.nextElement();
                         if (node != null && node.getId().equals(id)) {
                             return node;
+                        } else if (node != null && node.getChildCount() > 0) {
+                            // check its children
+                            for (int i = 0; i < node.getChildCount(); i++) {
+                                MetricTreeNode childNode = (MetricTreeNode) node.getChildAt(i);
+                                if (childNode != null && childNode.getId().equals(id)) {
+                                    return childNode;
+                                }
+                            }
                         }
                     }
                 }
@@ -254,13 +307,15 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
         Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
+        
+        MetricLabels mLabels = new MetricLabels();
+        mLabels.updateLabels(codeTimeSummary, sessionSummary);
 
-
-        root.add(TreeHelper.buildCodeTimeTree(codeTimeSummary));
-        root.add(TreeHelper.buildActiveCodeTimeTree(codeTimeSummary, sessionSummary));
-        root.add(TreeHelper.buildLinesAddedTree(sessionSummary));
-        root.add(TreeHelper.buildLinesRemovedTree(sessionSummary));
-        root.add(TreeHelper.buildKeystrokesTree(sessionSummary));
+        root.add(TreeHelper.buildCodeTimeTree(mLabels));
+        root.add(TreeHelper.buildActiveCodeTimeTree(mLabels));
+        root.add(TreeHelper.buildLinesAddedTree(mLabels));
+        root.add(TreeHelper.buildLinesRemovedTree(mLabels));
+        root.add(TreeHelper.buildKeystrokesTree(mLabels));
         root.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
         root.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
         root.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
