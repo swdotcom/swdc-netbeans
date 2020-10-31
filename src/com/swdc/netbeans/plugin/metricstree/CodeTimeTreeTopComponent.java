@@ -12,9 +12,7 @@ import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -58,10 +56,9 @@ import org.openide.windows.WindowManager;
 public final class CodeTimeTreeTopComponent extends TopComponent {
     
     public static final Logger LOG = Logger.getLogger("CodeTimeTreeTopComponent");
-
-    private static final Map<String, List<ExpandState>> expandStateMap = new HashMap<>();
     
     private static MetricTree metricTree;
+    private static boolean expandInitialized = false;
 
     public CodeTimeTreeTopComponent() {
         initComponents();
@@ -73,23 +70,22 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     
     protected void init() {
         metricTree = buildCodeTimeTreeView();
+        
+        if (!expandInitialized) {
+            // expand the code time and active code time paths
+            MetricTreeNode activeCodeTimeParentNode = findNodeById(TreeHelper.ACTIVE_CODETIME_PARENT_ID);
+            if (activeCodeTimeParentNode != null) {
+                TreePath nodeTreePath = activeCodeTimeParentNode.getNodeTreePath();
+                metricTree.expandPath(nodeTreePath);
+            }
+            expandInitialized = true;
+        }
 
         scrollPane.setViewportView(metricTree);
         scrollPane.setVisible(true);
 
         this.updateUI();
         this.setVisible(true);
-    }
-
-    public static class ExpandState {
-
-        public boolean expand = false;
-        public TreePath path = null;
-
-        public ExpandState(boolean expand, TreePath path) {
-            this.expand = expand;
-            this.path = path;
-        }
     }
     
     private static void updateNodeLabel(MetricTreeNode node, String label) {
@@ -166,35 +162,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         }
     }
 
-    public static void updateExpandState(String id, TreePath path, boolean expanded) {
-        ExpandState state = new ExpandState(expanded, path);
-        List<ExpandState> existingStates = expandStateMap.get(id);
-        if (existingStates == null) {
-            existingStates = new ArrayList<>();
-            existingStates.add(state);
-        } else {
-            boolean foundExisting = false;
-            for (ExpandState s : existingStates) {
-                String pathStr = s.path.toString();
-                String tPathStr = path.toString();
-                if (pathStr.equals(tPathStr)) {
-                    s.expand = expanded;
-                    foundExisting = true;
-                    break;
-                }
-            }
-            if (!foundExisting) {
-                existingStates.add(state);
-            }
-        }
-
-        expandStateMap.put(id, existingStates);
-    }
-
-    public static List<ExpandState> getExpandState(String id) {
-        return expandStateMap.get(id);
-    }
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -257,14 +224,14 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
         
         List<MetricTreeNode> loginNodes = TreeHelper.buildSignupNodes();
-        for (MetricTreeNode node : loginNodes) {
+        loginNodes.forEach(node -> {
             root.add(node);
-        }
+        });
         
         List<MetricTreeNode> menuNodes = TreeHelper.buildMenuNodes();
-        for (MetricTreeNode node : menuNodes) {
+        menuNodes.forEach(node -> {
             root.add(node);
-        }
+        });
         
         root.add(new MetricTreeNode(true));
         

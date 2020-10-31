@@ -45,7 +45,9 @@ public class TreeHelper {
     public static final String ADVANCED_METRICS_ID = "advanced_metrics";
     public static final String TOGGLE_METRICS_ID = "toggle_metrics";
     public static final String VIEW_SUMMARY_ID = "view_summary";
+    public static final String CODETIME_PARENT_ID = "codetime_parent";
     public static final String CODETIME_TODAY_ID = "codetime_today";
+    public static final String ACTIVE_CODETIME_PARENT_ID = "active_codetime_parent";
     public static final String ACTIVE_CODETIME_TODAY_ID = "active_codetime_today";
     public static final String ACTIVE_CODETIME_AVG_TODAY_ID = "active_codetime_avg_today";
     public static final String ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID = "active_codetime_global_avg_today";
@@ -128,7 +130,7 @@ public class TreeHelper {
     }
     
     public static MetricTreeNode buildActiveCodeTimeTree(MetricLabels mLabels) {
-        MetricTreeNode treeNode = new MetricTreeNode("Active code time", null, null);
+        MetricTreeNode treeNode = new MetricTreeNode("Active code time", null, ACTIVE_CODETIME_PARENT_ID);
         treeNode.add(new MetricTreeNode(mLabels.activeCodeTime, "rocket.png", ACTIVE_CODETIME_TODAY_ID));
         treeNode.add(new MetricTreeNode(mLabels.activeCodeTimeAvg, mLabels.activeCodeTimeAvgIcon, ACTIVE_CODETIME_AVG_TODAY_ID));
         treeNode.add(new MetricTreeNode(mLabels.activeCodeTimeGlobalAvg, "global-grey.svg", ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID));
@@ -136,7 +138,7 @@ public class TreeHelper {
     }
     
     public static MetricTreeNode buildCodeTimeTree(MetricLabels mLabels) {
-        MetricTreeNode treeNode = new MetricTreeNode("Code time", null, null);
+        MetricTreeNode treeNode = new MetricTreeNode("Code time", null, CODETIME_PARENT_ID);
         treeNode.add(new MetricTreeNode(mLabels.codeTime, "rocket.png", CODETIME_TODAY_ID));
         return treeNode;
     }

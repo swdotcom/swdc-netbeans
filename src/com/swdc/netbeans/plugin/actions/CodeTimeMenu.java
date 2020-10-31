@@ -7,6 +7,7 @@ package com.swdc.netbeans.plugin.actions;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
+import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
@@ -165,11 +166,16 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
         @Override
         public void actionPerformed(ActionEvent e) {
             SoftwareUtil.toggleStatusBar(UIInteractionType.keyboard);
+            CodeTimeTreeTopComponent.updateMetrics(null, null);
         }
 
         @Override
         public JMenuItem getMenuPresenter() {
-            JMenuItem item = new JMenuItem("Show/hide status bar metrics");
+            String toggleText = "Hide status bar metrics";
+            if (!SoftwareUtil.showingStatusText()) {
+                toggleText = "Show status bar metrics";
+            }
+            JMenuItem item = new JMenuItem(toggleText);
             item.addActionListener(this);
             return item;
         }
