@@ -1075,16 +1075,13 @@ public class SoftwareUtil {
 
         if (!userStatus.loggedIn && retryCount > 0) {
             final int newRetryCount = retryCount - 1;
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(10000);
-                        lazilyFetchUserStatus(newRetryCount);
-                    }
-                    catch (InterruptedException e){
-                        System.err.println(e);
-                    }
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    Thread.sleep(10000);
+                    lazilyFetchUserStatus(newRetryCount);
+                }
+                catch (InterruptedException e){
+                    System.err.println(e);
                 }
             });
         }
@@ -1107,16 +1104,13 @@ public class SoftwareUtil {
             LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
         }
 
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(10000);
-                    lazilyFetchUserStatus(10);
-                }
-                catch (InterruptedException e){
-                    System.err.println(e);
-                }
+        SwingUtilities.invokeLater(() -> {
+            try {
+                Thread.sleep(10000);
+                lazilyFetchUserStatus(10);
+            }
+            catch (InterruptedException e){
+                System.err.println(e);
             }
         });
     }

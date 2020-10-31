@@ -14,6 +14,7 @@ import java.awt.event.MouseEvent;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JTree;
+import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 public class MetricTree extends JTree {
@@ -30,10 +31,8 @@ public class MetricTree extends JTree {
             @Override
             public void mouseClicked(MouseEvent e) {
                 try {
-                    MetricTree tree = (MetricTree) e.getSource();
+                    final MetricTree tree = (MetricTree) e.getSource();
                     if (tree != null) {
-                        
-                        // TreePath selectionPath = tree.getSelectionPath();
 
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
 
@@ -44,21 +43,18 @@ public class MetricTree extends JTree {
                         if (node instanceof MetricTreeNode) {
                             TreeHelper.handleClickEvent((MetricTreeNode) node);
                         }
+                        
+                        SwingUtilities.invokeLater(() -> {
+                            try {
+                                Thread.sleep(750);
+                                tree.clearSelection();
+                            } catch (InterruptedException e1) {
+                                System.err.println(e1);
+                            }
+                        });
                     }
                 } catch (Exception ex) {
-                    LOG.log(Level.INFO, "Tree mouse click error: {0}", ex.toString());
-                }
-            }
-            
-            @Override
-            public void mouseExited(MouseEvent e) {
-                try {
-                    MetricTree tree = (MetricTree) e.getSource();
-                    if (tree != null) {
-                        tree.clearSelection();
-                    }
-                } catch (Exception ex) {
-                    //
+                    LOG.log(Level.WARNING, "Tree mouse click error: {0}", ex.toString());
                 }
             }
         });

@@ -268,46 +268,43 @@ public class FileManager {
     }
 
     public static void openReadmeFile(UIInteractionType interactionType) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                Project p = SoftwareUtil.getOpenProject();
-                if (p == null) {
-                    return;
-                }
-
-                UIElementEntity elementEntity = new UIElementEntity();
-                elementEntity.element_name = interactionType == UIInteractionType.click ? "ct_learn_more_btn" : "ct_learn_more_cmd";
-                elementEntity.element_location = interactionType == UIInteractionType.click ? "ct_menu_tree" : "ct_command_palette";
-                elementEntity.color = interactionType == UIInteractionType.click ? "yellow" : null;
-                elementEntity.cta_text = "Learn more";
-                elementEntity.icon_name = interactionType == UIInteractionType.click ? "document" : null;
-                EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
-
-                String fileContent = getReadmeContent();
-
-                String readmeFile = SoftwareUtil.getReadmeFile();
-                File f = new File(readmeFile);
-                if (!f.exists()) {
-                    Writer writer = null;
-                    // write the summary content
-                    try {
-                        writer = new BufferedWriter(new OutputStreamWriter(
-                                new FileOutputStream(new File(readmeFile)), StandardCharsets.UTF_8));
-                        writer.write(fileContent);
-                    } catch (IOException ex) {
-                        // Report
-                    } finally {
-                        try {
-                            if (writer != null) {
-                                writer.close();
-                            }
-                        } catch (Exception ex) {/*ignore*/}
-                    }
-                }
-
-                SoftwareUtil.launchFile(f.getPath());
+        SwingUtilities.invokeLater(() -> {
+            Project p = SoftwareUtil.getOpenProject();
+            if (p == null) {
+                return;
             }
+            
+            UIElementEntity elementEntity = new UIElementEntity();
+            elementEntity.element_name = interactionType == UIInteractionType.click ? "ct_learn_more_btn" : "ct_learn_more_cmd";
+            elementEntity.element_location = interactionType == UIInteractionType.click ? "ct_menu_tree" : "ct_command_palette";
+            elementEntity.color = interactionType == UIInteractionType.click ? "yellow" : null;
+            elementEntity.cta_text = "Learn more";
+            elementEntity.icon_name = interactionType == UIInteractionType.click ? "document" : null;
+            EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
+            
+            String fileContent = getReadmeContent();
+            
+            String readmeFile = SoftwareUtil.getReadmeFile();
+            File f = new File(readmeFile);
+            if (!f.exists()) {
+                Writer writer = null;
+                // write the summary content
+                try {
+                    writer = new BufferedWriter(new OutputStreamWriter(
+                            new FileOutputStream(new File(readmeFile)), StandardCharsets.UTF_8));
+                    writer.write(fileContent);
+                } catch (IOException ex) {
+                    // Report
+                } finally {
+                    try {
+                        if (writer != null) {
+                            writer.close();
+                        }
+                    } catch (Exception ex) {/*ignore*/}
+                }
+            }
+            
+            SoftwareUtil.launchFile(f.getPath());
         });
     }
 

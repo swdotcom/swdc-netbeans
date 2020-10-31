@@ -9,7 +9,6 @@ import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileAggregateDataManager;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
-import static com.swdc.netbeans.plugin.metricstree.MetricTree.LOG;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
@@ -100,6 +99,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         MetricTreeNode toggleNode = findNodeById(TreeHelper.TOGGLE_METRICS_ID);
         if (toggleNode != null) {
             toggleNode.updateLabel(toggleText);
+            
         }
         
         if (codeTimeSummary != null) {
@@ -109,6 +109,8 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         if (codeTimeSummary != null && sessionSummary != null) {
             // all of the other metrics can be updated
         }
+        
+        metricTree.updateUI();
         
     }
     
