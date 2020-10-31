@@ -5,8 +5,8 @@
  */
 package com.swdc.netbeans.plugin.status;
 
-import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileManager;
+import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
@@ -58,7 +58,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
             statusLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    SoftwareUtil.launchCodeTimeMetricsDashboard();
+                    CodeTimeTreeTopComponent.openTree();
                 }
             });
         }

@@ -6,7 +6,6 @@
 package com.swdc.netbeans.plugin.managers;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import static com.swdc.netbeans.plugin.SoftwareUtil.TELEMETRY_ON;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
 
@@ -35,8 +34,8 @@ public class StatusBarManager {
     }
     
     public static void updateTelementry(boolean telemetryOn) {
-        TELEMETRY_ON = telemetryOn;
-        if (!TELEMETRY_ON) {
+        SoftwareUtil.TELEMETRY_ON = telemetryOn;
+        if (!SoftwareUtil.TELEMETRY_ON) {
             setStatusLineMessage(SoftwareStatusBar.StatusBarType.OFF, "<S> Paused", "Enable metrics to resume");
         } else {
             updateStatusBar();

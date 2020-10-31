@@ -11,8 +11,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 import com.swdc.netbeans.plugin.managers.SoftwareHttpManager;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
@@ -29,18 +27,15 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -73,7 +68,6 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import org.apache.commons.codec.binary.Base64;
@@ -92,7 +86,6 @@ import org.netbeans.api.autoupdate.UpdateUnit;
 import org.netbeans.api.editor.EditorRegistry;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
-import org.netbeans.api.project.ProjectInformation;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.modules.parsing.api.Source;
 import org.openide.awt.HtmlBrowser.URLDisplayer;
@@ -879,23 +872,6 @@ public class SoftwareUtil {
             if (!resp.isOk()) {
                 LOG.log(Level.WARNING, "Code Time: unable to send heartbeat ping");
             }
-        }
-    }
-    
-    protected static void lazilyFetchUserStatus(int retryCount) {
-        boolean loggedOn = getUserLoginState();
-
-        if (!loggedOn && retryCount > 0) {
-            final int newRetryCount = retryCount - 1;
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    Thread.sleep(10000);
-                    lazilyFetchUserStatus(newRetryCount);
-                }
-                catch (InterruptedException e){
-                    System.err.println(e);
-                }
-            });
         }
     }
     

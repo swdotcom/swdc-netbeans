@@ -147,6 +147,9 @@ public class SoftwareSessionManager {
             Object[] options = { "OK" };
             JOptionPane.showOptionDialog(null, infoMsg, "Code Time Setup Complete", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
                     null, options, options[0]);
+            
+            // rebuild the tree
+            CodeTimeTreeTopComponent.rebuildTree();
         }
     }
 
