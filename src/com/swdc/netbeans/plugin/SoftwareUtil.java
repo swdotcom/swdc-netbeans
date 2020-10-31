@@ -19,6 +19,7 @@ import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.managers.EventTrackerManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.OfflineManager;
+import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import com.swdc.netbeans.plugin.models.FileDetails;
 import com.swdc.netbeans.plugin.models.NetbeansProject;
@@ -527,7 +528,7 @@ public class SoftwareUtil {
                     JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
             if (choice == 0) {
-                launchLogin("email");
+                SoftwareSessionManager.launchLogin("email", UIInteractionType.keyboard);
             }
         }
     }
@@ -896,34 +897,6 @@ public class SoftwareUtil {
                 }
             });
         }
-    }
-
-    public static void launchLogin(String loginType) {
-        String url = LAUNCH_URL;
-        String jwt = FileManager.getItem("jwt");
-        try {
-            jwt = URLEncoder.encode(jwt, "UTF-8");
-        } catch (UnsupportedEncodingException ex) {
-            //
-        }
-        url += "/onboarding?token=" + jwt;
-
-        try {
-            URL launchUrl = new URL(url);
-            URLDisplayer.getDefault().showURL(launchUrl);
-        } catch (MalformedURLException e) {
-            LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
-        }
-
-        SwingUtilities.invokeLater(() -> {
-            try {
-                Thread.sleep(10000);
-                lazilyFetchUserStatus(10);
-            }
-            catch (InterruptedException e){
-                System.err.println(e);
-            }
-        });
     }
     
     public static String getDashboardRow(String label, String value) {

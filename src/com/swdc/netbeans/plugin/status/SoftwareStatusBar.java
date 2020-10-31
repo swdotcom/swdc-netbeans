@@ -84,7 +84,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
             tooltip += " (" + name + ")";
         }
 
-        text = text == null ? " " : text + " ";
+        text = text == null ? "" : text + " ";
         
         statusLabel.setToolTipText(tooltip);
         statusLabel.setText(text);

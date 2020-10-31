@@ -266,38 +266,21 @@ public class TreeHelper {
         }
     }
     
-    private static final List<String> toggleItems = Arrays.asList("ct_codetime_toggle_node",
-            "ct_active_codetime_toggle_node",
-            "ct_lines_added_toggle_node",
-            "ct_lines_removed_toggle_node",
-            "ct_keystrokes_toggle_node",
-            "ct_files_changed_toggle_node",
-            "ct_top_files_by_kpm_toggle_node",
-            "ct_top_files_by_keystrokes_toggle_node",
-            "ct_top_files_by_codetime_toggle_node",
-            "ct_open_changes_toggle_node",
-            "ct_committed_today_toggle_node");
-    
-    private static String getToggleItem(String normalizedLabel) {
-        for (String toggleItem : toggleItems) {
-            // strip off "ct_" and "_toggle_node" and replace the "_" with ""
-            String normalizedToggleItem = toggleItem.replace("ct_", "").replace("_toggle_node", "").replaceAll("_", "");
-            if (normalizedLabel.toLowerCase().indexOf(normalizedToggleItem) != -1) {
-                return toggleItem;
-            }
-        }
-        return null;
-    }
-    
     public static void handleClickEvent(MetricTreeNode node) {
         switch (node.getId()) {
             case GOOGLE_SIGNUP_ID:
+                SoftwareSessionManager.launchLogin("google", UIInteractionType.click);
+                break;
             case GITHIUB_SIGNUP_ID:
+                SoftwareSessionManager.launchLogin("github", UIInteractionType.click);
+                break;
             case EMAIL_SIGNUP_ID:
+                SoftwareSessionManager.launchLogin("email", UIInteractionType.click);
                 break;
             case LOGGED_IN_ID:
                 break;
             case VIEW_SUMMARY_ID:
+                SoftwareUtil.launchCodeTimeMetricsDashboard();
                 break;
             case TOGGLE_METRICS_ID:
                 SoftwareUtil.toggleStatusBar(UIInteractionType.click);
