@@ -5,13 +5,15 @@
  */
 package com.swdc.netbeans.plugin.metricstree;
 
-import javax.swing.*;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import java.awt.*;
+import java.awt.Component;
 import java.net.URL;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JTree;
+import javax.swing.tree.DefaultTreeCellRenderer;
 
-public class MetricTreeNodeRenderer extends DefaultTreeCellRenderer {
-
+public class IconTreeCellRenderer extends DefaultTreeCellRenderer {
+    
     @Override
     public Component getTreeCellRendererComponent(
             JTree tree,
@@ -22,9 +24,10 @@ public class MetricTreeNodeRenderer extends DefaultTreeCellRenderer {
             int row,
             boolean hasFocus) {
 
-        Component component = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, true);
-
+        super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, true);
         
+        this.setBorderSelectionColor(null);
+
         Icon icon = null;
         if (value instanceof MetricTreeNode) {
             String iconName = ((MetricTreeNode)value).getIconName();
@@ -40,7 +43,7 @@ public class MetricTreeNodeRenderer extends DefaultTreeCellRenderer {
             setIcon(icon);
         }
 
-        return component;
+        return this;
     }
     
     public ImageIcon createImageIcon(String iconName, String description) {
@@ -52,5 +55,4 @@ public class MetricTreeNodeRenderer extends DefaultTreeCellRenderer {
             return null;
         }
     }
-
 }

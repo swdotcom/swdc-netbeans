@@ -18,27 +18,44 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
     private String id;
     private String iconName;
     private Object data;
-    
-    public MetricTreeNode(String label) {
+    private boolean expanded = false;
+    private boolean leaf = false;
+
+    public MetricTreeNode(String label, boolean isLeaf) {
         super(label);
-        this.id = label;
-        this.initModel();
+        this.init(label, null, isLeaf);
+    }
+
+    public MetricTreeNode(String label, String iconName, boolean isLeaf) {
+        super(label);
+        this.init(label, iconName, isLeaf);
+    }
+
+    public MetricTreeNode(String label, String iconName, String id, boolean isLeaf) {
+        super(label);
+        this.init(id, iconName, isLeaf);
     }
     
-    public MetricTreeNode(String label, String iconName) {
-        super(label);
-        this.id = label;
+    private void init(String id, String iconName, boolean isLeaf) {
+        this.id = id;
         this.iconName = iconName;
+        this.leaf = isLeaf;
+        this.expanded = !isLeaf;
         this.initModel();
     }
 
-    public MetricTreeNode(String label, String iconName, String id) {
-        super(label);
-        this.id = id;
-        this.iconName = iconName;
-        this.initModel();
+    public boolean isExpanded() {
+        return expanded;
     }
-    
+
+    public void setExpanded(boolean expanded) {
+        this.expanded = expanded;
+    }
+
+    public boolean isLeaf() {
+        return leaf;
+    }
+
     private void initModel() {
         DefaultTreeModel parentNodeModel = new DefaultTreeModel(this);
         this.setModel(parentNodeModel);
@@ -55,9 +72,8 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
 
     protected void nodeWasAdded(TreeNode node, int index) {
         if (model == null) {
-            ((MetricTreeNode)node.getParent()).nodeWasAdded(node, index);
-        }
-        else {
+            ((MetricTreeNode) node.getParent()).nodeWasAdded(node, index);
+        } else {
             int[] childIndices = new int[1];
             childIndices[0] = index;
             model.nodesWereInserted(node, childIndices);
@@ -72,12 +88,14 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
         return iconName;
     }
 
-    public Object getData() { return data; }
+    public Object getData() {
+        return data;
+    }
 
     public void setData(Object obj) {
         this.data = obj;
     }
-    
+
     public TreePath getNodeTreePath() {
         TreePath p = new TreePath(model.getPathToRoot(this));
         return p;

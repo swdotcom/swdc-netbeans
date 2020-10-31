@@ -13,6 +13,7 @@ import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
+import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -27,6 +28,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
+import javax.swing.JSeparator;
 import org.apache.commons.lang.StringUtils;
 import org.openide.awt.HtmlBrowser;
 
@@ -75,7 +77,7 @@ public class TreeHelper {
             text = "Sign up with GitHub";
             id = GITHIUB_SIGNUP_ID;
         }
-        MetricTreeNode node = new MetricTreeNode(text, iconName, id);
+        MetricTreeNode node = new MetricTreeNode(text, iconName, id, true);
         return node;
     }
     
@@ -89,7 +91,7 @@ public class TreeHelper {
             iconName = "github.png";
         }
         
-        MetricTreeNode node = new MetricTreeNode(name, iconName, LOGGED_IN_ID);
+        MetricTreeNode node = new MetricTreeNode(name, iconName, LOGGED_IN_ID, true);
         return node;
     }
     
@@ -100,17 +102,17 @@ public class TreeHelper {
         if (!SoftwareUtil.showingStatusText()) {
             toggleText = "Show status bar metrics";
         }
-        list.add(new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID));
-        list.add(new MetricTreeNode("Learn more", "readme.png", LEARN_MORE_ID));
-        list.add(new MetricTreeNode("Submit feedback", "message.png", SEND_FEEDBACK_ID));
-        list.add(new MetricTreeNode("See advanced metrics", "paw-grey.png", ADVANCED_METRICS_ID));
-        list.add(new MetricTreeNode("View summary", "dashboard.png", VIEW_SUMMARY_ID));
+        list.add(new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID, true));
+        list.add(new MetricTreeNode("Learn more", "readme.png", LEARN_MORE_ID, true));
+        list.add(new MetricTreeNode("Submit feedback", "message.png", SEND_FEEDBACK_ID, true));
+        list.add(new MetricTreeNode("See advanced metrics", "paw-grey.png", ADVANCED_METRICS_ID, true));
+        list.add(new MetricTreeNode("View summary", "dashboard.png", VIEW_SUMMARY_ID, true));
         
         return list;
     }
     
     public static MetricTreeNode buildActiveCodeTimeTree(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
-        MetricTreeNode treeNode = new MetricTreeNode("Active code time");
+        MetricTreeNode treeNode = new MetricTreeNode("Active code time", false);
         
         String min = SoftwareUtil.humanizeMinutes(codeTimeSummary.activeCodeTimeMinutes);
         String avg = SoftwareUtil.humanizeMinutes((int) sessionSummary.getAverageDailyMinutes());
@@ -118,19 +120,19 @@ public class TreeHelper {
         
         String dayStr = formatDay.format(new Date());
         
-        treeNode.add(new MetricTreeNode("Today: " + min, "rocket.png"));
+        treeNode.add(new MetricTreeNode("Today: " + min, "rocket.png", true));
         String avgIconName = sessionSummary.getAverageDailyMinutes() < sessionSummary.getCurrentDayMinutes() ? "bolt.png" : "bolt-grey.png";
-        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avg, avgIconName));
-        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvg, "global-grey.svg"));
+        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avg, avgIconName, true));
+        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvg, "global-grey.svg", true));
         
         return treeNode;
     }
     
     public static MetricTreeNode buildCodeTimeTree(CodeTimeSummary codeTimeSummary) {
-        MetricTreeNode treeNode = new MetricTreeNode("Code time");
+        MetricTreeNode treeNode = new MetricTreeNode("Code time", false);
         
         String min = SoftwareUtil.humanizeMinutes(codeTimeSummary.codeTimeMinutes);
-        treeNode.add(new MetricTreeNode("Today: " + min, "rocket.png"));
+        treeNode.add(new MetricTreeNode("Today: " + min, "rocket.png", true));
 
         return treeNode;
     }
@@ -139,14 +141,14 @@ public class TreeHelper {
         String dayStr = formatDay.format(new Date());
         
         // create the lines added nodes
-        MetricTreeNode treeNode = new MetricTreeNode("Lines added");
+        MetricTreeNode treeNode = new MetricTreeNode("Lines added", false);
         String linesAdded = SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayLinesAdded());
         String avgLinesAdded = SoftwareUtil.humanizeLongNumbers(sessionSummary.getAverageLinesAdded());
         String globalAvgLinesAdded = SoftwareUtil.humanizeLongNumbers(sessionSummary.getGlobalAverageLinesAdded());
-        treeNode.add(new MetricTreeNode("Today: " + linesAdded, "rocket.png"));
+        treeNode.add(new MetricTreeNode("Today: " + linesAdded, "rocket.png", true));
         String avgIconName = sessionSummary.getAverageLinesAdded() < sessionSummary.getCurrentDayLinesAdded() ? "bolt.png" : "bolt-grey.png";
-        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgLinesAdded, avgIconName));
-        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvgLinesAdded, "global-grey.png"));
+        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgLinesAdded, avgIconName, true));
+        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvgLinesAdded, "global-grey.png", true));
 
         return treeNode;
     }
@@ -154,28 +156,28 @@ public class TreeHelper {
     public static MetricTreeNode buildLinesRemovedTree(SessionSummary sessionSummary) {
         String dayStr = formatDay.format(new Date());
         // create the lines removed nodes
-        MetricTreeNode treeNode = new MetricTreeNode("Lines removed");
+        MetricTreeNode treeNode = new MetricTreeNode("Lines removed", false);
         String linesRemoved = SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayLinesRemoved());
         String avgLinesRemoved = SoftwareUtil.humanizeLongNumbers(sessionSummary.getAverageLinesRemoved());
         String globalAvgLinesRemoved = SoftwareUtil.humanizeLongNumbers(sessionSummary.getGlobalAverageLinesAdded());
-        treeNode.add(new MetricTreeNode("Today: " + linesRemoved, "rocket.png"));
+        treeNode.add(new MetricTreeNode("Today: " + linesRemoved, "rocket.png", true));
         String avgIconName = sessionSummary.getAverageLinesRemoved() < sessionSummary.getCurrentDayLinesRemoved() ? "bolt.svg" : "bolt-grey.png";
-        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgLinesRemoved, avgIconName));
-        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvgLinesRemoved, "global-grey.png"));
+        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgLinesRemoved, avgIconName, true));
+        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalAvgLinesRemoved, "global-grey.png", true));
         return treeNode;
     }
 
     public static MetricTreeNode buildKeystrokesTree(SessionSummary sessionSummary) {
         String dayStr = formatDay.format(new Date());
         // create the keystrokes nodes
-        MetricTreeNode treeNode = new MetricTreeNode("Keystrokes");
+        MetricTreeNode treeNode = new MetricTreeNode("Keystrokes", false);
         String keystrokes = SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayKeystrokes());
         String avgKeystrokes = SoftwareUtil.humanizeLongNumbers(sessionSummary.getAverageDailyKeystrokes());
         String globalKeystrokes = SoftwareUtil.humanizeLongNumbers(sessionSummary.getGlobalAverageDailyKeystrokes());
-        treeNode.add(new MetricTreeNode("Today: " + keystrokes, "rocket.png"));
+        treeNode.add(new MetricTreeNode("Today: " + keystrokes, "rocket.png", true));
         String avgIconName = sessionSummary.getAverageDailyKeystrokes() < sessionSummary.getCurrentDayKeystrokes() ? "bolt.png" : "bolt-grey.png";
-        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgKeystrokes, avgIconName));
-        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalKeystrokes, "global-grey.png"));
+        treeNode.add(new MetricTreeNode("Your average (" + dayStr + "): " + avgKeystrokes, avgIconName, true));
+        treeNode.add(new MetricTreeNode("Global average (" + dayStr + "): " + globalKeystrokes, "global-grey.png", true));
         return treeNode;
     }
     
@@ -192,7 +194,7 @@ public class TreeHelper {
     }
     
     private static MetricTreeNode buildTopFilesTree(String parentName, String sortBy, Map<String, FileChangeInfo> fileChangeInfoMap) {
-        MetricTreeNode treeNode = new MetricTreeNode(parentName);
+        MetricTreeNode treeNode = new MetricTreeNode(parentName, false);
         if (fileChangeInfoMap.size() == 0) {
             return null;
         }
@@ -239,7 +241,7 @@ public class TreeHelper {
             }
 
             String label = name + " | " + val;
-            MetricTreeNode editedFileNode = new MetricTreeNode(label, "files.png");
+            MetricTreeNode editedFileNode = new MetricTreeNode(label, "files.png", true);
             editedFileNode.setData(fileChangeInfoEntry.getValue());
             treeNode.add(editedFileNode);
             count++;
@@ -372,6 +374,13 @@ public class TreeHelper {
                 }
         );
         return entryList;
+    }
+    
+    public static JSeparator getSeparator() {
+        JSeparator separator = new JSeparator();
+        separator.setAlignmentY(0.0f);
+        separator.setForeground(new Color(58, 86, 187));
+        return separator;
     }
     
 }

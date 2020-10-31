@@ -5,20 +5,57 @@
  */
 package com.swdc.netbeans.plugin.metricstree;
 
-import javax.swing.*;
+import java.awt.Component;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
-import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 public class MetricTree extends JTree {
 
     public String id;
     public boolean expandState = false;
+    
+    public MetricTree(TreeModel model ) {
+        super(model);
+        
+        this.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    MetricTree tree = (MetricTree) e.getSource();
+                    if (tree != null) {
 
-    public MetricTree(String label) {
-        super(new DefaultMutableTreeNode(label));
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+
+                        if (node == null) {
+                            return;
+                        }
+
+                        if (node instanceof MetricTreeNode) {
+                            TreeHelper.handleClickEvent((MetricTreeNode) node);
+                        }
+                    }
+                } catch (Exception ex) {
+                    //
+                }
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                try {
+                    MetricTree tree = (MetricTree) e.getSource();
+                    if (tree != null) {
+                        tree.clearSelection();
+                    }
+                } catch (Exception ex) {
+                    //
+                }
+            }
+        });
     }
 
     @Override
@@ -52,4 +89,7 @@ public class MetricTree extends JTree {
         comp.setName(name);
         return super.add(comp);
     }
+    
+
+
 }

@@ -22,6 +22,8 @@ import java.util.Map;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.settings.ConvertAsProperties;
@@ -55,104 +57,23 @@ import org.openide.util.NbBundle.Messages;
     "HINT_CodeTimeTreeWindowTopComponent=This is a Code Time window"
 })
 public final class CodeTimeTreeTopComponent extends TopComponent {
-    
-    private static final Map<String, List<ExpandState>> expandStateMap = new HashMap<>();
 
+    private static final Map<String, List<ExpandState>> expandStateMap = new HashMap<>();
 
     public CodeTimeTreeTopComponent() {
         initComponents();
         setName(Bundle.CTL_CodeTimeTreeWindowTopComponent());
         setToolTipText(Bundle.HINT_CodeTimeTreeWindowTopComponent());
-       
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Code Time");
-        
-        List<MetricTreeNode> menuNodes = new ArrayList<>();
-        
-        menuNodes.addAll(TreeHelper.buildSignupNodes());
-        menuNodes.addAll(TreeHelper.buildMenuNodes());
-        
-        DefaultMutableTreeNode menuRoot = new DefaultMutableTreeNode("Menu");
-        DefaultMutableTreeNode dailyMetrics = new DefaultMutableTreeNode("Daily Metrics");
-        
-        for (MetricTreeNode node : menuNodes) {
-            menuRoot.add(node);
-        }
-        root.add(menuRoot);
-        
-        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
-        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
-        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
-        
-        MetricTreeNode codeTimeTreeNode = TreeHelper.buildCodeTimeTree(codeTimeSummary);
-        dailyMetrics.add(codeTimeTreeNode);
-        dailyMetrics.add(TreeHelper.buildActiveCodeTimeTree(codeTimeSummary, sessionSummary));
-        dailyMetrics.add(TreeHelper.buildLinesAddedTree(sessionSummary));
-        dailyMetrics.add(TreeHelper.buildLinesRemovedTree(sessionSummary));
-        dailyMetrics.add(TreeHelper.buildKeystrokesTree(sessionSummary));
-        dailyMetrics.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
-        dailyMetrics.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
-        dailyMetrics.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
-        
-        root.add(dailyMetrics);
-        
-        JTree codeTimeTree = new JTree(root);
-        
-        codeTimeTree.setCellRenderer(new MetricTreeNodeRenderer());
-        MetricTreeNodeRenderer renderer = (MetricTreeNodeRenderer) codeTimeTree.getCellRenderer();
-        renderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
-        renderer.setBorderSelectionColor(new Color(0,0,0,0));
-        
-        codeTimeTree.addMouseListener(new MouseListener() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) codeTimeTree.getLastSelectedPathComponent();
-
-                if (node == null) return;
-
-                if (node instanceof MetricTreeNode) {
-                    TreeHelper.handleClickEvent((MetricTreeNode)node);
-                }
-                
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        Thread.sleep(1000);
-                        codeTimeTree.clearSelection();
-                    } catch (InterruptedException err){
-                        System.err.println(err);
-                    }
-                });
-            }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-                //
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                //
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                //
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-               //
-            }
-        });
-        
-        scrollPane.setViewportView(codeTimeTree);
+        scrollPane.setViewportView(buildCodeTimeTreeView());
         scrollPane.setVisible(true);
 
         this.updateUI();
         this.setVisible(true);
     }
-    
+
     public static class ExpandState {
+
         public boolean expand = false;
         public TreePath path = null;
 
@@ -161,18 +82,18 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             this.path = path;
         }
     }
-    
+
     public static void refreshTree() {
         //
     }
-    
+
     public static void openTree() {
         Project project = SoftwareUtil.getFirstActiveProject();
         if (project != null) {
             // ToolWindowManager.getInstance(project).getToolWindow("Code Time").show(null);
         }
     }
-    
+
     public static void updateExpandState(String id, TreePath path, boolean expanded) {
         ExpandState state = new ExpandState(expanded, path);
         List<ExpandState> existingStates = expandStateMap.get(id);
@@ -201,7 +122,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     public static List<ExpandState> getExpandState(String id) {
         return expandStateMap.get(id);
     }
-
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -248,5 +168,132 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     void readProperties(java.util.Properties p) {
         String version = p.getProperty("version");
         // TODO read your settings according to their version
+    }
+
+    private JTree buildCodeTimeTreeView() {
+        MetricTree tree = new MetricTree(makeMetricNodeModel());
+
+        tree.setCellRenderer(new IconTreeCellRenderer());
+        tree.setRootVisible(false);
+        tree.setShowsRootHandles(false);
+
+        return tree;
+    }
+    
+    private TreeModel makeMetricNodeModel() {
+        // "Root" will not be visible
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
+        
+        List<MetricTreeNode> loginNodes = TreeHelper.buildSignupNodes();
+        for (MetricTreeNode node : loginNodes) {
+            root.add(node);
+        }
+        
+        List<MetricTreeNode> menuNodes = TreeHelper.buildMenuNodes();
+        for (MetricTreeNode node : menuNodes) {
+            root.add(node);
+        }
+        
+        // root.add(TreeHelper.getSeparator());
+        
+        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
+        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
+        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
+
+        root.add(TreeHelper.buildCodeTimeTree(codeTimeSummary));
+        root.add(TreeHelper.buildActiveCodeTimeTree(codeTimeSummary, sessionSummary));
+        root.add(TreeHelper.buildLinesAddedTree(sessionSummary));
+        root.add(TreeHelper.buildLinesRemovedTree(sessionSummary));
+        root.add(TreeHelper.buildKeystrokesTree(sessionSummary));
+        root.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
+        root.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
+        root.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
+        
+        return new DefaultTreeModel(root);
+    }
+
+    private JTree getCodeTimeTree() {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Code Time");
+
+        List<MetricTreeNode> menuNodes = new ArrayList<>();
+
+        menuNodes.addAll(TreeHelper.buildSignupNodes());
+        menuNodes.addAll(TreeHelper.buildMenuNodes());
+
+        DefaultMutableTreeNode menuRoot = new DefaultMutableTreeNode("Menu");
+        DefaultMutableTreeNode dailyMetrics = new DefaultMutableTreeNode("Daily Metrics");
+
+        for (MetricTreeNode node : menuNodes) {
+            menuRoot.add(node);
+        }
+        root.add(menuRoot);
+
+        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
+        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
+        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
+
+        MetricTreeNode codeTimeTreeNode = TreeHelper.buildCodeTimeTree(codeTimeSummary);
+        dailyMetrics.add(codeTimeTreeNode);
+        dailyMetrics.add(TreeHelper.buildActiveCodeTimeTree(codeTimeSummary, sessionSummary));
+        dailyMetrics.add(TreeHelper.buildLinesAddedTree(sessionSummary));
+        dailyMetrics.add(TreeHelper.buildLinesRemovedTree(sessionSummary));
+        dailyMetrics.add(TreeHelper.buildKeystrokesTree(sessionSummary));
+        dailyMetrics.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
+        dailyMetrics.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
+        dailyMetrics.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
+
+        root.add(dailyMetrics);
+
+        JTree codeTimeTree = new JTree(root);
+
+        codeTimeTree.setCellRenderer(new MetricTreeNodeRenderer());
+        MetricTreeNodeRenderer renderer = (MetricTreeNodeRenderer) codeTimeTree.getCellRenderer();
+        renderer.setBackgroundNonSelectionColor(new Color(0, 0, 0, 0));
+        renderer.setBorderSelectionColor(new Color(0, 0, 0, 0));
+
+        codeTimeTree.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) codeTimeTree.getLastSelectedPathComponent();
+
+                if (node == null) {
+                    return;
+                }
+
+                if (node instanceof MetricTreeNode) {
+                    TreeHelper.handleClickEvent((MetricTreeNode) node);
+                }
+
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        Thread.sleep(1000);
+                        codeTimeTree.clearSelection();
+                    } catch (InterruptedException err) {
+                        System.err.println(err);
+                    }
+                });
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                //
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                //
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                //
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                //
+            }
+        });
+        return codeTimeTree;
     }
 }
