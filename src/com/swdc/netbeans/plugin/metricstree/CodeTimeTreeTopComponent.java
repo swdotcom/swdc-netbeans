@@ -12,9 +12,11 @@ import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -138,6 +140,8 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
         
         updateMetrics(codeTimeSummary, sessionSummary);
+        
+        updateTopFileMetrics(fileChangeInfoMap);
     }
     
     public static void rebuildTree() {
@@ -255,6 +259,35 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         }
         
         return new DefaultTreeModel(root);
+    }
+    
+    private static void updateTopFileMetrics(Map<String, FileChangeInfo> fileChangeInfoMap) {
+        // getTopFilesId(name, sortBy)
+        // keystrokes, kpm, codetime
+        Set<String> keys = fileChangeInfoMap != null ? fileChangeInfoMap.keySet() : null;
+
+        if (keys != null && keys.size() > 0) {
+            for (String key : keys) {
+                FileChangeInfo info = fileChangeInfoMap.get(key);
+                String id = TreeHelper.getTopFilesId(info.name, "kpm");
+                MetricTreeNode node = findNodeById(id);
+                if (node != null) {
+                    // update the label
+                }
+                
+                id = TreeHelper.getTopFilesId(info.name, "keystrokes");
+                node = findNodeById(id);
+                if (node != null) {
+                    // update the label
+                }
+                
+                id = TreeHelper.getTopFilesId(info.name, "codetime");
+                node = findNodeById(id);
+                if (node != null) {
+                    // update the label
+                }
+            }
+        }
     }
     
     public static void updateMetrics(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {

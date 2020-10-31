@@ -233,7 +233,7 @@ public class TreeHelper {
                 }
 
                 String label = name + " | " + val;
-                MetricTreeNode editedFileNode = new MetricTreeNode(label, "files.png", null);
+                MetricTreeNode editedFileNode = new MetricTreeNode(label, "files.png", getTopFilesId(name, sortBy));
                 editedFileNode.setData(fileChangeInfoEntry.getValue());
                 treeNode.add(editedFileNode);
                 count++;
@@ -244,6 +244,11 @@ public class TreeHelper {
         }
 
         return treeNode;
+    }
+    
+    public static String getTopFilesId(String name, String sortBy) {
+        String id = name.replaceAll("\\s", "_") + "_" + sortBy;
+        return id.toLowerCase();
     }
 
     private static void launchFileClick(MouseEvent e) {
