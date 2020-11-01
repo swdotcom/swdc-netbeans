@@ -17,6 +17,7 @@ import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.SwingUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
@@ -166,7 +167,14 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
         @Override
         public void actionPerformed(ActionEvent e) {
             SoftwareUtil.toggleStatusBar(UIInteractionType.keyboard);
-            CodeTimeTreeTopComponent.updateMetrics(null, null);
+
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    CodeTimeTreeTopComponent.updateMetrics(null, null);
+                } catch (Exception ex) {
+                    System.err.println(ex);
+                }
+            });
         }
 
         @Override

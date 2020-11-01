@@ -150,8 +150,13 @@ public class WallClockManager {
             // STATUS BAR REFRESH
             StatusBarManager.updateStatusBar();
 
-            // TREE REFRESH
-            CodeTimeTreeTopComponent.refreshTree();
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    CodeTimeTreeTopComponent.refreshTree();
+                } catch (Exception e) {
+                    System.err.println(e);
+                }
+            });
         }
         dispatching = false;
     }

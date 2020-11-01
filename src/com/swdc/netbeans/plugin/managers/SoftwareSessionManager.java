@@ -11,15 +11,20 @@ import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import com.swdc.snowplow.tracker.entities.UIElementEntity;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.apache.http.client.methods.HttpGet;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
 import org.openide.awt.HtmlBrowser;
+import org.openide.awt.HtmlBrowser.URLDisplayer;
 
 public class SoftwareSessionManager {
 
@@ -148,58 +153,65 @@ public class SoftwareSessionManager {
             JOptionPane.showOptionDialog(null, infoMsg, "Code Time Setup Complete", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
                     null, options, options[0]);
             
-            // rebuild the tree
-            CodeTimeTreeTopComponent.rebuildTree();
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    // rebuild the tree
+                    CodeTimeTreeTopComponent.rebuildTree();
+                } catch (Exception ex) {
+                    System.err.println(ex);
+                }
+            });
+            
         }
     }
 
     public static void launchLogin(String loginType, UIInteractionType interactionType) {
-
-        String jwt = FileManager.getItem("jwt");
-
-        String url = "";
-        String element_name = "ct_sign_up_google_btn";
-        String icon_name = "google";
-        String cta_text = "Sign up with Google";
-        String icon_color = null;
-        if (loginType == null || loginType.equals("software") || loginType.equals("email")) {
-            element_name = "ct_sign_up_email_btn";
-            cta_text = "Sign up with email";
-            icon_name = "envelope";
-            icon_color = "gray";
-            url = SoftwareUtil.LAUNCH_URL + "/email-signup?token=" + jwt + "&plugin=codetime&auth=software";
-        } else if (loginType.equals("google")) {
-            url = SoftwareUtil.API_ENDPOINT + "/auth/google?token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
-        } else if (loginType.equals("github")) {
-            element_name = "ct_sign_up_github_btn";
-            cta_text = "Sign up with GitHub";
-            icon_name = "github";
-            url = SoftwareUtil.API_ENDPOINT + "/auth/github?token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
-        }
-
-        FileManager.setItem("authType", loginType);
-        
         try {
+            String jwt = URLEncoder.encode( FileManager.getItem("jwt") , "UTF8" );
+
+            String url = "";
+            String element_name = "ct_sign_up_google_btn";
+            String icon_name = "google";
+            String cta_text = "Sign up with Google";
+            String icon_color = null;
+            if (loginType == null || loginType.equals("software") || loginType.equals("email")) {
+                element_name = "ct_sign_up_email_btn";
+                cta_text = "Sign up with email";
+                icon_name = "envelope";
+                icon_color = "gray";
+                url = SoftwareUtil.LAUNCH_URL + "/email-signup?token=" + jwt + "&plugin=codetime&auth=software";
+            } else if (loginType.equals("google")) {
+                url = SoftwareUtil.API_ENDPOINT + "/auth/google?token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
+            } else if (loginType.equals("github")) {
+                element_name = "ct_sign_up_github_btn";
+                cta_text = "Sign up with GitHub";
+                icon_name = "github";
+                url = SoftwareUtil.API_ENDPOINT + "/auth/github?token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
+            }
+
+            FileManager.setItem("authType", loginType);
+        
+        
             URL launchUrl = new URL(url);
-            HtmlBrowser.URLDisplayer.getDefault().showURL(launchUrl);
-        } catch (Exception e) {
-            log.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
-        }
+            URLDisplayer.getDefault().showURL(launchUrl);
+            
+            if (!establishingUser) {
+                establishingUser = true;
+                // max of 5.3 minutes
+                final Runnable service = () -> lazilyFetchUserStatus(40);
+                AsyncManager.getInstance().executeOnceInSeconds(service, 8);
+            }
 
-        if (!establishingUser) {
-            establishingUser = true;
-            // max of 5.3 minutes
-            final Runnable service = () -> lazilyFetchUserStatus(40);
-            AsyncManager.getInstance().executeOnceInSeconds(service, 8);
+            UIElementEntity elementEntity = new UIElementEntity();
+            elementEntity.element_name = element_name;
+            elementEntity.element_location = interactionType == UIInteractionType.click ? "ct_menu_tree" : "ct_command_palette";
+            elementEntity.color = icon_color;
+            elementEntity.cta_text = cta_text;
+            elementEntity.icon_name = icon_name;
+            EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
+        } catch (UnsupportedEncodingException | MalformedURLException e) {
+            log.log(Level.WARNING, "Failed to launch the url: {0}", e.getMessage());
         }
-
-        UIElementEntity elementEntity = new UIElementEntity();
-        elementEntity.element_name = element_name;
-        elementEntity.element_location = interactionType == UIInteractionType.click ? "ct_menu_tree" : "ct_command_palette";
-        elementEntity.color = icon_color;
-        elementEntity.cta_text = cta_text;
-        elementEntity.icon_name = icon_name;
-        EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
     }
 
     public static void launchWebDashboard(UIInteractionType interactionType) {
