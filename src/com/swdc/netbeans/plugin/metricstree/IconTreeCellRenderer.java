@@ -53,7 +53,7 @@ public class IconTreeCellRenderer extends DefaultTreeCellRenderer {
         if (imgURL != null) {
             return new ImageIcon(imgURL, description);
         } else {
-            System.err.println("Couldn't find file: /com/softwareco/intellij/plugin/assets/" + iconName);
+            System.err.println("Couldn't find file: /com/swdc/netbeans/plugin/assets/" + iconName);
             return null;
         }
     }

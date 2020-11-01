@@ -289,40 +289,23 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     }
     
     private static void updateTopFileMetrics(Map<String, FileChangeInfo> fileChangeInfoMap) {
-        // getTopFilesId(name, sortBy)
-        // keystrokes, kpm, codetime
-        Set<String> keys = fileChangeInfoMap != null ? fileChangeInfoMap.keySet() : null;
-
-        if (keys != null && keys.size() > 0) {
-            for (String key : keys) {
-                FileChangeInfo info = fileChangeInfoMap.get(key);
-                
-                String val = "";
-                
-                String id = TreeHelper.getTopFilesId(info.name, "kpm");
-                MetricTreeNode node = findNodeById(id);
-                if (node != null) {
-                    val = SoftwareUtil.humanizeLongNumbers(info.kpm);
-                    // update the label
-                    node.updateLabel(info.name + " | " + val);
-                }
-                
-                id = TreeHelper.getTopFilesId(info.name, "keystrokes");
-                node = findNodeById(id);
-                if (node != null) {
-                    val = SoftwareUtil.humanizeLongNumbers(info.keystrokes);
-                    // update the label
-                    node.updateLabel(info.name + " | " + val);
-                }
-                
-                id = TreeHelper.getTopFilesId(info.name, "codetime");
-                node = findNodeById(id);
-                if (node != null) {
-                    val = SoftwareUtil.humanizeMinutes((int) (info.duration_seconds / 60));
-                    // update the label
-                    node.updateLabel(info.name + " | " + val);
-                }
-            }
+        // get the 3 parents: keystrokes, kpm, codetime
+        MetricTreeNode parent = findNodeById(TreeHelper.getTopFileParentId("keystrokes"));
+        if (parent != null) {
+            parent.removeAllChildren();
+            TreeHelper.addNodesToTopFilesMetricParentTreeNode(parent, "keystrokes", fileChangeInfoMap);
+        }
+        
+        parent = findNodeById(TreeHelper.getTopFileParentId("kpm"));
+        if (parent != null) {
+            parent.removeAllChildren();
+            TreeHelper.addNodesToTopFilesMetricParentTreeNode(parent, "kpm", fileChangeInfoMap);
+        }
+        
+        parent = findNodeById(TreeHelper.getTopFileParentId("codetime"));
+        if (parent != null) {
+            parent.removeAllChildren();
+            TreeHelper.addNodesToTopFilesMetricParentTreeNode(parent, "codetime", fileChangeInfoMap);
         }
     }
     

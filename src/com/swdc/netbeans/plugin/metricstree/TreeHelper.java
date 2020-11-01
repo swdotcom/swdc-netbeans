@@ -185,8 +185,14 @@ public class TreeHelper {
     }
     
     private static MetricTreeNode buildTopFilesTree(String parentName, String sortBy, Map<String, FileChangeInfo> fileChangeInfoMap) {
-        MetricTreeNode treeNode = new MetricTreeNode(parentName, null, null);
+        MetricTreeNode treeNode = new MetricTreeNode(parentName, null, getTopFileParentId(sortBy));
 
+        addNodesToTopFilesMetricParentTreeNode(treeNode, sortBy, fileChangeInfoMap);
+
+        return treeNode;
+    }
+    
+    public static void addNodesToTopFilesMetricParentTreeNode(MetricTreeNode treeNode, String sortBy, Map<String, FileChangeInfo> fileChangeInfoMap) {
         // build the most edited files nodes
         // sort the fileChangeInfoMap based on keystrokes
         List<Map.Entry<String, FileChangeInfo>> entryList = null;
@@ -242,8 +248,10 @@ public class TreeHelper {
             MetricTreeNode node = new MetricTreeNode("<empty>", "files.png", null);
             treeNode.add(node);
         }
-
-        return treeNode;
+    }
+    
+    public static String getTopFileParentId(String sortBy) {
+        return sortBy.toLowerCase() + "_topfiles_parent";
     }
     
     public static String getTopFilesId(String name, String sortBy) {
@@ -251,24 +259,20 @@ public class TreeHelper {
         return id.toLowerCase();
     }
 
-    private static void launchFileClick(MouseEvent e) {
-        MetricTree mTree = (MetricTree)e.getSource();
-        if (mTree.getLeadSelectionPath() != null) {
-            MetricTreeNode selectedNode = (MetricTreeNode) mTree.getLeadSelectionPath().getLastPathComponent();
-            if (selectedNode != null) {
-                if (selectedNode.getData() != null && selectedNode.getData() instanceof FileChangeInfo) {
-                    String fsPath = ((FileChangeInfo) selectedNode.getData()).fsPath;
-                    SoftwareUtil.launchFile(fsPath);
-                } else if (selectedNode.getPath() != null && selectedNode.getData() instanceof String && String.valueOf(selectedNode.getData()).contains("http")) {
-                    // launch the commit url
-                    String url = String.valueOf(selectedNode.getData());
-                    
-                    try {
-                        URL launchUrl = new URL(url);
-                        HtmlBrowser.URLDisplayer.getDefault().showURL(launchUrl);
-                    } catch (MalformedURLException ex) {
-                        LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, ex.getMessage()});
-                    }
+    private static void launchFileClick(MetricTreeNode selectedNode) {
+        if (selectedNode != null) {
+            if (selectedNode.getData() != null && selectedNode.getData() instanceof FileChangeInfo) {
+                String fsPath = ((FileChangeInfo) selectedNode.getData()).fsPath;
+                SoftwareUtil.launchFile(fsPath);
+            } else if (selectedNode.getPath() != null && selectedNode.getData() instanceof String && String.valueOf(selectedNode.getData()).contains("http")) {
+                // launch the commit url
+                String url = String.valueOf(selectedNode.getData());
+
+                try {
+                    URL launchUrl = new URL(url);
+                    HtmlBrowser.URLDisplayer.getDefault().showURL(launchUrl);
+                } catch (MalformedURLException ex) {
+                    LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, ex.getMessage()});
                 }
             }
         }
@@ -304,6 +308,7 @@ public class TreeHelper {
                 FileManager.openReadmeFile(UIInteractionType.click);
                 break;
             default:
+                launchFileClick(node);
                 break;
         }
     }

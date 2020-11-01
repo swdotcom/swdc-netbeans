@@ -49,7 +49,7 @@ public class EventTrackerManager {
     public void init() {
         try {
             trackerMgr = new TrackerManager(
-                    SoftwareUtil.API_ENDPOINT, "CodeTime", "swdc-intellij");
+                    SoftwareUtil.API_ENDPOINT, "CodeTime", "swdc-netbeans");
             if (trackerMgr != null) {
                 ready = true;
             }
