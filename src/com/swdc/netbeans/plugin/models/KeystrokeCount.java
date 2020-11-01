@@ -16,9 +16,13 @@ import com.swdc.netbeans.plugin.managers.WallClockManager;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.netbeans.api.project.Project;
 
 public class KeystrokeCount {
+    
+    public static final Logger LOG = Logger.getLogger("KeystrokeCount");
 
     // TODO: backend driven, we should look at getting a list of types at some point
     private String type = "Events";
@@ -254,6 +258,7 @@ public class KeystrokeCount {
                 FileManager.setNumericItem("latestPayloadTimestampEndUtc", timesData.now);
             }
         } catch (Exception e) {
+            LOG.log(Level.WARNING, "Error processing payload event: {0}", e.getMessage());
         }
 
         this.resetData();

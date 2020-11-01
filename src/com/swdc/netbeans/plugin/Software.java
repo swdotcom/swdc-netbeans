@@ -5,12 +5,15 @@
 package com.swdc.netbeans.plugin;
 
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
+import com.swdc.netbeans.plugin.managers.AsyncManager;
 import com.swdc.netbeans.plugin.managers.EventTrackerManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
 import com.swdc.netbeans.plugin.managers.RepoManager;
+import com.swdc.netbeans.plugin.managers.SoftwareEventManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import com.swdc.netbeans.plugin.managers.WallClockManager;
+import com.swdc.netbeans.plugin.models.KeystrokeCount;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -25,6 +28,7 @@ import javax.swing.text.JTextComponent;
 import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
+import org.openide.windows.WindowManager;
 
 /**
  *
@@ -36,11 +40,11 @@ public class Software extends ModuleInstall implements Runnable {
 
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    private KeystrokeManager keystrokeMgr;
     private RepoManager repoManager;
 
     private final int ONE_MINUTE_SECONDS = 60;
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
+    private static final int FOCUS_STATE_INTERVAL_SECONDS = 5;
 
     private static final int retry_counter = 0;
     private static final long check_online_interval_ms = 1000 * 60 * 10;
@@ -95,7 +99,6 @@ public class Software extends ModuleInstall implements Runnable {
     }
 
     protected void initializePlugin(boolean initializedUser) {
-        keystrokeMgr = KeystrokeManager.getInstance();
         repoManager = RepoManager.getInstance();
 
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
@@ -133,6 +136,10 @@ public class Software extends ModuleInstall implements Runnable {
         
         // initialize the wallclock manager
         WallClockManager.getInstance().updateSessionSummaryFromServer();
+        
+        final Runnable checkFocusStateTimer = () -> checkFocusState();
+        AsyncManager.getInstance().scheduleService(
+                checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);
     }
 
     /**
@@ -158,6 +165,27 @@ public class Software extends ModuleInstall implements Runnable {
         Object[] options = { "OK" };
         JOptionPane.showOptionDialog(null, infoMsg, "Code Time", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
                 null, options, options[0]);
+    }
+    
+    private void checkFocusState() {
+        SwingUtilities.invokeLater(() -> {
+            boolean isActive = WindowManager.getDefault().getMainWindow().isFocused();
+            if (isActive != SoftwareEventManager.isCurrentlyActive) {
+                KeystrokeCount keystrokeCount = KeystrokeManager.getInstance().getKeystrokeCount();
+                if (keystrokeCount != null) {
+                    // set the flag the "unfocusStateChangeHandler" will look for in order to process payloads early
+                    keystrokeCount.triggered = false;
+                    keystrokeCount.processKeystrokes();
+                }
+                EventTrackerManager.getInstance().trackEditorAction("editor", "unfocus");
+            } else {
+                // just set the process keystrokes payload to false since we're focused again
+                EventTrackerManager.getInstance().trackEditorAction("editor", "focus");
+            }
+            
+            // update the currently active flag
+            SoftwareEventManager.isCurrentlyActive = isActive;
+        });
     }
 
 }

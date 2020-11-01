@@ -12,7 +12,6 @@ import com.swdc.netbeans.plugin.models.KeystrokeProject;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentEvent.ElementChange;
 import javax.swing.event.DocumentEvent.EventType;
@@ -27,11 +26,10 @@ import org.openide.filesystems.FileObject;
 
 public class SoftwareEventManager {
 
-    public static final Logger LOG = Logger.getLogger("SoftwareCoEventManager");
+    public static final Logger LOG = Logger.getLogger("SoftwareEventManager");
 
     private static SoftwareEventManager instance = null;
 
-    private static final int FOCUS_STATE_INTERVAL_SECONDS = 5;
     private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\n");
     private static final Pattern NEW_LINE_TAB_PATTERN = Pattern.compile("\n\t");
     private static final Pattern TAB_PATTERN = Pattern.compile("\t");
@@ -40,8 +38,6 @@ public class SoftwareEventManager {
 
     private EventTrackerManager tracker;
     private KeystrokeManager keystrokeMgr;
-    private SoftwareSessionManager sessionMgr;
-    private AsyncManager asyncManager;
     private Document lastDocument;
 
     public static SoftwareEventManager getInstance() {
@@ -53,37 +49,7 @@ public class SoftwareEventManager {
 
     private SoftwareEventManager() {
         keystrokeMgr = KeystrokeManager.getInstance();
-        sessionMgr = SoftwareSessionManager.getInstance();
         tracker = EventTrackerManager.getInstance();
-        asyncManager = AsyncManager.getInstance();
-
-        final Runnable checkFocusStateTimer = () -> checkFocusState();
-        asyncManager.scheduleService(
-                checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);
-    }
-
-    private void checkFocusState() {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                boolean isActive = true; // TODO: figure out how to get the focus status
-                if (isActive != isCurrentlyActive) {
-                    KeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount();
-                    if (keystrokeCount != null) {
-                        // set the flag the "unfocusStateChangeHandler" will look for in order to process payloads early
-                        keystrokeCount.triggered = false;
-                        keystrokeCount.processKeystrokes();
-                    }
-                    EventTrackerManager.getInstance().trackEditorAction("editor", "unfocus");
-                } else {
-                    // just set the process keystrokes payload to false since we're focused again
-                    EventTrackerManager.getInstance().trackEditorAction("editor", "focus");
-                }
-
-                // update the currently active flag
-                isCurrentlyActive = isActive;
-            }
-        });
     }
 
     private int getNewlineCount(String text) {
