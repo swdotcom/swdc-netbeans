@@ -170,17 +170,21 @@ public class Software extends ModuleInstall implements Runnable {
     private void checkFocusState() {
         SwingUtilities.invokeLater(() -> {
             boolean isActive = WindowManager.getDefault().getMainWindow().isFocused();
-            if (isActive != SoftwareEventManager.isCurrentlyActive) {
-                KeystrokeCount keystrokeCount = KeystrokeManager.getInstance().getKeystrokeCount();
-                if (keystrokeCount != null) {
-                    // set the flag the "unfocusStateChangeHandler" will look for in order to process payloads early
-                    keystrokeCount.triggered = false;
-                    keystrokeCount.processKeystrokes();
+            
+            boolean focusStateChanged = isActive != SoftwareEventManager.isCurrentlyActive;
+            if (focusStateChanged) {
+                if (!isActive) {
+                    KeystrokeCount keystrokeCount = KeystrokeManager.getInstance().getKeystrokeCount();
+                    if (keystrokeCount != null) {
+                        // set the flag the "unfocusStateChangeHandler" will look for in order to process payloads early
+                        keystrokeCount.triggered = false;
+                        keystrokeCount.processKeystrokes();
+                    }
+                    EventTrackerManager.getInstance().trackEditorAction("editor", "unfocus");
+                } else {
+                    // just set the process keystrokes payload to false since we're focused again
+                    EventTrackerManager.getInstance().trackEditorAction("editor", "focus");
                 }
-                EventTrackerManager.getInstance().trackEditorAction("editor", "unfocus");
-            } else {
-                // just set the process keystrokes payload to false since we're focused again
-                EventTrackerManager.getInstance().trackEditorAction("editor", "focus");
             }
             
             // update the currently active flag

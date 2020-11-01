@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.project.Project;
@@ -54,7 +55,7 @@ public class EventTrackerManager {
                 ready = true;
             }
         } catch (Exception e) {
-            log.warning("Error initializing the code time tracker: " + e.getMessage());
+            log.log(Level.WARNING, "Error initializing the code time tracker: {0}", e.getMessage());
         }
     }
 
