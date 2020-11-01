@@ -5,15 +5,15 @@
  */
 package com.swdc.netbeans.plugin.managers;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
+import static com.swdc.netbeans.plugin.managers.SoftwareSessionManager.LOG;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
-import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.lang.reflect.Type;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import org.apache.http.client.methods.HttpGet;
@@ -93,25 +93,6 @@ public class WallClockManager {
         if (resp.isOk()) {
             JsonObject jsonObj = resp.getJsonObj();
 
-            JsonElement lastUpdatedToday = jsonObj.get("lastUpdatedToday");
-            if (lastUpdatedToday != null) {
-                // make sure it's a boolean and not a number
-                if (!lastUpdatedToday.getAsJsonPrimitive().isBoolean()) {
-                    // set it to boolean
-                    boolean newVal = lastUpdatedToday.getAsInt() != 0;
-                    jsonObj.addProperty("lastUpdatedToday", newVal);
-                }
-            }
-            JsonElement inFlow = jsonObj.get("inFlow");
-            if (inFlow != null) {
-                // make sure it's a boolean and not a number
-                if (!inFlow.getAsJsonPrimitive().isBoolean()) {
-                    // set it to boolean
-                    boolean newVal = inFlow.getAsInt() != 0;
-                    jsonObj.addProperty("inFlow", newVal);
-                }
-            }
-
             Type type = new TypeToken<SessionSummary>() {}.getType();
             SessionSummary fetchedSummary = SoftwareUtil.gson.fromJson(jsonObj, type);
 
@@ -123,6 +104,15 @@ public class WallClockManager {
             // save the file
             FileManager.writeData(SessionDataManager.getSessionDataSummaryFile(), summary);
         }
+        
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // rebuild the tree
+                CodeTimeTreeTopComponent.refreshTree();
+            } catch (Exception ex) {
+                LOG.log(Level.WARNING, "Tree rebuild after authentication error: {0}", ex.getMessage());
+            }
+        });
     }
 
     private void updateWallClockTime() {

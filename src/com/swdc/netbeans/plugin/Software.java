@@ -122,7 +122,6 @@ public class Software extends ModuleInstall implements Runnable {
         setupEventListeners();
 
         StatusBarManager.updateStatusBar();
-        
 
         // send the init heartbeat
         SwingUtilities.invokeLater(() -> {

@@ -119,6 +119,7 @@ public class TimeDataManager {
         // save the info to disk
         // make sure editor seconds isn't less
         saveTimeDataSummaryToDisk(td);
+        
     }
 
     private static List<TimeData> getTimeDataList() {

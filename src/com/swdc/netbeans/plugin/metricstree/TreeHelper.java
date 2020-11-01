@@ -133,7 +133,7 @@ public class TreeHelper {
         MetricTreeNode treeNode = new MetricTreeNode("Active code time", null, ACTIVE_CODETIME_PARENT_ID);
         treeNode.add(new MetricTreeNode(mLabels.activeCodeTime, "rocket.png", ACTIVE_CODETIME_TODAY_ID));
         treeNode.add(new MetricTreeNode(mLabels.activeCodeTimeAvg, mLabels.activeCodeTimeAvgIcon, ACTIVE_CODETIME_AVG_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.activeCodeTimeGlobalAvg, "global-grey.svg", ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID));
+        treeNode.add(new MetricTreeNode(mLabels.activeCodeTimeGlobalAvg, "global-grey.png", ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID));
         return treeNode;
     }
     

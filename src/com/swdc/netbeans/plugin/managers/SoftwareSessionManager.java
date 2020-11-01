@@ -29,7 +29,7 @@ import org.openide.awt.HtmlBrowser.URLDisplayer;
 public class SoftwareSessionManager {
 
     private static SoftwareSessionManager instance = null;
-    public static final Logger log = Logger.getLogger("SoftwareCoSessionManager");
+    public static final Logger LOG = Logger.getLogger("SoftwareCoSessionManager");
     private static long lastAppAvailableCheck = 0;
     public static boolean establishingUser = false;
 
@@ -157,8 +157,11 @@ public class SoftwareSessionManager {
                 try {
                     // rebuild the tree
                     CodeTimeTreeTopComponent.rebuildTree();
+                    
+                    // fetch the session summary
+                    WallClockManager.getInstance().updateSessionSummaryFromServer();
                 } catch (Exception ex) {
-                    System.err.println(ex);
+                    LOG.log(Level.WARNING, "Tree rebuild after authentication error: {0}", ex.getMessage());
                 }
             });
             
@@ -210,7 +213,7 @@ public class SoftwareSessionManager {
             elementEntity.icon_name = icon_name;
             EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
         } catch (UnsupportedEncodingException | MalformedURLException e) {
-            log.log(Level.WARNING, "Failed to launch the url: {0}", e.getMessage());
+            LOG.log(Level.WARNING, "Failed to launch the url: {0}", e.getMessage());
         }
     }
 
@@ -220,7 +223,7 @@ public class SoftwareSessionManager {
             URL launchUrl = new URL(url);
             HtmlBrowser.URLDisplayer.getDefault().showURL(launchUrl);
         } catch (Exception e) {
-            log.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
+            LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
         }
 
         UIElementEntity elementEntity = new UIElementEntity();
@@ -238,7 +241,7 @@ public class SoftwareSessionManager {
             URL launchUrl = new URL(url);
             HtmlBrowser.URLDisplayer.getDefault().showURL(launchUrl);
         } catch (Exception e) {
-            log.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
+            LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
         }
 
         UIElementEntity elementEntity = new UIElementEntity();

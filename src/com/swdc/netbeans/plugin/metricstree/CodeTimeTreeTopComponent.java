@@ -15,14 +15,12 @@ import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
@@ -173,6 +171,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     
     public static void rebuildTree() {
         try {
+            expandInitialized = false;
             CodeTimeTreeTopComponent topComp = (CodeTimeTreeTopComponent) WindowManager.getDefault().findTopComponent("CodeTimeTreeWindowTopComponent");
             if (topComp != null) {
                 topComp.init();
