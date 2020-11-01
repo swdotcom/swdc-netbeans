@@ -12,7 +12,6 @@ import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.netbeans.plugin.models.SessionSummary;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -74,11 +73,13 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         metricTree = buildCodeTimeTreeView();
         
         if (!expandInitialized) {
-            // expand the code time and active code time paths
-            MetricTreeNode activeCodeTimeParentNode = findNodeById(TreeHelper.ACTIVE_CODETIME_PARENT_ID);
-            if (activeCodeTimeParentNode != null) {
-                TreePath nodeTreePath = activeCodeTimeParentNode.getNodeTreePath();
-                metricTree.expandPath(nodeTreePath);
+            int activeCodeTimeParentRow = findParentNodeRowById(TreeHelper.ACTIVE_CODETIME_PARENT_ID);
+            if (activeCodeTimeParentRow != -1) {
+                metricTree.expandRow(activeCodeTimeParentRow);
+            }
+            int codeTimeParentRow = findParentNodeRowById(TreeHelper.CODETIME_PARENT_ID);
+            if (codeTimeParentRow != -1) {
+                metricTree.expandRow(codeTimeParentRow);
             }
             expandInitialized = true;
         }
@@ -100,6 +101,32 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         if (node != null) {
             node.updateIconName(iconName);
         }
+    }
+    
+    private static int findParentNodeRowById(String id) {
+        int row = 0;
+        try {
+            DefaultTreeModel model = (DefaultTreeModel) metricTree.getModel();
+
+            DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) model.getRoot();
+            
+            if (treeNode != null) {
+                Enumeration<TreeNode> nodes = treeNode.children();
+                if (nodes != null) {
+                    while (nodes.hasMoreElements()) {
+                        MetricTreeNode node = (MetricTreeNode) nodes.nextElement();
+                        if (node != null && node.getId().equals(id)) {
+                            return row;
+                        }
+                        row++;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Find node by ID error: {0}", e.toString());
+        }
+        
+        return -1; 
     }
     
     private static MetricTreeNode findNodeById(String id) {
@@ -269,22 +296,31 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         if (keys != null && keys.size() > 0) {
             for (String key : keys) {
                 FileChangeInfo info = fileChangeInfoMap.get(key);
+                
+                String val = "";
+                
                 String id = TreeHelper.getTopFilesId(info.name, "kpm");
                 MetricTreeNode node = findNodeById(id);
                 if (node != null) {
+                    val = SoftwareUtil.humanizeLongNumbers(info.kpm);
                     // update the label
+                    node.updateLabel(info.name + " | " + val);
                 }
                 
                 id = TreeHelper.getTopFilesId(info.name, "keystrokes");
                 node = findNodeById(id);
                 if (node != null) {
+                    val = SoftwareUtil.humanizeLongNumbers(info.keystrokes);
                     // update the label
+                    node.updateLabel(info.name + " | " + val);
                 }
                 
                 id = TreeHelper.getTopFilesId(info.name, "codetime");
                 node = findNodeById(id);
                 if (node != null) {
+                    val = SoftwareUtil.humanizeMinutes((int) (info.duration_seconds / 60));
                     // update the label
+                    node.updateLabel(info.name + " | " + val);
                 }
             }
         }
