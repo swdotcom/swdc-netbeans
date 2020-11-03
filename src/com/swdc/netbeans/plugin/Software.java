@@ -5,26 +5,30 @@
 package com.swdc.netbeans.plugin;
 
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
+import com.swdc.netbeans.plugin.managers.AsyncManager;
+import com.swdc.netbeans.plugin.managers.EventTrackerManager;
+import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
-import com.swdc.netbeans.plugin.managers.MusicManager;
-import com.swdc.netbeans.plugin.managers.OfflineManager;
 import com.swdc.netbeans.plugin.managers.RepoManager;
-import com.swdc.netbeans.plugin.models.KeystrokeData;
-import com.swdc.netbeans.plugin.managers.SessionManager;
-import com.swdc.netbeans.plugin.models.KeystrokeMetrics;
+import com.swdc.netbeans.plugin.managers.SoftwareEventManager;
+import com.swdc.netbeans.plugin.managers.StatusBarManager;
+import com.swdc.netbeans.plugin.managers.WallClockManager;
+import com.swdc.netbeans.plugin.models.KeystrokeCount;
+import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
+import org.openide.windows.WindowManager;
 
 /**
  *
@@ -36,13 +40,11 @@ public class Software extends ModuleInstall implements Runnable {
 
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    private KeystrokeManager keystrokeMgr;
-    private final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
     private RepoManager repoManager;
-    private MusicManager musicManager;
 
     private final int ONE_MINUTE_SECONDS = 60;
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
+    private static final int FOCUS_STATE_INTERVAL_SECONDS = 5;
 
     private static final int retry_counter = 0;
     private static final long check_online_interval_ms = 1000 * 60 * 10;
@@ -53,11 +55,10 @@ public class Software extends ModuleInstall implements Runnable {
     }
 
     protected void initComponent() {
-        boolean serverIsOnline = softwareUtil.isServerOnline();
-        boolean sessionFileExists = softwareUtil.softwareSessionFileExists();
-        boolean hasJwt = softwareUtil.hasJwt();
+        boolean serverIsOnline = SoftwareUtil.isServerOnline();
+        boolean hasJwt = SoftwareUtil.hasJwt();
         // no session file or no jwt
-        if (!sessionFileExists || !hasJwt) {
+        if (!hasJwt) {
             if (!serverIsOnline) {
                 // server isn't online, check again in 10 min
                 if (retry_counter == 0) {
@@ -73,7 +74,7 @@ public class Software extends ModuleInstall implements Runnable {
                 }).start();
             } else {
                 // create the anon user
-                String jwt = softwareUtil.createAnonymousUser(serverIsOnline);
+                String jwt = SoftwareUtil.createAnonymousUser(serverIsOnline);
                 if (jwt == null) {
                     // it failed, try again later
                     if (retry_counter == 0) {
@@ -98,32 +99,46 @@ public class Software extends ModuleInstall implements Runnable {
     }
 
     protected void initializePlugin(boolean initializedUser) {
-        keystrokeMgr = KeystrokeManager.getInstance();
         repoManager = RepoManager.getInstance();
-        musicManager = MusicManager.getInstance();
 
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
-        LOG.log(Level.INFO, "Code Time: Loaded v{0}", softwareUtil.getVersion());
+        LOG.log(Level.INFO, "Code Time: Loaded v{0}", SoftwareUtil.getVersion());
+        
+        // initialize the tracker
+        EventTrackerManager.getInstance().init();
+
+        // send the activate event
+        EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
+        
+        String readmeDisplayed = FileManager.getItem("netbeans_CtReadme");
+        if (readmeDisplayed == null || Boolean.valueOf(readmeDisplayed) == false) {
+            // send an initial plugin payload
+            FileManager.openReadmeFile(UIInteractionType.keyboard);
+            FileManager.setItem("netbeans_CtReadme", "true");
+        }
+
 
         // setup the document change event listeners
         setupEventListeners();
 
-        // setup the kpm metrics info fetch (every minute)
-        setupScheduledKpmMetricsProcessor();
+        StatusBarManager.updateStatusBar();
+
+        // send the init heartbeat
+        SwingUtilities.invokeLater(() -> {
+            try {
+                Thread.sleep(5000);
+                SoftwareUtil.sendHeartbeat("INITIALIZED");
+            } catch (InterruptedException e) {
+                System.err.println(e);
+            }
+        });
         
-        // setup offline batch processor (every 30 minutes)
-        setupOfflineDataSendProcessor();
-
-        setupRepoMusicInfoProcessor();
-
-        final Runnable hourlyJobs = () -> hourlyJobsProcessor();
-        int interval = ONE_HOUR_SECONDS;
-        scheduler.scheduleAtFixedRate(hourlyJobs, 45, interval, TimeUnit.SECONDS);
-
-        setupUserStatusProcessor();
-
-        // check the user auth status and send any offline data
-        bootstrapStatus(initializedUser);
+        // initialize the wallclock manager
+        WallClockManager.getInstance().updateSessionSummaryFromServer();
+        
+        final Runnable checkFocusStateTimer = () -> checkFocusState();
+        AsyncManager.getInstance().scheduleService(
+                checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);
     }
 
     /**
@@ -143,128 +158,37 @@ public class Software extends ModuleInstall implements Runnable {
         EditorRegistry.addPropertyChangeListener(l);
     }
 
-    private void setupOfflineDataSendProcessor() {
-        final Runnable handler = () -> processOfflineDataSend();
-        long everyThrityMin = ONE_MINUTE_SECONDS * 30;
-        scheduler.scheduleAtFixedRate(handler, 1 /* 1 second */, everyThrityMin, TimeUnit.SECONDS);
-    }
-
-    private void setupScheduledKpmMetricsProcessor() {
-        final Runnable handler = () -> SessionManager.fetchDailyKpmSessionInfo(false);
-        scheduler.scheduleAtFixedRate(handler, 15, ONE_MINUTE_SECONDS, TimeUnit.SECONDS);
-    }
-
-    private void setupUserStatusProcessor() {
-        final Runnable handler = () -> processUserStatus();
-        scheduler.scheduleAtFixedRate(handler, 60, 90, TimeUnit.SECONDS);
-    }
-
-    private void setupRepoMusicInfoProcessor() {
-        final Runnable handler = () -> processMusicInfo();
-        int interval = 15;
-        scheduler.scheduleAtFixedRate(handler, 15, interval, TimeUnit.SECONDS);
-    }
-
-    private void hourlyJobsProcessor() {
-        // send a heartbeat
-        softwareUtil.sendHeartbeat("HOURLY");
-
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000 * 5);
-                processHistoricalCommits();
-            } catch (InterruptedException e) {
-                System.err.println(e);
-            }
-        }).start();
-    }
-
-    private void bootstrapStatus(boolean initializedUser) {
-        new Thread(() -> {
-            try {
-                Thread.sleep(5000);
-                initializeUserInfo(initializedUser);
-            } catch (InterruptedException e) {
-                System.err.println(e);
-            }
-        }).start();
-    }
-
-    private void processUserStatus() {
-        softwareUtil.getUserStatus();
-    }
-
-    private void processMusicInfo() {
-        musicManager.processMusicTrack();
-    }
-
-    private void processHistoricalCommits() {
-        KeystrokeData keystrokeData = keystrokeMgr.getKeystrokeData();
-        // if we have keystroke data, we'll have the project info
-        if (keystrokeData != null && keystrokeData.getProject() != null) {
-            String projectDir = keystrokeData.getProject().getDirectory();
-            repoManager.getHistoricalCommits(projectDir);
-        }
-    }
-
-    private void processOfflineDataSend() {
-        softwareUtil.sendOfflineData();
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000 * 10);
-                SessionManager.fetchDailyKpmSessionInfo(true);
-            } catch (Exception e) {
-                //
-            }
-        }).start();
-    }
-
-    private void initializeUserInfo(boolean initializedUser) {
-
-        softwareUtil.getUserStatus();
-
-        if (initializedUser) {
-            sendInstallPayload();
-            // ask the user to login one time only
-            new Thread(() -> {
-                try {
-                    Thread.sleep(5000);
-                    softwareUtil.showLoginPrompt();
-                } catch (InterruptedException e) {
-                    System.err.println(e);
-                }
-            }).start();
-        }
-        new Thread(() -> {
-            try {
-                Thread.sleep(2000);
-                softwareUtil.sendOfflineData();
-                SessionManager.fetchDailyKpmSessionInfo(true);
-            } catch (InterruptedException e) {
-                System.err.println(e);
-            }
-        }).start();
-
-        softwareUtil.sendHeartbeat("INITIALIZED");
-    }
-
-    protected void sendInstallPayload() {
-        String currentFile = "Untitled";
-        String projectName = "Unnamed";
-        String projectDir = "";
-        KeystrokeMetrics metrics = keystrokeMgr.getKeystrokeMetrics(currentFile, projectName, projectDir);
-        metrics.setAdd(1);
-        keystrokeMgr.incrementKeystrokes();
-
-        keystrokeMgr.getKeystrokeData().processKeystrokes();
-    }
-
     protected void showOfflinePrompt() {
         String infoMsg = "Our service is temporarily unavailable. We will try to reconnect again "
                 + "in 10 minutes. Your status bar will not update at this time.";
         Object[] options = { "OK" };
         JOptionPane.showOptionDialog(null, infoMsg, "Code Time", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
                 null, options, options[0]);
+    }
+    
+    private void checkFocusState() {
+        SwingUtilities.invokeLater(() -> {
+            boolean isActive = WindowManager.getDefault().getMainWindow().isFocused();
+            
+            boolean focusStateChanged = isActive != SoftwareEventManager.isCurrentlyActive;
+            if (focusStateChanged) {
+                if (!isActive) {
+                    KeystrokeCount keystrokeCount = KeystrokeManager.getInstance().getKeystrokeCount();
+                    if (keystrokeCount != null) {
+                        // set the flag the "unfocusStateChangeHandler" will look for in order to process payloads early
+                        keystrokeCount.triggered = false;
+                        keystrokeCount.processKeystrokes();
+                    }
+                    EventTrackerManager.getInstance().trackEditorAction("editor", "unfocus");
+                } else {
+                    // just set the process keystrokes payload to false since we're focused again
+                    EventTrackerManager.getInstance().trackEditorAction("editor", "focus");
+                }
+            }
+            
+            // update the currently active flag
+            SoftwareEventManager.isCurrentlyActive = isActive;
+        });
     }
 
 }

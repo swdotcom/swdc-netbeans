@@ -32,12 +32,38 @@
                     </run-dependency>
                 </dependency>
                 <dependency>
+                    <code-name-base>org.netbeans.modules.editor</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <release-version>3</release-version>
+                        <specification-version>1.96.0.6.3.23.55</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.netbeans.modules.editor.document</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <specification-version>1.18.0.3</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
                     <code-name-base>org.netbeans.modules.editor.lib2</code-name-base>
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
                         <release-version>1</release-version>
                         <specification-version>2.16.3.56.3</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.netbeans.modules.editor.util</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <release-version>1</release-version>
+                        <specification-version>1.74</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -59,11 +85,36 @@
                     </run-dependency>
                 </dependency>
                 <dependency>
+                    <code-name-base>org.netbeans.modules.settings</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <release-version>1</release-version>
+                        <specification-version>1.57</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.openide.actions</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <specification-version>6.48</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
                     <code-name-base>org.openide.awt</code-name-base>
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
                         <specification-version>7.67.1</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.openide.explorer</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <specification-version>6.71</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -141,20 +192,24 @@
             </module-dependencies>
             <public-packages/>
             <class-path-extension>
-                <runtime-relative-path>ext/gson-2.8.0.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/gson-2.8.0.jar</binary-origin>
-            </class-path-extension>
-            <class-path-extension>
-                <runtime-relative-path>ext/httpclient-4.5.6.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/httpclient-4.5.6.jar</binary-origin>
+                <runtime-relative-path>ext/swdc-java-tracker-1.1.1.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/swdc-java-tracker-1.1.1.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
                 <runtime-relative-path>ext/commons-logging-1.2.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/commons-logging-1.2.jar</binary-origin>
             </class-path-extension>
             <class-path-extension>
-                <runtime-relative-path>ext/httpcore-4.4.10.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/httpcore-4.4.10.jar</binary-origin>
+                <runtime-relative-path>ext/httpclient-4.5.7.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/httpclient-4.5.7.jar</binary-origin>
+            </class-path-extension>
+            <class-path-extension>
+                <runtime-relative-path>ext/gson-2.8.2.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/gson-2.8.2.jar</binary-origin>
+            </class-path-extension>
+            <class-path-extension>
+                <runtime-relative-path>ext/httpcore-4.4.11.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/httpcore-4.4.11.jar</binary-origin>
             </class-path-extension>
         </data>
     </configuration>

@@ -6,6 +6,9 @@
 package com.swdc.netbeans.plugin.actions;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
+import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
+import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
+import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +17,7 @@ import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.SwingUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
@@ -53,14 +57,14 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
     }
 
     private JComponent[] createMenu() {
-        SoftwareUtil.UserStatus userStatus = SoftwareUtil.getInstance().getUserStatus();
+        boolean loggedIn = SoftwareUtil.getUserLoginState();
         List<JComponent> items = new ArrayList<>();
 
         items.add(toMenuItem(new CodeTimeDashboardAction()));
         items.add(toMenuItem(new CodeTimeTop40Action()));
         items.add(toMenuItem(new WebDashboardAction()));
 
-        if (!userStatus.loggedIn) {
+        if (!loggedIn) {
             // not logged in, show the login and signup menu items
             items.add(toMenuItem(new CodeTimeLoginAction()));
         }
@@ -94,7 +98,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchWebDashboard();
+            SoftwareSessionManager.launchWebDashboard(UIInteractionType.keyboard);
         }
 
         @Override
@@ -111,7 +115,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchCodeTimeMetricsDashboard();
+            SoftwareUtil.launchCodeTimeMetricsDashboard();
         }
 
         @Override
@@ -128,7 +132,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchLogin();
+            SoftwareSessionManager.launchLogin("email", UIInteractionType.keyboard);
         }
 
         @Override
@@ -145,7 +149,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().launchSoftwareTopForty();
+            SoftwareUtil.launchSoftwareTopForty();
         }
 
         @Override
@@ -162,12 +166,24 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.getInstance().toggleStatusBar();
+            SoftwareUtil.toggleStatusBar(UIInteractionType.keyboard);
+
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    CodeTimeTreeTopComponent.updateMetrics(null, null);
+                } catch (Exception ex) {
+                    System.err.println(ex);
+                }
+            });
         }
 
         @Override
         public JMenuItem getMenuPresenter() {
-            JMenuItem item = new JMenuItem("Show/hide status bar metrics");
+            String toggleText = "Hide status bar metrics";
+            if (!SoftwareUtil.showingStatusText()) {
+                toggleText = "Show status bar metrics";
+            }
+            JMenuItem item = new JMenuItem(toggleText);
             item.addActionListener(this);
             return item;
         }

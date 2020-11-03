@@ -5,7 +5,8 @@
  */
 package com.swdc.netbeans.plugin.status;
 
-import com.swdc.netbeans.plugin.SoftwareUtil;
+import com.swdc.netbeans.plugin.managers.FileManager;
+import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
@@ -31,21 +32,16 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     private long last_click_time = -1;
     
     private static boolean showStatusText = true;
-    private static StatusBarType lastStatusType = StatusBarType.NO_KPM;
+    private static StatusBarType lastStatusType = StatusBarType.PAW;
     private static String lastMsg = "";
     private static String lastTooltip = "";
 
     private static boolean registeredMouseClick = false;
     
-    public enum StatusBarType {
-        ROCKET("com/swdc/netbeans/plugin/status/rocket.png"),
-        FULL("com/swdc/netbeans/plugin/status/100.png"),
-        ALMOST("com/swdc/netbeans/plugin/status/75.png"),
-        HALF("com/swdc/netbeans/plugin/status/50.png"),
-        QUARTER("com/swdc/netbeans/plugin/status/25.png"),
-        NO_KPM("com/swdc/netbeans/plugin/status/sw.png"),
-        ALERT("com/swdc/netbeans/plugin/status/warning.png"),
-        OFF("com/swdc/netbeans/plugin/status/clock.png");
+    public static enum StatusBarType {
+        PAW("com/swdc/netbeans/plugin/assets/paw-grey.png"),
+        ROCKET("com/swdc/netbeans/plugin/assets/rocket.png"),
+        OFF("com/swdc/netbeans/plugin/assets/status-clock.png");
 
         private Icon icon;
 
@@ -56,13 +52,13 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
 
     public SoftwareStatusBar() {
         
-        statusLabel.setIcon(StatusBarType.NO_KPM.icon);
+        statusLabel.setIcon(StatusBarType.PAW.icon);
         if (!registeredMouseClick) {
             registeredMouseClick = true;
             statusLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    SoftwareUtil.getInstance().launchCodeTimeMetricsDashboard();
+                    CodeTimeTreeTopComponent.openTree();
                 }
             });
         }
@@ -76,56 +72,31 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
             updateMessage(lastStatusType, lastMsg, lastTooltip);
         } else {
             // set status line will update it to a clock
-            updateMessage(StatusBarType.NO_KPM, "", lastTooltip);
+            updateMessage(StatusBarType.OFF, "", lastTooltip);
         }
     }
 
     public void updateMessage(StatusBarType status, String text, String tooltip) {
-        String name = SoftwareUtil.getInstance().getItem("name");
+        String name = FileManager.getItem("name");
         
-        if ( showStatusText ) {
-            lastMsg = text;
-            lastTooltip = tooltip;
-            lastStatusType = status;
-            statusLabel.setText(text + " ");
-        }
-        
-        if (tooltip != null && name != null && !name.equals("")) {
+        tooltip = tooltip == null ? "" : tooltip;
+        if (name != null && !name.equals("")) {
             tooltip += " (" + name + ")";
         }
-        
-        if (!showStatusText) {
-            tooltip = lastMsg + " | " + tooltip;
-            status = StatusBarType.OFF;
-            statusLabel.setText(" ");
-        }
-        
+
+        text = text == null ? "" : text + " ";
         
         statusLabel.setToolTipText(tooltip);
+        statusLabel.setText(text);
         switch (status) {
             case ROCKET:
                 statusLabel.setIcon(StatusBarType.ROCKET.icon);
-                break;
-            case FULL:
-                statusLabel.setIcon(StatusBarType.FULL.icon);
-                break;
-            case ALMOST:
-                statusLabel.setIcon(StatusBarType.ALMOST.icon);
-                break;
-            case HALF:
-                statusLabel.setIcon(StatusBarType.HALF.icon);
-                break;
-            case QUARTER:
-                statusLabel.setIcon(StatusBarType.QUARTER.icon);
-                break;
-            case ALERT:
-                statusLabel.setIcon(StatusBarType.ALERT.icon);
                 break;
             case OFF:
                 statusLabel.setIcon(StatusBarType.OFF.icon);
                 break;
             default:
-                statusLabel.setIcon(StatusBarType.NO_KPM.icon);
+                statusLabel.setIcon(StatusBarType.PAW.icon);
                 break;
         }
         statusLabel.repaint();

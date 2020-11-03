@@ -28,8 +28,6 @@ public class RepoManager {
 
     public static final Logger LOG = Logger.getLogger("RepoManager");
 
-    private static final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
-
     private static RepoManager instance = null;
 
     public static RepoManager getInstance() {
@@ -40,7 +38,7 @@ public class RepoManager {
     }
 
     public JsonObject getLatestCommit(String projectDir) {
-        JsonObject resource = softwareUtil.getResourceInfo(projectDir);
+        JsonObject resource = SoftwareUtil.getResourceInfo(projectDir);
         if (resource.has("identifier")) {
             String identifier = resource.get("identifier").getAsString();
             String tag = (resource.has("tag")) ? resource.get("tag").getAsString() : "";
@@ -56,7 +54,7 @@ public class RepoManager {
                 qryString += "&branch=" + encodedBranch;
 
                 SoftwareResponse softwareResp =
-                        softwareUtil.makeApiCall("/commits/latest?" + qryString, HttpGet.METHOD_NAME, null);
+                        SoftwareUtil.makeApiCall("/commits/latest?" + qryString, HttpGet.METHOD_NAME, null);
                 if (softwareResp != null && softwareResp.isOk()) {
                     JsonObject payload = softwareResp.getJsonObj();
                     // will get a single commit object back with the following attributes
@@ -76,7 +74,7 @@ public class RepoManager {
     }
 
     public void getHistoricalCommits(String projectDir) {
-        JsonObject resource = softwareUtil.getResourceInfo(projectDir);
+        JsonObject resource = SoftwareUtil.getResourceInfo(projectDir);
         if (resource.has("identifier")) {
             String identifier = resource.get("identifier").getAsString();
             String tag = (resource.has("tag")) ? resource.get("tag").getAsString() : "";
@@ -106,7 +104,7 @@ public class RepoManager {
             }
 
             String[] commitHistoryCmd = Arrays.copyOf(cmdList.toArray(), cmdList.size(), String[].class);
-            String historyContent = softwareUtil.runCommand(commitHistoryCmd, projectDir);
+            String historyContent = SoftwareUtil.runCommand(commitHistoryCmd, projectDir);
 
             if (historyContent == null || historyContent.isEmpty()) {
                 return;
@@ -224,7 +222,7 @@ public class RepoManager {
             String commitDataStr = commitData.toString();
 
             SoftwareResponse softwareResp =
-                    softwareUtil.makeApiCall("/commits", HttpPost.METHOD_NAME, commitDataStr);
+                    SoftwareUtil.makeApiCall("/commits", HttpPost.METHOD_NAME, commitDataStr);
 
             if (softwareResp != null) {
 
@@ -249,14 +247,14 @@ public class RepoManager {
     }
 
     public void processRepoMembersInfo(final String projectDir) {
-        JsonObject resource = softwareUtil.getResourceInfo(projectDir);
+        JsonObject resource = SoftwareUtil.getResourceInfo(projectDir);
         if (resource.has("identifier")) {
             String identifier = resource.get("identifier").getAsString();
             String tag = (resource.has("tag")) ? resource.get("tag").getAsString() : "";
             String branch = (resource.has("branch")) ? resource.get("branch").getAsString() : "";
 
             String[] identifierCmd = {"git", "log", "--pretty=%an,%ae"};
-            String devOutput = softwareUtil.runCommand(identifierCmd, projectDir);
+            String devOutput = SoftwareUtil.runCommand(identifierCmd, projectDir);
 
             // String[] devList = devOutput.replace(/\r\n/g, "\r").replace(/\n/g,"\r").split(/\r/);
             String[] devList = devOutput.split("\n");
@@ -290,7 +288,7 @@ public class RepoManager {
                     String repoDataStr = repoData.toString();
                     
                     SoftwareResponse softwareResp =
-                            softwareUtil.makeApiCall("/repo/members", HttpPost.METHOD_NAME, repoDataStr);
+                            SoftwareUtil.makeApiCall("/repo/members", HttpPost.METHOD_NAME, repoDataStr);
                     if (softwareResp.isOk()) {
                         LOG.log(Level.INFO, "Code Time: Completed sending repo member info");
                     } else {

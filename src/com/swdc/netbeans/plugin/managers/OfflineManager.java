@@ -8,7 +8,6 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,8 +29,6 @@ public class OfflineManager {
     public static final Logger LOG = Logger.getLogger("OfflineManager");
 
     private static OfflineManager instance = null;
-
-    private final SoftwareUtil softwareUtil = SoftwareUtil.getInstance();
 
     public SessionSummaryData sessionSummaryData = new SessionSummaryData();
 
@@ -74,41 +71,13 @@ public class OfflineManager {
     }
 
     public String getSessionSummaryFile() {
-        String file = softwareUtil.getSoftwareDir(true);
-        if (softwareUtil.isWindows()) {
+        String file = SoftwareUtil.getSoftwareDir(true);
+        if (SoftwareUtil.isWindows()) {
             file += "\\sessionSummary.json";
         } else {
             file += "/sessionSummary.json";
         }
         return file;
-    }
-
-    public void updateStatusBarWithSummaryData(JsonObject sessionSummary) {
-
-        int averageDailyMinutes = 0;
-        if (sessionSummary.has("averageDailyMinutes")) {
-            averageDailyMinutes = sessionSummary.get("averageDailyMinutes").getAsInt();
-        }
-        int currentDayMinutes = 0;
-        if (sessionSummary.has("currentDayMinutes")) {
-            currentDayMinutes = sessionSummary.get("currentDayMinutes").getAsInt();
-        }
-
-        String currentDayTimeStr = softwareUtil.humanizeMinutes(currentDayMinutes);
-        String averageDailyMinutesTimeStr = softwareUtil.humanizeMinutes(averageDailyMinutes);
-
-        SoftwareStatusBar.StatusBarType barType = currentDayMinutes > averageDailyMinutes
-                ? SoftwareStatusBar.StatusBarType.ROCKET
-                : SoftwareStatusBar.StatusBarType.NO_KPM;
-        String msg = currentDayTimeStr;
-        if (averageDailyMinutes > 0) {
-            msg += " | " + averageDailyMinutesTimeStr;
-        }
-
-        softwareUtil.setStatusLineMessage(barType, msg,
-                "Code time today vs. your daily average. Click to see more from Code Time");
-
-        softwareUtil.fetchCodeTimeMetricsDashboard(sessionSummary);
     }
 
     public void saveSessionSummaryToDisk() {
@@ -140,13 +109,13 @@ public class OfflineManager {
                 byte[] encoded = Files.readAllBytes(Paths.get(sessionSummaryFile));
                 String content = new String(encoded, Charset.defaultCharset());
                 // json parse it
-                data = SoftwareUtil.jsonParser.parse(content).getAsJsonObject();
+                data = SoftwareUtil.readAsJsonObject(content);
             } catch (JsonSyntaxException | IOException e) {
                 LOG.log(Level.SEVERE, "Code Time: Error trying to read and json parse the session file.", e);
             }
         } else {
             String jsonStr = SoftwareUtil.gson.toJson(new SessionSummaryData());
-            data = (JsonObject) SoftwareUtil.jsonParser.parse(jsonStr);
+            data = SoftwareUtil.readAsJsonObject(jsonStr);
         }
         return data;
     }
@@ -154,7 +123,7 @@ public class OfflineManager {
     public String getSessionSummaryInfoFileContent() {
         String content = null;
 
-        String sessionSummaryFile = softwareUtil.getSummaryInfoFile(true);
+        String sessionSummaryFile = SoftwareUtil.getSummaryInfoFile(true);
         File f = new File(sessionSummaryFile);
         if (f.exists()) {
             try {
