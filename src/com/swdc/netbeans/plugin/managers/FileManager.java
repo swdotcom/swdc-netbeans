@@ -39,7 +39,7 @@ import org.netbeans.api.project.Project;
 public class FileManager {
 
     public static final Logger log = Logger.getLogger("FileManager");
-    
+
     private static KeystrokeCount lastSavedKeystrokeStats = null;
 
     public static void clearLastSavedKeystrokeStats() {
@@ -162,73 +162,6 @@ public class FileManager {
         }
     }
 
-    public static void sendBatchData(String file, String api) {
-        File f = new File(file);
-        if (f.exists()) {
-            // found a data file, check if there's content
-            StringBuffer sb = new StringBuffer();
-            try {
-                FileInputStream fis = new FileInputStream(f);
-
-                // Construct BufferedReader from InputStreamReader
-                BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-
-                String line = null;
-                // add commas to the end of each line
-                while ((line = br.readLine()) != null) {
-                    if (line.length() > 0) {
-                        sb.append(line).append(",");
-                    }
-                }
-
-                br.close();
-
-                if (sb.length() > 0) {
-                    // check to see if it's already an array
-                    String payloads = sb.toString();
-                    payloads = payloads.substring(0, payloads.lastIndexOf(","));
-                    payloads = "[" + payloads + "]";
-
-                    JsonArray jsonArray = SoftwareUtil.readAsJsonArray(payloads);
-
-                    // delete the file
-                    deleteFile(file);
-
-                    JsonArray batch = new JsonArray();
-                    int batch_size = 5;
-                    // go through the array about 50 at a time
-                    for (int i = 0; i < jsonArray.size(); i++) {
-                        batch.add(jsonArray.get(i));
-                        if (i > 0 && i % batch_size == 0) {
-                            String payloadData = SoftwareUtil.gson.toJson(batch);
-                            SoftwareResponse resp =
-                                    SoftwareUtil.makeApiCall(api, HttpPost.METHOD_NAME, payloadData);
-                            if (!resp.isOk()) {
-                                // add these back to the offline file
-                                log.info("Code Time: Unable to send batch data: " + resp.getErrorMessage());
-                            }
-                            batch = new JsonArray();
-                        }
-                    }
-                    if (batch.size() > 0) {
-                        String payloadData = SoftwareUtil.gson.toJson(batch);
-                        SoftwareResponse resp =
-                                SoftwareUtil.makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloadData);
-                        if (!resp.isOk()) {
-                            // add these back to the offline file
-                            log.info("Code Time: Unable to send batch data: " + resp.getErrorMessage());
-                        }
-                    }
-
-                } else {
-                    log.info("Code Time: No offline data to send");
-                }
-            } catch (Exception e) {
-                log.warning("Code Time: Error trying to read and send offline data: " + e.getMessage());
-            }
-        }
-    }
-
     public static void saveFileContent(String file, String content) {
         File f = new File(file);
         Writer writer = null;
@@ -251,7 +184,7 @@ public class FileManager {
             if (p == null) {
                 return;
             }
-            
+
             UIElementEntity elementEntity = new UIElementEntity();
             elementEntity.element_name = interactionType == UIInteractionType.click ? "ct_learn_more_btn" : "ct_learn_more_cmd";
             elementEntity.element_location = interactionType == UIInteractionType.click ? "ct_menu_tree" : "ct_command_palette";
@@ -259,9 +192,9 @@ public class FileManager {
             elementEntity.cta_text = "Learn more";
             elementEntity.icon_name = interactionType == UIInteractionType.click ? "document" : null;
             EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
-            
+
             String fileContent = getReadmeContent();
-            
+
             String readmeFile = SoftwareUtil.getReadmeFile();
             File f = new File(readmeFile);
             if (!f.exists()) {
@@ -281,7 +214,7 @@ public class FileManager {
                     } catch (Exception ex) {/*ignore*/}
                 }
             }
-            
+
             SoftwareUtil.launchFile(f.getPath());
         });
     }
