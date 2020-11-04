@@ -851,29 +851,6 @@ public class SoftwareUtil {
         return null;
     }
     
-    public static void sendHeartbeat(String reason) {
-        boolean serverIsOnline = isServerOnline();
-        String jwt = FileManager.getItem("jwt");
-        if (serverIsOnline && jwt != null) {
-
-            long start = Math.round(System.currentTimeMillis() / 1000);
-
-            JsonObject payload = new JsonObject();
-            payload.addProperty("pluginId", SoftwareUtil.PLUGIN_ID);
-            payload.addProperty("os", getOs());
-            payload.addProperty("start", start);
-            payload.addProperty("version", getVersion());
-            payload.addProperty("hostname", getHostname());
-            payload.addProperty("trigger_annotation", reason);
-
-            String api = "/data/heartbeat";
-            SoftwareResponse resp = makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), jwt);
-            if (!resp.isOk()) {
-                LOG.log(Level.WARNING, "Code Time: unable to send heartbeat ping");
-            }
-        }
-    }
-    
     public static String getDashboardRow(String label, String value) {
         String content = getDashboardLabel(label) + " : " + getDashboardValue(value) + "\n";
         return content;
