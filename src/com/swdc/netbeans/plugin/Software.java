@@ -46,7 +46,7 @@ public class Software extends ModuleInstall implements Runnable {
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
     private static final int FOCUS_STATE_INTERVAL_SECONDS = 5;
 
-    private static final int retry_counter = 0;
+    private static int retry_counter = 0;
     private static final long check_online_interval_ms = 1000 * 60 * 10;
 
     @Override
@@ -62,6 +62,7 @@ public class Software extends ModuleInstall implements Runnable {
             if (!serverIsOnline) {
                 // server isn't online, check again in 10 min
                 if (retry_counter == 0) {
+                    retry_counter++;
                     showOfflinePrompt();
                 }
                 new Thread(() -> {
@@ -78,6 +79,7 @@ public class Software extends ModuleInstall implements Runnable {
                 if (jwt == null) {
                     // it failed, try again later
                     if (retry_counter == 0) {
+                        retry_counter++;
                         initComponent();
                     }
                     new Thread(() -> {
@@ -117,21 +119,10 @@ public class Software extends ModuleInstall implements Runnable {
             FileManager.setItem("netbeans_CtReadme", "true");
         }
 
-
         // setup the document change event listeners
         setupEventListeners();
 
         StatusBarManager.updateStatusBar();
-
-        // send the init heartbeat
-        SwingUtilities.invokeLater(() -> {
-            try {
-                Thread.sleep(5000);
-                SoftwareUtil.sendHeartbeat("INITIALIZED");
-            } catch (InterruptedException e) {
-                System.err.println(e);
-            }
-        });
         
         // initialize the wallclock manager
         WallClockManager.getInstance().updateSessionSummaryFromServer();
