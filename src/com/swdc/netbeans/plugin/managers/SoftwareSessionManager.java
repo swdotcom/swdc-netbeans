@@ -184,12 +184,12 @@ public class SoftwareSessionManager {
                 icon_color = "gray";
                 url = SoftwareUtil.LAUNCH_URL + "/email-signup?token=" + jwt + "&plugin=codetime&auth=software";
             } else if (loginType.equals("google")) {
-                url = SoftwareUtil.API_ENDPOINT + "/auth/google?token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
+                url = SoftwareUtil.API_ENDPOINT + "/auth/google?plugin_token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
             } else if (loginType.equals("github")) {
                 element_name = "ct_sign_up_github_btn";
                 cta_text = "Sign up with GitHub";
                 icon_name = "github";
-                url = SoftwareUtil.API_ENDPOINT + "/auth/github?token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
+                url = SoftwareUtil.API_ENDPOINT + "/auth/github?plugin_token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
             }
 
             FileManager.setItem("authType", loginType);

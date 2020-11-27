@@ -120,9 +120,10 @@ public class TreeHelper {
         
         MetricTreeNode toggleNode = new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID);
         
-        list.add(toggleNode);
         list.add(new MetricTreeNode("Learn more", "readme.png", LEARN_MORE_ID));
+        list.add(toggleNode);
         list.add(new MetricTreeNode("Submit feedback", "message.png", SEND_FEEDBACK_ID));
+        list.add(new MetricTreeNode(true));
         list.add(new MetricTreeNode("See advanced metrics", "paw-grey.png", ADVANCED_METRICS_ID));
         list.add(new MetricTreeNode("View summary", "dashboard.png", VIEW_SUMMARY_ID));
         

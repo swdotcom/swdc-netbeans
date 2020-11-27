@@ -9,7 +9,6 @@ import com.swdc.netbeans.plugin.managers.AsyncManager;
 import com.swdc.netbeans.plugin.managers.EventTrackerManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
-import com.swdc.netbeans.plugin.managers.RepoManager;
 import com.swdc.netbeans.plugin.managers.SoftwareEventManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import com.swdc.netbeans.plugin.managers.WallClockManager;
@@ -39,8 +38,6 @@ public class Software extends ModuleInstall implements Runnable {
     public static final Logger LOG = Logger.getLogger("Software");
 
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-    private RepoManager repoManager;
 
     private final int ONE_MINUTE_SECONDS = 60;
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
@@ -101,7 +98,6 @@ public class Software extends ModuleInstall implements Runnable {
     }
 
     protected void initializePlugin(boolean initializedUser) {
-        repoManager = RepoManager.getInstance();
 
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
         LOG.log(Level.INFO, "Code Time: Loaded v{0}", SoftwareUtil.getVersion());

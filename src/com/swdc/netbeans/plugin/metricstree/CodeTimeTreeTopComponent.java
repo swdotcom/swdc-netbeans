@@ -186,6 +186,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             CodeTimeTreeTopComponent topComp = (CodeTimeTreeTopComponent) WindowManager.getDefault().findTopComponent("CodeTimeTreeWindowTopComponent");
             if (topComp != null) {
                 topComp.open();
+                topComp.updateUI();
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to retrieve the code time top component: {0}", e.getMessage());
