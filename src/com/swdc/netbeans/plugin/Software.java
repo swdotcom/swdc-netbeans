@@ -24,6 +24,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
+import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
@@ -48,53 +49,19 @@ public class Software extends ModuleInstall implements Runnable {
 
     @Override
     public void run() {
-        initComponent();
-    }
-
-    protected void initComponent() {
-        boolean serverIsOnline = SoftwareUtil.isServerOnline();
-        boolean hasJwt = SoftwareUtil.hasJwt();
-        // no session file or no jwt
-        if (!hasJwt) {
-            if (!serverIsOnline) {
-                // server isn't online, check again in 10 min
-                if (retry_counter == 0) {
-                    retry_counter++;
+        String jwt = FileManager.getItem("jwt");
+        if (StringUtils.isBlank(jwt)) {
+            jwt = SoftwareUtil.createAnonymousUser(false);
+            if (StringUtils.isBlank(jwt)) {
+                boolean serverIsOnline = SoftwareUtil.isServerOnline();
+                if (!serverIsOnline) {
                     showOfflinePrompt();
                 }
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(check_online_interval_ms);
-                        initComponent();
-                    } catch (InterruptedException e) {
-                        System.err.println(e);
-                    }
-                }).start();
             } else {
-                // create the anon user
-                String jwt = SoftwareUtil.createAnonymousUser(serverIsOnline);
-                if (jwt == null) {
-                    // it failed, try again later
-                    if (retry_counter == 0) {
-                        retry_counter++;
-                        initComponent();
-                    }
-                    new Thread(() -> {
-                        try {
-                            Thread.sleep(check_online_interval_ms);
-                            initComponent();
-                        } catch (InterruptedException e) {
-                            System.err.println(e);
-                        }
-                    }).start();
-                } else {
-                    initializePlugin(true);
-                }
+                initializePlugin(true);
             }
-        } else {
-            // session json already exists, continue with plugin init
-            initializePlugin(false);
         }
+        initializePlugin(false);
     }
 
     protected void initializePlugin(boolean initializedUser) {

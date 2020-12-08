@@ -8,6 +8,7 @@ package com.swdc.netbeans.plugin.metricstree;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
+import com.swdc.netbeans.plugin.managers.SwitchAccountManager;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.Color;
@@ -63,6 +64,8 @@ public class TreeHelper {
     public static final String KEYSTROKES_TODAY_ID = "keystrokes_today";
     public static final String KEYSTROKES_AVG_TODAY_ID = "keystrokes_avg_today";
     public static final String KEYSTROKES_GLOBAL_AVG_TODAY_ID = "keystrokes_global_avg_today";
+    
+    public static final String SWITCH_ACCOUNT_ID = "switch_account";
 
     private static final SimpleDateFormat formatDay = new SimpleDateFormat("EEE");
     
@@ -96,7 +99,7 @@ public class TreeHelper {
         return node;
     }
     
-    private static MetricTreeNode buildLoggedInNode() {
+    public static MetricTreeNode buildLoggedInNode() {
         String authType = FileManager.getItem("authType");
         String name = FileManager.getItem("name");
         String iconName = "icons8-envelope-16.png";
@@ -107,6 +110,7 @@ public class TreeHelper {
         }
         
         MetricTreeNode node = new MetricTreeNode(name, iconName, LOGGED_IN_ID);
+        node.add(new MetricTreeNode("Switch account", "paw.png", SWITCH_ACCOUNT_ID));
         return node;
     }
     
@@ -282,15 +286,19 @@ public class TreeHelper {
     public static void handleClickEvent(MetricTreeNode node) {
         switch (node.getId()) {
             case GOOGLE_SIGNUP_ID:
-                SoftwareSessionManager.launchLogin("google", UIInteractionType.click);
+                SoftwareSessionManager.launchLogin("google", UIInteractionType.click, false);
                 break;
             case GITHIUB_SIGNUP_ID:
-                SoftwareSessionManager.launchLogin("github", UIInteractionType.click);
+                SoftwareSessionManager.launchLogin("github", UIInteractionType.click, false);
                 break;
             case EMAIL_SIGNUP_ID:
-                SoftwareSessionManager.launchLogin("email", UIInteractionType.click);
+                SoftwareSessionManager.launchLogin("email", UIInteractionType.click, false);
                 break;
             case LOGGED_IN_ID:
+                CodeTimeTreeTopComponent.expandCollapse(LOGGED_IN_ID);
+                break;
+            case SWITCH_ACCOUNT_ID:
+                SwitchAccountManager.initiateSwitchAccountFlow();
                 break;
             case VIEW_SUMMARY_ID:
                 SoftwareUtil.launchCodeTimeMetricsDashboard();

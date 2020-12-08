@@ -132,7 +132,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareSessionManager.launchLogin("email", UIInteractionType.keyboard);
+            SoftwareSessionManager.launchLogin("email", UIInteractionType.keyboard, false);
         }
 
         @Override
