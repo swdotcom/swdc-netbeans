@@ -111,9 +111,9 @@ public class SoftwareUtil {
     public static final Gson gson = new GsonBuilder().create();
 
     // set the api endpoint to use
-    public final static String API_ENDPOINT = "https://api.software.com";
+    public final static String API_ENDPOINT = "https://stagingapi.software.com";// "https://api.software.com";
     // set the launch url to use
-    public final static String LAUNCH_URL = "https://app.software.com";
+    public final static String LAUNCH_URL = "https://staging.software.com";// "https://app.software.com";
     
     private static int DASHBOARD_LABEL_WIDTH = 25;
     private static int DASHBOARD_VALUE_WIDTH = 25;
@@ -776,11 +776,7 @@ public class SoftwareUtil {
 
             String plugin_uuid = FileManager.getPluginUuid();
             String auth_callback_state = FileManager.getAuthCallbackState();
-            if (StringUtils.isBlank(plugin_uuid)) {
-                plugin_uuid = UUID.randomUUID().toString();
-                // write the plugin uuid to the device.json file
-                FileManager.setPluginUuid(plugin_uuid);
-            }
+
             if (StringUtils.isBlank(auth_callback_state)) {
                 auth_callback_state = UUID.randomUUID().toString();
                 FileManager.setAuthCallbackState(auth_callback_state);
