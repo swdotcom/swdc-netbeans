@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import org.apache.commons.lang.StringUtils;
@@ -79,6 +80,16 @@ public class FileManager {
             file += "\\session.json";
         } else {
             file += "/session.json";
+        }
+        return file;
+    }
+    
+    private static String getDeviceFile() {
+        String file = getSoftwareDir(true);
+        if (SoftwareUtil.isWindows()) {
+            file += "\\device.json";
+        } else {
+            file += "/device.json";
         }
         return file;
     }
@@ -335,6 +346,24 @@ public class FileManager {
         }
         return defaultVal.longValue();
     }
+    
+    public static void setBooleanItem(String key, boolean val) {
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        sessionJson.addProperty(key, val);
+
+        String content = sessionJson.toString();
+        String sessionFile = getSoftwareSessionFile(true);
+
+        saveFileContent(sessionFile, content);
+    }
+
+    public static boolean getBooleanItem(String key) {
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
+            return sessionJson.get(key).getAsBoolean();
+        }
+        return false;
+    }
 
     public static JsonObject getSoftwareSessionAsJson() {
         String sessionFile = getSoftwareSessionFile(true);
@@ -460,6 +489,39 @@ public class FileManager {
             }
         }
         return null;
+    }
+    
+    public static String getPluginUuid() {
+        String plugin_uuid = null;
+        JsonObject deviceJson = getJsonObjectFromFile(getDeviceFile());
+        if (deviceJson.has("plugin_uuid") && !deviceJson.get("plugin_uuid").isJsonNull()) {
+            plugin_uuid = deviceJson.get("plugin_uuid").getAsString();
+        } else {
+            // set it for the 1st and only time
+            plugin_uuid = UUID.randomUUID().toString();
+            deviceJson.addProperty("plugin_uuid", plugin_uuid);
+            String content = deviceJson.toString();
+            saveFileContent(getDeviceFile(), content);
+        }
+        return plugin_uuid;
+    }
+
+    public static String getAuthCallbackState() {
+        JsonObject deviceJson = getJsonObjectFromFile(getDeviceFile());
+        if (deviceJson != null && deviceJson.has("auth_callback_state") && !deviceJson.get("auth_callback_state").isJsonNull()) {
+            return deviceJson.get("auth_callback_state").getAsString();
+        }
+        return null;
+    }
+
+    public static void setAuthCallbackState(String value) {
+        String deviceFile = getDeviceFile();
+        JsonObject deviceJson = getJsonObjectFromFile(deviceFile);
+        deviceJson.addProperty("auth_callback_state", value);
+
+        String content = deviceJson.toString();
+
+        saveFileContent(deviceFile, content);
     }
 
 }

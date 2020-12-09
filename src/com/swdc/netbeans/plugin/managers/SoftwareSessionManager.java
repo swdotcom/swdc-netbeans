@@ -5,6 +5,7 @@
  */
 package com.swdc.netbeans.plugin.managers;
 
+import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
@@ -15,11 +16,15 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
@@ -31,7 +36,6 @@ public class SoftwareSessionManager {
     private static SoftwareSessionManager instance = null;
     public static final Logger LOG = Logger.getLogger("SoftwareCoSessionManager");
     private static long lastAppAvailableCheck = 0;
-    public static boolean establishingUser = false;
 
     public static SoftwareSessionManager getInstance() {
         if (instance == null) {
@@ -139,15 +143,23 @@ public class SoftwareSessionManager {
     protected static void lazilyFetchUserStatus(int retryCount) {
         boolean establishedUser = SoftwareUtil.getUserLoginState();
 
-        if (!establishedUser && retryCount > 0) {
-            final int newRetryCount = retryCount - 1;
+        if (!establishedUser) {
+            if (retryCount > 0) {
+                final int newRetryCount = retryCount - 1;
 
-            final Runnable service = () -> lazilyFetchUserStatus(newRetryCount);
-            AsyncManager.getInstance().executeOnceInSeconds(service, 8);
+                final Runnable service = () -> lazilyFetchUserStatus(newRetryCount);
+                AsyncManager.getInstance().executeOnceInSeconds(service, 10);
+            } else {
+                // clear the auth callback state
+                FileManager.setBooleanItem("switching_account", false);
+                FileManager.setAuthCallbackState(null);
+            }
         } else {
-            establishingUser = false;
-            // prompt they've completed the setup
+            // clear the auth callback state
+            FileManager.setBooleanItem("switching_account", false);
+            FileManager.setAuthCallbackState(null);
 
+            // prompt they've completed the setup
             String infoMsg = "Successfully logged onto Code Time";
             Object[] options = { "OK" };
             JOptionPane.showOptionDialog(null, infoMsg, "Code Time Setup Complete", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
@@ -168,9 +180,22 @@ public class SoftwareSessionManager {
         }
     }
 
-    public static void launchLogin(String loginType, UIInteractionType interactionType) {
+    public static void launchLogin(String loginType, UIInteractionType interactionType, boolean switching_account) {
         try {
-            String jwt = URLEncoder.encode( FileManager.getItem("jwt") , "UTF8" );
+            String auth_callback_state = UUID.randomUUID().toString();
+            FileManager.setAuthCallbackState(auth_callback_state);
+
+            FileManager.setBooleanItem("switching_account", switching_account);
+
+            String plugin_uuid = FileManager.getPluginUuid();
+
+            JsonObject obj = new JsonObject();
+            obj.addProperty("plugin", "codetime");
+            obj.addProperty("plugin_uuid", plugin_uuid);
+            obj.addProperty("pluginVersion", SoftwareUtil.getVersion());
+            obj.addProperty("plugin_id", SoftwareUtil.PLUGIN_ID);
+            obj.addProperty("auth_callback_state", auth_callback_state);
+            obj.addProperty("redirect", SoftwareUtil.LAUNCH_URL);
 
             String url = "";
             String element_name = "ct_sign_up_google_btn";
@@ -182,28 +207,41 @@ public class SoftwareSessionManager {
                 cta_text = "Sign up with email";
                 icon_name = "envelope";
                 icon_color = "gray";
-                url = SoftwareUtil.LAUNCH_URL + "/email-signup?token=" + jwt + "&plugin=codetime&auth=software";
+                url = SoftwareUtil.LAUNCH_URL + "/email-signup";
             } else if (loginType.equals("google")) {
-                url = SoftwareUtil.API_ENDPOINT + "/auth/google?plugin_token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
+                url = SoftwareUtil.API_ENDPOINT + "/auth/google";
             } else if (loginType.equals("github")) {
                 element_name = "ct_sign_up_github_btn";
                 cta_text = "Sign up with GitHub";
                 icon_name = "github";
-                url = SoftwareUtil.API_ENDPOINT + "/auth/github?plugin_token=" + jwt + "&plugin=codetime&redirect=" + SoftwareUtil.LAUNCH_URL;
+                url = SoftwareUtil.API_ENDPOINT + "/auth/github";
             }
 
+            StringBuilder sb = new StringBuilder();
+            Iterator<String> keys = obj.keySet().iterator();
+            while(keys.hasNext()) {
+                if (sb.length() > 0) {
+                    sb.append("&");
+                }
+                String key = keys.next();
+                String val = obj.get(key).getAsString();
+                try {
+                    val = URLEncoder.encode(val, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    LOG.log(Level.INFO, "Unable to url encode value, error: {0}", e.getMessage());
+                }
+                sb.append(key).append("=").append(val);
+            }
+            url += "?" + sb.toString();
+
             FileManager.setItem("authType", loginType);
-        
         
             URL launchUrl = new URL(url);
             URLDisplayer.getDefault().showURL(launchUrl);
             
-            if (!establishingUser) {
-                establishingUser = true;
-                // max of 5.3 minutes
-                final Runnable service = () -> lazilyFetchUserStatus(40);
-                AsyncManager.getInstance().executeOnceInSeconds(service, 8);
-            }
+            // max of 5.3 minutes
+            final Runnable service = () -> lazilyFetchUserStatus(40);
+            AsyncManager.getInstance().executeOnceInSeconds(service, 8);
 
             UIElementEntity elementEntity = new UIElementEntity();
             elementEntity.element_name = element_name;
@@ -212,7 +250,7 @@ public class SoftwareSessionManager {
             elementEntity.cta_text = cta_text;
             elementEntity.icon_name = icon_name;
             EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
-        } catch (UnsupportedEncodingException | MalformedURLException e) {
+        } catch (MalformedURLException e) {
             LOG.log(Level.WARNING, "Failed to launch the url: {0}", e.getMessage());
         }
     }

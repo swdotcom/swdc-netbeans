@@ -521,7 +521,7 @@ public class SoftwareUtil {
                     JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
             if (choice == 0) {
-                SoftwareSessionManager.launchLogin("email", UIInteractionType.keyboard);
+                SoftwareSessionManager.launchLogin("email", UIInteractionType.keyboard, false);
             }
         }
     }
@@ -767,21 +767,30 @@ public class SoftwareUtil {
         return null;
     }
 
-    public static String createAnonymousUser(boolean serverIsOnline) {
+    public static String createAnonymousUser(boolean ignoreJwt) {
         // make sure we've fetched the app jwt
-        String appJwt = getAppJwt(serverIsOnline);
+        String jwt = FileManager.getItem("jwt");
 
-        if (serverIsOnline && appJwt != null) {
+        if (StringUtils.isBlank(jwt) || ignoreJwt) {
             String timezone = TimeZone.getDefault().getID();
+
+            String plugin_uuid = FileManager.getPluginUuid();
+            String auth_callback_state = FileManager.getAuthCallbackState();
+
+            if (StringUtils.isBlank(auth_callback_state)) {
+                auth_callback_state = UUID.randomUUID().toString();
+                FileManager.setAuthCallbackState(auth_callback_state);
+            }
 
             JsonObject payload = new JsonObject();
             payload.addProperty("username", getOsUsername());
             payload.addProperty("timezone", timezone);
             payload.addProperty("hostname", getHostname());
-            payload.addProperty("creation_annotation", "NO_SESSION_FILE");
+            payload.addProperty("auth_callback_state", auth_callback_state);
+            payload.addProperty("plugin_uuid", plugin_uuid);
 
-            String api = "/data/onboard";
-            SoftwareResponse resp = makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), appJwt);
+            String api = "/plugins/onboard";
+            SoftwareResponse resp = SoftwareUtil.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString());
             if (resp.isOk()) {
                 // check if we have the data and jwt
                 // resp.data.jwt and resp.data.user
@@ -791,6 +800,8 @@ public class SoftwareUtil {
                 if (data != null && data.has("jwt")) {
                     String dataJwt = data.get("jwt").getAsString();
                     FileManager.setItem("jwt", dataJwt);
+                    FileManager.setBooleanItem("switching_account", false);
+                    FileManager.setAuthCallbackState(null);
                     return dataJwt;
                 }
             }
@@ -799,37 +810,53 @@ public class SoftwareUtil {
     }
     
     public static boolean getUserLoginState() {
-        String pluginjwt = FileManager.getItem("jwt");
+        String name = FileManager.getItem("name");
+        boolean switching_account = FileManager.getBooleanItem("switching_account");
 
-        JsonObject userObj = getUser();
-        if (userObj != null && userObj.has("email") && userObj.has("registered")) {
-            // check if the email is valid
-            int registered = userObj.get("registered").getAsInt();
-            if (registered == 1) {
-                FileManager.setItem("jwt", userObj.get("plugin_jwt").getAsString());
-                FileManager.setItem("name", userObj.get("email").getAsString());
-                return true;
-            }
+        if (StringUtils.isNotBlank(name) && !switching_account) {
+            return true;
         }
 
+        String authType = FileManager.getItem("authType");
+        if (StringUtils.isBlank(authType)) {
+            authType = "software";
+        }
+        String jwt = FileManager.getItem("jwt");
+        String auth_callback_state = FileManager.getAuthCallbackState();
+        String token = (StringUtils.isNotBlank(auth_callback_state)) ? auth_callback_state : jwt;
         String api = "/users/plugin/state";
-        SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, pluginjwt);
-        if (resp.isOk()) {
-            // check if we have the data and jwt
-            // resp.data.jwt and resp.data.user
-            // then update the session.json for the jwt
-            JsonObject data = resp.getJsonObj();
-            String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
-            // check if we have any data
-            if (state.equals("OK")) {
-                String dataJwt = data.get("jwt").getAsString();
-                FileManager.setItem("jwt", dataJwt);
-                String dataEmail = data.get("email").getAsString();
-                if (dataEmail != null) {
-                    FileManager.setItem("name", dataEmail);
-                }
-                return true;
+        SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, token);
+
+        boolean foundUser = (resp.isOk() && resp.getJsonObj() != null && resp.getJsonObj().has("user"));
+        String state = (foundUser) ? resp.getJsonObj().get("state").getAsString() : "UNKNOWN";
+        boolean isEmailLogin = (authType.equals("software") || authType.equals("email"));
+        if (!state.equals("OK") && isEmailLogin) {
+            // check using the jwt
+            resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+            foundUser = (resp.isOk() && resp.getJsonObj() != null && resp.getJsonObj().has("user"));
+        }
+
+        if (foundUser) {
+            JsonObject user = resp.getJsonObj().get("user").getAsJsonObject();
+
+            int registered = user.get("registered").getAsInt();
+            FileManager.setItem("jwt", user.get("plugin_jwt").getAsString());
+            if (registered == 1) {
+                FileManager.setItem("name", user.get("email").getAsString());
+            } else {
+                FileManager.setItem("name", null);
             }
+
+            String currentAuthType = FileManager.getItem("authType");
+            if (StringUtils.isBlank(currentAuthType)) {
+                FileManager.setItem("authType", "software");
+            }
+
+            FileManager.setBooleanItem("switching_account", false);
+            FileManager.setAuthCallbackState(null);
+
+            // if we need the user it's "resp.data.user"
+            return (registered == 1);
         }
 
         return false;

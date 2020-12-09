@@ -7,6 +7,7 @@ package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileAggregateDataManager;
+import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
@@ -21,6 +22,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
+import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
@@ -79,6 +81,10 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             if (codeTimeParentRow != -1) {
                 metricTree.expandRow(codeTimeParentRow);
             }
+            int loggedInParentRow = findParentNodeRowById(TreeHelper.LOGGED_IN_ID);
+            if (loggedInParentRow != -1) {
+                metricTree.expandRow(loggedInParentRow);
+            }
             expandInitialized = true;
         }
 
@@ -90,7 +96,14 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     }
     
     private static void updateNodeLabel(MetricTreeNode node, String label) {
+        updateNodeLabel(node, label, null);
+    }
+
+    private static void updateNodeLabel(MetricTreeNode node, String label, String iconName) {
         if (node != null) {
+            if (iconName != null) {
+                node.updateIconName(iconName);
+            }
             node.updateLabel(label);
         }
     }
@@ -160,6 +173,32 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     }
 
     public static void refreshTree() {
+        String name = FileManager.getItem("name");
+        // check to see if we need to swap out the signup nodes with the signed up node
+        MetricTreeNode loggedInNode = findNodeById(TreeHelper.LOGGED_IN_ID);
+        if (StringUtils.isNotBlank(name) && loggedInNode == null) {
+            // swap the nodes out
+            removeNodeById(TreeHelper.EMAIL_SIGNUP_ID);
+            removeNodeById(TreeHelper.GITHIUB_SIGNUP_ID);
+            removeNodeById(TreeHelper.GOOGLE_SIGNUP_ID);
+
+            // add the LOGGED_IN_ID node
+            loggedInNode = TreeHelper.buildLoggedInNode();
+            ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(loggedInNode, 0);
+        } else {
+            String authType = FileManager.getItem("authType");
+            String iconName = "icons8-envelope-16.png";
+            if ("google".equals(authType)) {
+                iconName = "google.png";
+            } else if ("github".equals(authType)) {
+                iconName = "github.png";
+            }
+            
+            String email = FileManager.getItem("name");
+            // update the logged in node
+            updateNodeLabel(findNodeById(TreeHelper.LOGGED_IN_ID), email, iconName);
+        }
+        
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
         Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
@@ -365,6 +404,69 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             }
 
             metricTree.updateUI();
+        }
+    }
+    
+    public static void expandCollapse(String id) {
+        int row = 0;
+        try {
+            DefaultTreeModel model = (DefaultTreeModel) metricTree.getModel();
+
+            DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) model.getRoot();
+
+            if (treeNode != null) {
+                Enumeration<TreeNode> nodes = treeNode.children();
+                if (nodes != null) {
+                    while (nodes.hasMoreElements()) {
+                        MetricTreeNode node = (MetricTreeNode) nodes.nextElement();
+                        if (node != null && node.getId().equals(id)) {
+                            if (!node.isExpanded()) {
+                                metricTree.expandRow(row);
+                                node.setExpanded(true);
+                            } else {
+                                metricTree.collapseRow(row);
+                                node.setExpanded(false);
+                            }
+                            break;
+                        }
+                        row++;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Find node by ID error: {0}", e.toString());
+        }
+    }
+    
+    private static void removeNodeById(String id) {
+        try {
+            DefaultTreeModel model = (DefaultTreeModel) metricTree.getModel();
+
+            DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) model.getRoot();
+
+            if (treeNode != null) {
+                Enumeration<TreeNode> nodes = treeNode.children();
+                if (nodes != null) {
+                    while (nodes.hasMoreElements()) {
+                        MetricTreeNode node = (MetricTreeNode) nodes.nextElement();
+                        if (node != null && node.getId().equals(id)) {
+                            treeNode.remove(node);
+                            return;
+                        } else if (node != null && node.getChildCount() > 0) {
+                            // check its children
+                            for (int i = 0; i < node.getChildCount(); i++) {
+                                MetricTreeNode childNode = (MetricTreeNode) node.getChildAt(i);
+                                if (childNode != null && childNode.getId().equals(id)) {
+                                    treeNode.remove(childNode);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Remove node by ID error: {0}", e.toString());
         }
     }
 }
