@@ -167,9 +167,6 @@ public class SoftwareSessionManager {
             
             SwingUtilities.invokeLater(() -> {
                 try {
-                    // rebuild the tree
-                    CodeTimeTreeTopComponent.rebuildTree();
-                    
                     // fetch the session summary
                     WallClockManager.getInstance().updateSessionSummaryFromServer();
                 } catch (Exception ex) {
