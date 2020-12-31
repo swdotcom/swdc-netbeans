@@ -7,12 +7,16 @@ package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileManager;
+import com.swdc.netbeans.plugin.managers.OsaScriptManager;
+import com.swdc.netbeans.plugin.managers.SlackClientManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.SwitchAccountManager;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
+import com.swdc.netbeans.plugin.models.Integration;
+import com.swdc.netbeans.plugin.models.SlackDndInfo;
+import com.swdc.netbeans.plugin.models.SlackUserPresence;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.Color;
-import java.awt.event.MouseEvent;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -29,10 +33,7 @@ import javax.swing.JSeparator;
 import org.apache.commons.lang.StringUtils;
 import org.openide.awt.HtmlBrowser;
 
-/**
- *
- * @author xavierluiz
- */
+
 public class TreeHelper {
     
     public static final Logger LOG = Logger.getLogger("TreeHelper");
@@ -66,6 +67,18 @@ public class TreeHelper {
     public static final String KEYSTROKES_GLOBAL_AVG_TODAY_ID = "keystrokes_global_avg_today";
     
     public static final String SWITCH_ACCOUNT_ID = "switch_account";
+    
+    public static final String SLACK_WORKSPACES_NODE_ID = "slack_workspaces_node";
+    public static final String SWITCH_OFF_DARK_MODE_ID = "switch_off_dark_mode";
+    public static final String SWITCH_ON_DARK_MODE_ID = "switch_ON_dark_mode";
+    public static final String TOGGLE_DOCK_POSITION_ID = "toggle_dock_position";
+    public static final String SWITCH_OFF_DND_ID = "switch_off_dnd";
+    public static final String SWITCH_ON_DND_ID = "switch_on_dnd";
+    public static final String CONNECT_SLACK_ID = "connect_slack";
+    public static final String ADD_WORKSPACE_ID = "add_workspace";
+    public static final String SET_PRESENCE_AWAY_ID = "set_presence_away";
+    public static final String SET_PRESENCE_ACTIVE_ID = "set_presence_active";
+    
 
     private static final SimpleDateFormat formatDay = new SimpleDateFormat("EEE");
     
@@ -122,16 +135,101 @@ public class TreeHelper {
             toggleText = "Show status bar metrics";
         }
         
-        MetricTreeNode toggleNode = new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID);
-        
         list.add(new MetricTreeNode("Learn more", "readme.png", LEARN_MORE_ID));
-        list.add(toggleNode);
         list.add(new MetricTreeNode("Submit feedback", "message.png", SEND_FEEDBACK_ID));
-        list.add(new MetricTreeNode(true));
-        list.add(new MetricTreeNode("See advanced metrics", "paw-grey.png", ADVANCED_METRICS_ID));
-        list.add(new MetricTreeNode("View summary", "dashboard.png", VIEW_SUMMARY_ID));
+        list.add(new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID));
+        
+        list.add(buildSlackWorkspacesNode());
         
         return list;
+    }
+    
+    public static MetricTreeNode buildSummaryButton() {
+        return new MetricTreeNode("Dashboard", "dashboard.png", VIEW_SUMMARY_ID);
+    }
+    
+    public static MetricTreeNode buildViewWebDashboardButton() {
+        return new MetricTreeNode("More data at Software.com", "paw-grey.png", ADVANCED_METRICS_ID);
+    }
+    
+    public static List<MetricTreeNode> buildTreeFlowNodes() {
+        List<MetricTreeNode> list = new ArrayList<>();
+        
+        if (SlackClientManager.hasSlackWorkspaces()) {
+            SlackDndInfo slackDndInfo = SlackClientManager.getSlackDnDInfo();
+            
+            // snooze node
+            if (slackDndInfo.snooze_enabled) {
+                list.add(getSwitchOnDndNode());
+            } else {
+                list.add(getSwitchOffDndNode());
+            }
+            // presence toggle
+            SlackUserPresence slackUserPresence = SlackClientManager.getSlackUserPresence();
+            if (slackUserPresence != null && slackUserPresence.presence.equals("active")) {
+                list.add(getSetAwayPresenceNode());
+            } else {
+                list.add(getSetActivePresenceNode());
+            }
+        } else {
+            // show the connect slack node
+            list.add(getConnectSlackNode());
+        }
+        
+        if (SoftwareUtil.isMac()) {
+            if (OsaScriptManager.isDarkMode()) {
+                list.add(getSwitchOffDarkModeNode());
+            } else {
+                list.add(getSwitchOnDarkModeNode());
+            }
+            
+            list.add(new MetricTreeNode("Toggle dock position", "", TOGGLE_DOCK_POSITION_ID));
+        }
+        
+        return list;
+    }
+    
+    public static MetricTreeNode getSwitchOffDarkModeNode() {
+        return new MetricTreeNode("Turn off dark mode", "", SWITCH_OFF_DARK_MODE_ID);
+    }
+    
+    public static MetricTreeNode getSwitchOnDarkModeNode() {
+        return new MetricTreeNode("Turn on dark mode", "icons8-night-16.png", SWITCH_ON_DARK_MODE_ID);
+    }
+    
+    public static MetricTreeNode getConnectSlackNode() {
+        return new MetricTreeNode("Connect to set your status and pause notifications", "icons8-slack-new-16.png", CONNECT_SLACK_ID);
+    }
+    
+    public static MetricTreeNode getSwitchOffDndNode() {
+        return new MetricTreeNode("Turn off notifications", "", SWITCH_OFF_DND_ID);
+    }
+    
+    public static MetricTreeNode getSwitchOnDndNode() {
+        return new MetricTreeNode("Turn on notifications", "", SWITCH_ON_DND_ID);
+    }
+    
+    public static MetricTreeNode getSetAwayPresenceNode() {
+        return new MetricTreeNode("Set presence to away", "", SET_PRESENCE_AWAY_ID);
+    }
+    
+    public static MetricTreeNode getSetActivePresenceNode() {
+        return new MetricTreeNode("Set presence to active", "", SET_PRESENCE_ACTIVE_ID);
+    }
+    
+    public static MetricTreeNode buildSlackWorkspacesNode() {
+        MetricTreeNode node = new MetricTreeNode("Slack workspaces", null, SLACK_WORKSPACES_NODE_ID);
+        List<Integration> workspaces = SlackClientManager.getSlackWorkspaces();
+        workspaces.forEach(workspace -> {
+            node.add(new MetricTreeNode(workspace.team_domain, "icons8-slack-new-16.png", workspace.authId));
+        });
+        // add the add new workspace button
+        node.add(getAddSlackWorkspaceNode());
+        return node;
+    }
+    
+    public static MetricTreeNode getAddSlackWorkspaceNode() {
+        return new MetricTreeNode("Add workspace", "add.png", ADD_WORKSPACE_ID);
     }
     
     public static MetricTreeNode buildActiveCodeTimeTree(MetricLabels mLabels) {
@@ -315,6 +413,29 @@ public class TreeHelper {
                 break;
             case LEARN_MORE_ID:
                 FileManager.openReadmeFile(UIInteractionType.click);
+                break;
+            case CONNECT_SLACK_ID:
+            case ADD_WORKSPACE_ID:
+                SlackClientManager.connectSlackWorkspace();
+                break;
+            case SWITCH_OFF_DARK_MODE_ID:
+            case SWITCH_ON_DARK_MODE_ID:
+                OsaScriptManager.toggleDarkMode();
+                break;
+            case SWITCH_OFF_DND_ID:
+                SlackClientManager.pauseSlackNotifications();
+                break;
+            case SWITCH_ON_DND_ID:
+                SlackClientManager.enableSlackNotifications();
+                break;
+            case SET_PRESENCE_ACTIVE_ID:
+                SlackClientManager.toggleSlackPresence("auto");
+                break;
+            case SET_PRESENCE_AWAY_ID:
+                SlackClientManager.toggleSlackPresence("away");
+                break;
+            case TOGGLE_DOCK_POSITION_ID:
+                OsaScriptManager.toggleDock();
                 break;
             default:
                 launchFileClick(node);

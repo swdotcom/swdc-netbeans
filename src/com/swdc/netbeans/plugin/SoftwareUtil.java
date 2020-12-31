@@ -16,11 +16,15 @@ import com.swdc.netbeans.plugin.managers.SoftwareHttpManager;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.managers.EventTrackerManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
+import com.swdc.netbeans.plugin.managers.JsonManager;
 import com.swdc.netbeans.plugin.managers.OfflineManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import com.swdc.netbeans.plugin.models.FileDetails;
+import com.swdc.netbeans.plugin.models.Integration;
 import com.swdc.netbeans.plugin.models.NetbeansProject;
+import com.swdc.netbeans.plugin.models.SoftwareUser;
+import com.swdc.netbeans.plugin.models.UserLoginState;
 import com.swdc.snowplow.tracker.entities.UIElementEntity;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.io.BufferedReader;
@@ -33,9 +37,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -52,6 +59,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -80,6 +88,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.codehaus.plexus.util.CollectionUtils;
 import org.netbeans.api.autoupdate.UpdateElement;
 import org.netbeans.api.autoupdate.UpdateManager;
 import org.netbeans.api.autoupdate.UpdateUnit;
@@ -129,7 +138,7 @@ public class SoftwareUtil {
 
     public static final AtomicBoolean SEND_TELEMTRY = new AtomicBoolean(true);
 
-    private final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
+    public final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
     public static HttpClient httpClient;
     public static HttpClient pingClient;
     
@@ -363,7 +372,7 @@ public class SoftwareUtil {
         return softwareDataDir;
     }
 
-    private static String getStringRepresentation(HttpEntity res, boolean isPlainText) throws IOException {
+    public static String getStringRepresentation(HttpEntity res, boolean isPlainText) throws IOException {
         if (res == null) {
             return null;
         }
@@ -525,6 +534,21 @@ public class SoftwareUtil {
             }
         }
     }
+    
+    public static void showAuthSelectPrompt(boolean isSignup) {
+        String promptText = isSignup ? "Sign up" : "Log in";
+        String[] options = new String[]{ "Google", "GitHub", "Email" };
+        String input = (String) JOptionPane.showInputDialog(
+                null,
+                promptText + " using",
+                promptText,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options, // Array of choices
+                options[0]); // Initial choice
+
+        SoftwareSessionManager.launchLogin(input.toLowerCase(), UIInteractionType.click, true);
+    }
 
     public static String generateToken() {
         String uuid = UUID.randomUUID().toString();
@@ -563,11 +587,15 @@ public class SoftwareUtil {
         return jsonObj;
     }
     
+    public static String runCommand(String[] args) {
+        return runCommand(args, null);
+    }
+    
     public static String runCommand(String[] args, String dir) {
         String command = Arrays.toString(args);
         
         ProcessBuilder processBuilder = new ProcessBuilder(args);
-        if (dir != null) {
+        if (StringUtils.isNotBlank(dir)) {
             processBuilder.directory(new File(dir));
         }
 
@@ -751,22 +779,6 @@ public class SoftwareUtil {
         return username;
     }
 
-    public static String getAppJwt(boolean serverIsOnline) {
-        // clear out the previous app_jwt
-        FileManager.setItem("app_jwt", null);
-
-        if (serverIsOnline) {
-            long now = Math.round(System.currentTimeMillis() / 1000);
-            String api = "/data/apptoken?token=" + now;
-            SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null);
-            if (resp.isOk()) {
-                JsonObject obj = resp.getJsonObj();
-                return obj.get("jwt").getAsString();
-            }
-        }
-        return null;
-    }
-
     public static String createAnonymousUser(boolean ignoreJwt) {
         // make sure we've fetched the app jwt
         String jwt = FileManager.getItem("jwt");
@@ -776,11 +788,6 @@ public class SoftwareUtil {
 
             String plugin_uuid = FileManager.getPluginUuid();
             String auth_callback_state = FileManager.getAuthCallbackState();
-
-            if (StringUtils.isBlank(auth_callback_state)) {
-                auth_callback_state = UUID.randomUUID().toString();
-                FileManager.setAuthCallbackState(auth_callback_state);
-            }
 
             JsonObject payload = new JsonObject();
             payload.addProperty("username", getOsUsername());
@@ -809,13 +816,11 @@ public class SoftwareUtil {
         return null;
     }
     
-    public static boolean getUserLoginState() {
+    public static UserLoginState getUserLoginState(boolean isIntegrationRequest) {
+        UserLoginState userLoginState = new UserLoginState();
+        SoftwareUser softwareUser = new SoftwareUser();
+        
         String name = FileManager.getItem("name");
-        boolean switching_account = FileManager.getBooleanItem("switching_account");
-
-        if (StringUtils.isNotBlank(name) && !switching_account) {
-            return true;
-        }
 
         String authType = FileManager.getItem("authType");
         if (StringUtils.isBlank(authType)) {
@@ -837,45 +842,62 @@ public class SoftwareUtil {
         }
 
         if (foundUser) {
-            JsonObject user = resp.getJsonObj().get("user").getAsJsonObject();
+            JsonObject obj = resp.getJsonObj().get("user").getAsJsonObject();
+            // get the integrations
+            JsonArray jsonIntegrations = JsonManager.getArrayVal(obj, "integrations");
+            
+            String payload_jwt = JsonManager.getStringVal(resp.getJsonObj(), "jwt", null);
+            String plugin_jwt = JsonManager.getStringVal(obj, "plugin_jwt", null);
 
-            int registered = user.get("registered").getAsInt();
-            FileManager.setItem("jwt", user.get("plugin_jwt").getAsString());
-            if (registered == 1) {
-                FileManager.setItem("name", user.get("email").getAsString());
-            } else {
-                FileManager.setItem("name", null);
+            softwareUser.plugin_jwt = plugin_jwt != null ? plugin_jwt : payload_jwt;
+            softwareUser.registered = JsonManager.getIntVal(obj, "registered", 0);
+            softwareUser.email = JsonManager.getStringVal(obj, "email", null);
+            
+            softwareUser.integrations = new ArrayList<>();
+            if (jsonIntegrations.size() > 0) {
+                for (JsonElement el : jsonIntegrations) {
+                    Integration integration = new Integration();
+                    integration.updateInfoWithResponse(el.getAsJsonObject());
+                    softwareUser.integrations.add(integration);
+                }
             }
 
-            String currentAuthType = FileManager.getItem("authType");
-            if (StringUtils.isBlank(currentAuthType)) {
-                FileManager.setItem("authType", "software");
+            if (StringUtils.isNotBlank(plugin_jwt)) {
+                FileManager.setItem("jwt", plugin_jwt);
+            }
+            if (softwareUser.registered == 1) {
+                FileManager.setItem("name", softwareUser.email);
             }
 
             FileManager.setBooleanItem("switching_account", false);
             FileManager.setAuthCallbackState(null);
-
-            // if we need the user it's "resp.data.user"
-            return (registered == 1);
+            
+            userLoginState.user = softwareUser;
+            userLoginState.loggedIn = (softwareUser.registered == 1);
         }
 
-        return false;
+        return userLoginState;
     }
     
-    private static JsonObject getUser() {
-        String jwt = FileManager.getItem("jwt");
-        String api = "/users/me";
-        SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
-        if (resp.isOk()) {
-            // check if we have the data and jwt
-            // resp.data.jwt and resp.data.user
-            // then update the session.json for the jwt
-            JsonObject obj = resp.getJsonObj();
-            if (obj != null && obj.has("data")) {
-                return obj.get("data").getAsJsonObject();
-            }
-        }
-        return null;
+    public static String getDecodedUserIdFromJwt(String jwt) {
+        String stippedDownJwt = jwt.indexOf("JWT ") != -1 ? jwt.substring("JWT ".length()) : jwt;
+        try {
+            String[] split_string = stippedDownJwt.split("\\.");
+            String base64EncodedBody = split_string[1];
+
+            org.apache.commons.codec.binary.Base64 base64Url = new Base64(true);
+            String body = new String(base64Url.decode(base64EncodedBody));
+            Map<String, String> jsonMap;
+
+            ObjectMapper mapper = new ObjectMapper();
+            // convert JSON string to Map
+            jsonMap = mapper.readValue(body,
+                    new TypeReference<Map<String, String>>() {
+                    });
+            Object idVal = jsonMap.getOrDefault("id", "");
+            return idVal.toString();
+        } catch (Exception ex) {}
+        return "";
     }
     
     public static String getDashboardRow(String label, String value) {
@@ -1162,32 +1184,6 @@ public class SoftwareUtil {
 
         return data;
     }
-
-    public static boolean isAppJwt() {
-        String jwt = FileManager.getItem("jwt");
-        if (StringUtils.isNotBlank(jwt)) {
-            String stippedDownJwt = jwt.indexOf("JWT ") != -1 ? jwt.substring("JWT ".length()) : jwt;
-            try {
-                String[] split_string = stippedDownJwt.split("\\.");
-                String base64EncodedBody = split_string[1];
-
-                org.apache.commons.codec.binary.Base64 base64Url = new Base64(true);
-                String body = new String(base64Url.decode(base64EncodedBody));
-                Map<String, String> jsonMap;
-
-                ObjectMapper mapper = new ObjectMapper();
-                // convert JSON string to Map
-                jsonMap = mapper.readValue(body,
-                        new TypeReference<Map<String, String>>() {
-                        });
-                Object idVal = jsonMap.getOrDefault("id", null);
-                if (idVal != null && Long.valueOf(idVal.toString()).longValue() > 9999999999L) {
-                    return true;
-                }
-            } catch (Exception ex) {}
-        }
-        return false;
-    }
     
     public static List<String> getResultsForCommandArgs(String[] args, String dir) {
         List<String> results = new ArrayList<>();
@@ -1254,6 +1250,28 @@ public class SoftwareUtil {
         elementEntity.cta_text = cta_text;
         elementEntity.icon_name = interactionType == UIInteractionType.click ? "slash-eye" : null;
         EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
+    }
+    
+    public static String buildQueryString(JsonObject obj) {
+        StringBuilder sb = new StringBuilder();
+        Iterator<String> keys = obj.keySet().iterator();
+        while(keys.hasNext()) {
+            String key = keys.next();
+            if (!obj.get(key).isJsonNull()) {
+                if (sb.length() > 0) {
+                    sb.append("&");
+                }
+
+                String val = obj.get(key).getAsString();
+                try {
+                    val = URLEncoder.encode(val, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    LOG.log(Level.INFO, "Unable to url encode value, error: {0}", e.getMessage());
+                }
+                sb.append(key).append("=").append(val);
+            }
+        }
+        return "?" + sb.toString();
     }
 
 }

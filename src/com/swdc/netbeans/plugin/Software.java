@@ -88,7 +88,7 @@ public class Software extends ModuleInstall implements Runnable {
         StatusBarManager.updateStatusBar();
         
         // initialize the wallclock manager
-        WallClockManager.getInstance().updateSessionSummaryFromServer();
+        WallClockManager.getInstance().updateSessionSummaryFromServer(false /*rebuildTree*/);
         
         final Runnable checkFocusStateTimer = () -> checkFocusState();
         AsyncManager.getInstance().scheduleService(

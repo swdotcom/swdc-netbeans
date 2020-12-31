@@ -55,7 +55,7 @@ public class WallClockManager {
         asyncManager.scheduleService(
                 newDayCheckerTimer, "newDayCheckerTimer", 30, DAY_CHECK_TIMER_INTERVAL);
 
-        dispatchStatusViewUpdate();
+        dispatchStatusViewUpdate(false);
     }
 
     public void newDayChecker() {
@@ -78,13 +78,13 @@ public class WallClockManager {
             // update the last payload timestamp
             FileManager.setNumericItem("latestPayloadTimestampEndUtc", 0);
 
-            final Runnable service = () -> updateSessionSummaryFromServer();
+            final Runnable service = () -> updateSessionSummaryFromServer(false);
             AsyncManager.getInstance().executeOnceInSeconds(service, 60);
 
         }
     }
 
-    public void updateSessionSummaryFromServer() {
+    public void updateSessionSummaryFromServer(boolean rebuildTree) {
         SessionSummary summary = SessionDataManager.getSessionSummaryData();
 
         String jwt = FileManager.getItem("jwt");
@@ -105,14 +105,7 @@ public class WallClockManager {
             FileManager.writeData(SessionDataManager.getSessionDataSummaryFile(), summary);
         }
         
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // rebuild the tree
-                CodeTimeTreeTopComponent.refreshTree();
-            } catch (Exception ex) {
-                LOG.log(Level.WARNING, "Tree rebuild after authentication error: {0}", ex.getMessage());
-            }
-        });
+        dispatchStatusViewUpdate(rebuildTree);
     }
 
     private void updateWallClockTime() {
@@ -128,25 +121,23 @@ public class WallClockManager {
                     // update the json time data file
                     TimeDataManager.incrementEditorSeconds(SECONDS_INCREMENT);
                 }
-                dispatchStatusViewUpdate();
+                dispatchStatusViewUpdate(false);
             }
         });
     }
 
-    public synchronized void dispatchStatusViewUpdate() {
+    public synchronized void dispatchStatusViewUpdate(boolean rebuildTree) {
         if (!dispatching) {
             dispatching = true;
 
             // STATUS BAR REFRESH
             StatusBarManager.updateStatusBar();
 
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    CodeTimeTreeTopComponent.refreshTree();
-                } catch (Exception e) {
-                    System.err.println(e);
-                }
-            });
+            if (!rebuildTree) {
+                CodeTimeTreeTopComponent.refreshTree();
+            } else {
+                CodeTimeTreeTopComponent.rebuildTree();
+            }
         }
         dispatching = false;
     }
@@ -156,7 +147,7 @@ public class WallClockManager {
     }
 
     public long getWcTimeInSeconds() {
-        return FileManager.getNumericItem("wctime", 0L);
+        return FileManager.getNumericItem("wctime", 0);
     }
 
     public void setWcTime(long seconds) {

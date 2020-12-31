@@ -251,7 +251,7 @@ public class KeystrokeCount {
                 EventTrackerManager.getInstance().trackCodeTimeEvent(this);
 
                 // refresh the code time tree view
-                WallClockManager.getInstance().dispatchStatusViewUpdate();
+                WallClockManager.getInstance().dispatchStatusViewUpdate(false);
 
                 SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
                 // set the latest payload timestamp utc so help with session time calculations

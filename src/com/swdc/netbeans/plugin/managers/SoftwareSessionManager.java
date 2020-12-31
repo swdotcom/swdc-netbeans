@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
+import com.swdc.netbeans.plugin.models.UserLoginState;
 import com.swdc.snowplow.tracker.entities.UIElementEntity;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.io.File;
@@ -141,9 +142,9 @@ public class SoftwareSessionManager {
     }
 
     protected static void lazilyFetchUserStatus(int retryCount) {
-        boolean establishedUser = SoftwareUtil.getUserLoginState();
+        UserLoginState loginState = SoftwareUtil.getUserLoginState(false);
 
-        if (!establishedUser) {
+        if (!loginState.loggedIn) {
             if (retryCount > 0) {
                 final int newRetryCount = retryCount - 1;
 
@@ -155,6 +156,9 @@ public class SoftwareSessionManager {
                 FileManager.setAuthCallbackState(null);
             }
         } else {
+            // pull in any integrations
+            SlackClientManager.getSlackAuth(loginState.user);
+            
             // clear the auth callback state
             FileManager.setBooleanItem("switching_account", false);
             FileManager.setAuthCallbackState(null);
@@ -168,7 +172,7 @@ public class SoftwareSessionManager {
             SwingUtilities.invokeLater(() -> {
                 try {
                     // fetch the session summary
-                    WallClockManager.getInstance().updateSessionSummaryFromServer();
+                    WallClockManager.getInstance().updateSessionSummaryFromServer(true /*rebuildTree*/);
                 } catch (Exception ex) {
                     LOG.log(Level.WARNING, "Tree rebuild after authentication error: {0}", ex.getMessage());
                 }
@@ -214,22 +218,7 @@ public class SoftwareSessionManager {
                 url = SoftwareUtil.API_ENDPOINT + "/auth/github";
             }
 
-            StringBuilder sb = new StringBuilder();
-            Iterator<String> keys = obj.keySet().iterator();
-            while(keys.hasNext()) {
-                if (sb.length() > 0) {
-                    sb.append("&");
-                }
-                String key = keys.next();
-                String val = obj.get(key).getAsString();
-                try {
-                    val = URLEncoder.encode(val, "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    LOG.log(Level.INFO, "Unable to url encode value, error: {0}", e.getMessage());
-                }
-                sb.append(key).append("=").append(val);
-            }
-            url += "?" + sb.toString();
+            url += SoftwareUtil.buildQueryString(obj);
 
             FileManager.setItem("authType", loginType);
         

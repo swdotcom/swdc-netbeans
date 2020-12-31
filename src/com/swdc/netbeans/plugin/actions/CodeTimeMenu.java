@@ -8,6 +8,7 @@ package com.swdc.netbeans.plugin.actions;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
+import com.swdc.netbeans.plugin.models.UserLoginState;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
@@ -57,14 +58,14 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
     }
 
     private JComponent[] createMenu() {
-        boolean loggedIn = SoftwareUtil.getUserLoginState();
+        UserLoginState loginState = SoftwareUtil.getUserLoginState(false);
         List<JComponent> items = new ArrayList<>();
 
         items.add(toMenuItem(new CodeTimeDashboardAction()));
         items.add(toMenuItem(new CodeTimeTop40Action()));
         items.add(toMenuItem(new WebDashboardAction()));
 
-        if (!loggedIn) {
+        if (!loginState.loggedIn) {
             // not logged in, show the login and signup menu items
             items.add(toMenuItem(new CodeTimeLoginAction()));
         }

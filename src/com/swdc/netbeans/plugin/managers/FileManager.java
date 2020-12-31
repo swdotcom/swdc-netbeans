@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.http.SoftwareResponse;
+import com.swdc.netbeans.plugin.models.Integration;
 import com.swdc.netbeans.plugin.models.KeystrokeCount;
 import com.swdc.snowplow.tracker.entities.UIElementEntity;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
@@ -29,7 +30,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
@@ -42,6 +45,9 @@ public class FileManager {
     public static final Logger log = Logger.getLogger("FileManager");
 
     private static KeystrokeCount lastSavedKeystrokeStats = null;
+    
+    private static JsonObject cachedSessionJson = null;
+    private static long last_session_json_millis = 0;
 
     public static void clearLastSavedKeystrokeStats() {
         lastSavedKeystrokeStats = null;
@@ -90,6 +96,16 @@ public class FileManager {
             file += "\\device.json";
         } else {
             file += "/device.json";
+        }
+        return file;
+    }
+    
+    private static String getIntegrationsFile() {
+        String file = getSoftwareDir(true);
+        if (SoftwareUtil.isWindows()) {
+            file += "\\integrations.json";
+        } else {
+            file += "/integrations.json";
         }
         return file;
     }
@@ -180,6 +196,23 @@ public class FileManager {
             writer = new BufferedWriter(new OutputStreamWriter(
                     new FileOutputStream(f), StandardCharsets.UTF_8));
             writer.write(content);
+        } catch (IOException ex) {
+            // Report
+        } finally {
+            try {
+                writer.close();
+            } catch (Exception ex) {/*ignore*/}
+        }
+    }
+    
+    private synchronized static void writeSessionJsonContent(JsonObject obj) {
+        cachedSessionJson = obj;
+        File f = new File(getSoftwareSessionFile(true));
+        Writer writer = null;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(f), StandardCharsets.UTF_8));
+            writer.write(obj.toString());
         } catch (IOException ex) {
             // Report
         } finally {
@@ -317,45 +350,15 @@ public class FileManager {
         }
         return defaultVal;
     }
-
-    public static void setNumericItem(String key, long val) {
-        JsonObject sessionJson = getSoftwareSessionAsJson();
-        sessionJson.addProperty(key, val);
-
-        String content = sessionJson.toString();
-
-        String sessionFile = getSoftwareSessionFile(true);
-        saveFileContent(sessionFile, content);
-    }
-
-    public static void setItem(String key, String val) {
-        JsonObject sessionJson = getSoftwareSessionAsJson();
-        sessionJson.addProperty(key, val);
-
-        String content = sessionJson.toString();
-        String sessionFile = getSoftwareSessionFile(true);
-
-        saveFileContent(sessionFile, content);
-
-    }
-
-    public static long getNumericItem(String key, Long defaultVal) {
+    
+    public static long getNumericItem(String key, long defaultVal) {
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
             return sessionJson.get(key).getAsLong();
         }
-        return defaultVal.longValue();
+        return defaultVal;
     }
-    
-    public static void setBooleanItem(String key, boolean val) {
-        JsonObject sessionJson = getSoftwareSessionAsJson();
-        sessionJson.addProperty(key, val);
-
-        String content = sessionJson.toString();
-        String sessionFile = getSoftwareSessionFile(true);
-
-        saveFileContent(sessionFile, content);
-    }
+   
 
     public static boolean getBooleanItem(String key) {
         JsonObject sessionJson = getSoftwareSessionAsJson();
@@ -365,9 +368,31 @@ public class FileManager {
         return false;
     }
 
+    public static void setItem(String key, String val) {
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        sessionJson.addProperty(key, val);
+        writeSessionJsonContent(sessionJson);
+    }
+
+    public static void setBooleanItem(String key, boolean val) {
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        sessionJson.addProperty(key, val);
+        writeSessionJsonContent(sessionJson);
+    }
+    
+    public static void setNumericItem(String key, long val) {
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        sessionJson.addProperty(key, val);
+        writeSessionJsonContent(sessionJson);
+    }
+
     public static JsonObject getSoftwareSessionAsJson() {
-        String sessionFile = getSoftwareSessionFile(true);
-        return getJsonObjectFromFile(sessionFile);
+        if (cachedSessionJson == null || System.currentTimeMillis() - last_session_json_millis > 3000) {
+            String sessionFile = getSoftwareSessionFile(true);
+            cachedSessionJson = getJsonObjectFromFile(sessionFile);
+            last_session_json_millis = System.currentTimeMillis();
+        }
+        return cachedSessionJson;
     }
 
     public static JsonObject getJsonObjectFromFile(String fileName) {
@@ -507,11 +532,15 @@ public class FileManager {
     }
 
     public static String getAuthCallbackState() {
+        String auth_callback_state = null;
         JsonObject deviceJson = getJsonObjectFromFile(getDeviceFile());
-        if (deviceJson != null && deviceJson.has("auth_callback_state") && !deviceJson.get("auth_callback_state").isJsonNull()) {
-            return deviceJson.get("auth_callback_state").getAsString();
+        if (!deviceJson.has("auth_callback_state") || deviceJson.get("auth_callback_state").isJsonNull()) {
+            auth_callback_state = UUID.randomUUID().toString();
+            setAuthCallbackState(auth_callback_state);
+        } else {
+            auth_callback_state = deviceJson.get("auth_callback_state").getAsString();
         }
-        return null;
+        return auth_callback_state;
     }
 
     public static void setAuthCallbackState(String value) {
@@ -522,6 +551,38 @@ public class FileManager {
         String content = deviceJson.toString();
 
         saveFileContent(deviceFile, content);
+    }
+    
+    public static List<Integration> getIntegrations() {
+        List<Integration> integrations = new ArrayList<Integration>();
+        JsonArray jsonArr = getFileContentAsJsonArray(getIntegrationsFile());
+        if (jsonArr == null || jsonArr.isJsonNull()) {
+            // sync the empty list
+            syncIntegrations(integrations);
+            return integrations;
+        }
+
+        Type type = new TypeToken<List<Integration>>() {
+        }.getType();
+        integrations = SoftwareUtil.gson.fromJson(jsonArr, type);
+
+        return integrations;
+    }
+    
+    public static void removeSlackIntegration(String authId) {
+        List<Integration> integrations = new ArrayList<Integration>();
+        for (int i = integrations.size() - 1; i >= 0; i--) {
+            if (integrations.get(i).authId.equals(authId)) {
+                integrations.remove(i);
+                break;
+            }
+        }
+        
+        syncIntegrations(integrations);
+    }
+
+    public static void syncIntegrations(List<Integration> integrations) {
+        writeData(getIntegrationsFile(), integrations);
     }
 
 }

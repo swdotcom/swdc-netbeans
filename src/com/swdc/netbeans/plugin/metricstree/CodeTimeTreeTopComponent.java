@@ -8,7 +8,9 @@ package com.swdc.netbeans.plugin.metricstree;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileAggregateDataManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
+import com.swdc.netbeans.plugin.managers.OsaScriptManager;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
+import com.swdc.netbeans.plugin.managers.SlackClientManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
@@ -60,6 +63,8 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     
     private static MetricTree metricTree;
     private static boolean expandInitialized = false;
+    private static long last_refresh_millis = 0;
+    private static long last_rebuild_millis = 0;
 
     public CodeTimeTreeTopComponent() {
         initComponents();
@@ -173,31 +178,23 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     }
 
     public static void refreshTree() {
-        String name = FileManager.getItem("name");
-        // check to see if we need to swap out the signup nodes with the signed up node
-        MetricTreeNode loggedInNode = findNodeById(TreeHelper.LOGGED_IN_ID);
-        if (StringUtils.isNotBlank(name) && loggedInNode == null) {
-            // swap the nodes out
-            removeNodeById(TreeHelper.EMAIL_SIGNUP_ID);
-            removeNodeById(TreeHelper.GITHIUB_SIGNUP_ID);
-            removeNodeById(TreeHelper.GOOGLE_SIGNUP_ID);
-
-            // add the LOGGED_IN_ID node
-            loggedInNode = TreeHelper.buildLoggedInNode();
-            ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(loggedInNode, 0);
-        } else {
-            String authType = FileManager.getItem("authType");
-            String iconName = "icons8-envelope-16.png";
-            if ("google".equals(authType)) {
-                iconName = "google.png";
-            } else if ("github".equals(authType)) {
-                iconName = "github.png";
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // refresh if metric tree has been initialized
+                if (metricTree != null && (last_refresh_millis == 0 || System.currentTimeMillis() - last_refresh_millis > 3000)) {
+                    last_refresh_millis = System.currentTimeMillis();
+                    refresh();
+                }
+            } catch (Exception e) {
+                System.err.println(e);
             }
-            
-            String email = FileManager.getItem("name");
-            // update the logged in node
-            updateNodeLabel(findNodeById(TreeHelper.LOGGED_IN_ID), email, iconName);
-        }
+        });
+    }
+    
+    private static void refresh() {
+        rebuildMenuNodes();
+        
+        rebuildFlowNodes();
         
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
@@ -209,15 +206,18 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     }
     
     public static void rebuildTree() {
-        try {
-            expandInitialized = false;
-            CodeTimeTreeTopComponent topComp = (CodeTimeTreeTopComponent) WindowManager.getDefault().findTopComponent("CodeTimeTreeWindowTopComponent");
-            if (topComp != null) {
-                topComp.init();
+        SwingUtilities.invokeLater(() -> {
+            try {
+                expandInitialized = false;
+                CodeTimeTreeTopComponent topComp = (CodeTimeTreeTopComponent) WindowManager.getDefault().findTopComponent("CodeTimeTreeWindowTopComponent");
+                if (topComp != null && System.currentTimeMillis() - last_rebuild_millis > 3000) {
+                    last_rebuild_millis = System.currentTimeMillis();
+                    topComp.init();
+                }
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Failed to retrieve the code time top component: {0}", e.getMessage());
             }
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Failed to retrieve the code time top component: {0}", e.getMessage());
-        }
+        });
     }
 
     public static void openTree() {
@@ -303,7 +303,14 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             root.add(node);
         });
         
-        root.add(new MetricTreeNode(true));
+        root.add(new MetricTreeNode(true /*isSeparator*/));
+        
+        List<MetricTreeNode> flowNodes = TreeHelper.buildTreeFlowNodes();
+        flowNodes.forEach(node -> {
+            root.add(node);
+        });
+        
+        root.add(new MetricTreeNode(true /*isSeparator*/));
         
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
@@ -318,11 +325,8 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         root.add(TreeHelper.buildLinesRemovedTree(mLabels));
         root.add(TreeHelper.buildKeystrokesTree(mLabels));
         
-        if (fileChangeInfoMap != null) {
-            root.add(TreeHelper.buildTopKeystrokesFilesTree(fileChangeInfoMap));
-            root.add(TreeHelper.buildTopKpmFilesTree(fileChangeInfoMap));
-            root.add(TreeHelper.buildTopCodeTimeFilesTree(fileChangeInfoMap));
-        }
+        root.add(TreeHelper.buildSummaryButton());
+        root.add(TreeHelper.buildViewWebDashboardButton());
         
         return new DefaultTreeModel(root);
     }
@@ -467,6 +471,49 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             }
         } catch (Exception e) {
             LOG.log(Level.INFO, "Remove node by ID error: {0}", e.toString());
+        }
+    }
+    
+    private static void rebuildMenuNodes() {
+        String name = FileManager.getItem("name");
+        // check to see if we need to swap out the signup nodes with the signed up node
+        MetricTreeNode loggedInNode = findNodeById(TreeHelper.LOGGED_IN_ID);
+        if (StringUtils.isNotBlank(name) && loggedInNode == null) {
+            // swap the nodes out
+            removeNodeById(TreeHelper.EMAIL_SIGNUP_ID);
+            removeNodeById(TreeHelper.GITHIUB_SIGNUP_ID);
+            removeNodeById(TreeHelper.GOOGLE_SIGNUP_ID);
+
+            // add the LOGGED_IN_ID node
+            loggedInNode = TreeHelper.buildLoggedInNode();
+            ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(loggedInNode, 0);
+        } else {
+            String authType = FileManager.getItem("authType");
+            String iconName = "icons8-envelope-16.png";
+            if ("google".equals(authType)) {
+                iconName = "google.png";
+            } else if ("github".equals(authType)) {
+                iconName = "github.png";
+            }
+            
+            String email = FileManager.getItem("name");
+            // update the logged in node
+            updateNodeLabel(findNodeById(TreeHelper.LOGGED_IN_ID), email, iconName);
+        }
+    }
+    
+    private static void rebuildFlowNodes() {
+        MetricTreeNode connectSlackId = findNodeById(TreeHelper.CONNECT_SLACK_ID);
+        if (connectSlackId != null) {
+            if (SlackClientManager.hasSlackWorkspaces()) {
+                // remove this node
+                removeNodeById(TreeHelper.CONNECT_SLACK_ID);
+            }
+        }
+        
+        MetricTreeNode switchOnDarkModeId = findNodeById(TreeHelper.SWITCH_ON_DARK_MODE_ID);
+        if (switchOnDarkModeId != null && OsaScriptManager.isDarkMode()) {
+            // remove it and add the other one
         }
     }
 }

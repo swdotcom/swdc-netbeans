@@ -81,7 +81,7 @@ public class SessionDataManager {
         long sessionSeconds = 60;
         long elapsedSeconds = 60;
 
-        long lastPayloadEnd = FileManager.getNumericItem("latestPayloadTimestampEndUtc", 0L);
+        long lastPayloadEnd = FileManager.getNumericItem("latestPayloadTimestampEndUtc", 0);
         if (lastPayloadEnd > 0) {
             SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
             elapsedSeconds = Math.max(60, timesData.now - lastPayloadEnd);
