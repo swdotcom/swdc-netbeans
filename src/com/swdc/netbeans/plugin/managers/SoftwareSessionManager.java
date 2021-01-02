@@ -111,14 +111,7 @@ public class SoftwareSessionManager {
             JOptionPane.showOptionDialog(null, infoMsg, "Code Time Setup Complete", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
                     null, options, options[0]);
             
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    // fetch the session summary
-                    WallClockManager.getInstance().updateSessionSummaryFromServer(true /*rebuildTree*/);
-                } catch (Exception ex) {
-                    LOG.log(Level.WARNING, "Tree rebuild after authentication error: {0}", ex.getMessage());
-                }
-            });
+            WallClockManager.getInstance().refreshSessionDataAndTree();
             
         }
     }

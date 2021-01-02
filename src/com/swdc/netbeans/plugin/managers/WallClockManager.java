@@ -8,9 +8,11 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
+import static com.swdc.netbeans.plugin.managers.SoftwareSessionManager.LOG;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.lang.reflect.Type;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import swdc.java.ops.http.ClientResponse;
@@ -78,6 +80,17 @@ public class WallClockManager {
             AsyncManager.getInstance().executeOnceInSeconds(service, 60);
 
         }
+    }
+    
+    public void refreshSessionDataAndTree() {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // fetch the session summary
+                updateSessionSummaryFromServer(true /*rebuildTree*/);
+            } catch (Exception ex) {
+                LOG.log(Level.WARNING, "Refresh session data error: {0}", ex.getMessage());
+            }
+        });
     }
 
     public void updateSessionSummaryFromServer(boolean rebuildTree) {

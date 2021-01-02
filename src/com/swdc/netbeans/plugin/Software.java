@@ -29,6 +29,8 @@ import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
 import org.openide.windows.WindowManager;
+import swdc.java.ops.event.UserStateChangeModel;
+import swdc.java.ops.event.UserStateChangeObserver;
 import swdc.java.ops.manager.AccountManager;
 import swdc.java.ops.manager.ConfigManager;
 import swdc.java.ops.manager.FileUtilManager;
@@ -49,6 +51,8 @@ public class Software extends ModuleInstall implements Runnable {
 
     private static int retry_counter = 0;
     private static final long check_online_interval_ms = 1000 * 60 * 10;
+    
+    private UserStateChangeObserver userStateChangeObserver;
 
     @Override
     public void run() {
@@ -87,6 +91,8 @@ public class Software extends ModuleInstall implements Runnable {
             FileManager.openReadmeFile(UIInteractionType.keyboard);
             FileUtilManager.setItem("netbeans_CtReadme", "true");
         }
+        
+        setupOpsListeners();
 
         // setup the document change event listeners
         setupEventListeners();
@@ -94,11 +100,19 @@ public class Software extends ModuleInstall implements Runnable {
         StatusBarManager.updateStatusBar();
         
         // initialize the wallclock manager
-        WallClockManager.getInstance().updateSessionSummaryFromServer(false /*rebuildTree*/);
+        WallClockManager.getInstance().refreshSessionDataAndTree();
         
         final Runnable checkFocusStateTimer = () -> checkFocusState();
         AsyncManager.getInstance().scheduleService(
                 checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);
+    }
+     
+    private void setupOpsListeners() {
+        if (userStateChangeObserver == null) {
+            userStateChangeObserver = new UserStateChangeObserver(new UserStateChangeModel(), () -> {
+                WallClockManager.getInstance().refreshSessionDataAndTree();
+            });
+        }
     }
 
     /**
