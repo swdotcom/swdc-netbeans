@@ -19,6 +19,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.netbeans.api.project.Project;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.UtilManager;
 
 public class KeystrokeCount {
     
@@ -51,13 +53,13 @@ public class KeystrokeCount {
     public KeystrokeCount() {
         this.version = SoftwareUtil.getVersion();
         this.pluginId = SoftwareUtil.PLUGIN_ID;
-        this.os = SoftwareUtil.getOs();
+        this.os = UtilManager.getOs();
     }
 
     public KeystrokeCount(String version) {
         this.version = version;
         this.pluginId = SoftwareUtil.PLUGIN_ID;
-        this.os = SoftwareUtil.getOs();
+        this.os = UtilManager.getOs();
     }
 
     public KeystrokeCount clone() {
@@ -255,7 +257,7 @@ public class KeystrokeCount {
 
                 SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
                 // set the latest payload timestamp utc so help with session time calculations
-                FileManager.setNumericItem("latestPayloadTimestampEndUtc", timesData.now);
+                FileUtilManager.setNumericItem("latestPayloadTimestampEndUtc", timesData.now);
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Error processing payload event: {0}", e.getMessage());
@@ -269,10 +271,7 @@ public class KeystrokeCount {
         TimeData td = TimeDataManager.incrementSessionAndFileSeconds(this.project, sessionSeconds);
 
         // get the current payloads so we can compare our last cumulative seconds
-        KeystrokeCount lastPayload = FileManager.getLastSavedKeystrokeStats();
         if (SoftwareUtil.isNewDay()) {
-            // don't use the last kpm since the day is different
-            lastPayload = null;
 
             // clear out data from the previous day
             WallClockManager.getInstance().newDayChecker();
@@ -292,11 +291,6 @@ public class KeystrokeCount {
         if (td != null) {
             this.cumulative_editor_seconds = td.getEditor_seconds();
             this.cumulative_session_seconds = td.getSession_seconds();
-        } else if (lastPayload != null) {
-            // no time data found, project null error
-            this.project_null_error = "TimeData not found using " + this.project.getDirectory() + " for editor and session seconds";
-            this.cumulative_editor_seconds = lastPayload.cumulative_editor_seconds + 60;
-            this.cumulative_session_seconds = lastPayload.cumulative_session_seconds + 60;
         }
 
         if (this.cumulative_editor_seconds < this.cumulative_session_seconds) {

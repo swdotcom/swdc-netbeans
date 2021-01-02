@@ -7,33 +7,30 @@ package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileManager;
-import com.swdc.netbeans.plugin.managers.OsaScriptManager;
-import com.swdc.netbeans.plugin.managers.SlackClientManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.SwitchAccountManager;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
-import com.swdc.netbeans.plugin.models.Integration;
-import com.swdc.netbeans.plugin.models.SlackDndInfo;
-import com.swdc.netbeans.plugin.models.SlackUserPresence;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.Color;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JSeparator;
-import org.apache.commons.lang.StringUtils;
 import org.openide.awt.HtmlBrowser;
+import swdc.java.ops.manager.AppleScriptManager;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.SlackManager;
+import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.Integration;
+import swdc.java.ops.model.SlackDndInfo;
+import swdc.java.ops.model.SlackUserPresence;
 
 
 public class TreeHelper {
@@ -86,7 +83,7 @@ public class TreeHelper {
     
     public static List<MetricTreeNode> buildSignupNodes() {
         List<MetricTreeNode> list = new ArrayList<>();
-        String name = FileManager.getItem("name");
+        String name = FileUtilManager.getItem("name");
         if (name == null || name.equals("")) {
             list.add(buildSignupNode("google"));
             list.add(buildSignupNode("github"));
@@ -115,8 +112,8 @@ public class TreeHelper {
     }
     
     public static MetricTreeNode buildLoggedInNode() {
-        String authType = FileManager.getItem("authType");
-        String name = FileManager.getItem("name");
+        String authType = FileUtilManager.getItem("authType");
+        String name = FileUtilManager.getItem("name");
         String iconName = "icons8-envelope-16.png";
         if ("google".equals(authType)) {
             iconName = "google.png";
@@ -157,8 +154,8 @@ public class TreeHelper {
     public static List<MetricTreeNode> buildTreeFlowNodes() {
         List<MetricTreeNode> list = new ArrayList<>();
         
-        if (SlackClientManager.hasSlackWorkspaces()) {
-            SlackDndInfo slackDndInfo = SlackClientManager.getSlackDnDInfo();
+        if (SlackManager.hasSlackWorkspaces()) {
+            SlackDndInfo slackDndInfo = SlackManager.getSlackDnDInfo();
             
             // snooze node
             if (slackDndInfo.snooze_enabled) {
@@ -167,7 +164,7 @@ public class TreeHelper {
                 list.add(getPauseNotificationsNode());
             }
             // presence toggle
-            SlackUserPresence slackUserPresence = SlackClientManager.getSlackUserPresence();
+            SlackUserPresence slackUserPresence = SlackManager.getSlackUserPresence();
             if (slackUserPresence != null && slackUserPresence.presence.equals("active")) {
                 list.add(getSetAwayPresenceNode());
             } else {
@@ -178,8 +175,8 @@ public class TreeHelper {
             list.add(getConnectSlackNode());
         }
         
-        if (SoftwareUtil.isMac()) {
-            if (OsaScriptManager.isDarkMode()) {
+        if (UtilManager.isMac()) {
+            if (AppleScriptManager.isDarkMode()) {
                 list.add(getSwitchOffDarkModeNode());
             } else {
                 list.add(getSwitchOnDarkModeNode());
@@ -222,7 +219,7 @@ public class TreeHelper {
     
     public static MetricTreeNode buildSlackWorkspacesNode() {
         MetricTreeNode node = new MetricTreeNode("Slack workspaces", null, SLACK_WORKSPACES_NODE_ID);
-        List<Integration> workspaces = SlackClientManager.getSlackWorkspaces();
+        List<Integration> workspaces = SlackManager.getSlackWorkspaces();
         workspaces.forEach(workspace -> {
             node.add(new MetricTreeNode(workspace.team_domain, "icons8-slack-new-16.png", workspace.authId));
         });
@@ -310,26 +307,26 @@ public class TreeHelper {
                 break;
             case CONNECT_SLACK_ID:
             case ADD_WORKSPACE_ID:
-                SlackClientManager.connectSlackWorkspace();
+                SlackManager.connectSlackWorkspace(() -> {CodeTimeTreeTopComponent.rebuildTree();});
                 break;
             case SWITCH_OFF_DARK_MODE_ID:
             case SWITCH_ON_DARK_MODE_ID:
-                OsaScriptManager.toggleDarkMode();
+                AppleScriptManager.toggleDarkMode(() -> {CodeTimeTreeTopComponent.rebuildTree();});
                 break;
             case SWITCH_OFF_DND_ID:
-                SlackClientManager.pauseSlackNotifications();
+                SlackManager.pauseSlackNotifications(() -> {CodeTimeTreeTopComponent.rebuildTree();});
                 break;
             case SWITCH_ON_DND_ID:
-                SlackClientManager.enableSlackNotifications();
+                SlackManager.enableSlackNotifications(() -> {CodeTimeTreeTopComponent.rebuildTree();});
                 break;
             case SET_PRESENCE_ACTIVE_ID:
-                SlackClientManager.toggleSlackPresence("auto");
+                SlackManager.toggleSlackPresence("auto", () -> {CodeTimeTreeTopComponent.rebuildTree();});
                 break;
             case SET_PRESENCE_AWAY_ID:
-                SlackClientManager.toggleSlackPresence("away");
+                SlackManager.toggleSlackPresence("away", () -> {CodeTimeTreeTopComponent.rebuildTree();});
                 break;
             case TOGGLE_DOCK_POSITION_ID:
-                OsaScriptManager.toggleDock();
+                AppleScriptManager.toggleDock();
                 break;
             default:
                 launchFileClick(node);

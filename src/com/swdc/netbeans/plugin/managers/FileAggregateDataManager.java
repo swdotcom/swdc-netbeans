@@ -12,38 +12,29 @@ import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import swdc.java.ops.manager.FileUtilManager;
 
 public class FileAggregateDataManager {
 
-    public static String getFileChangeSummaryFile() {
-        String file = SoftwareUtil.getSoftwareDir(true);
-        if (SoftwareUtil.isWindows()) {
-            file += "\\fileChangeSummary.json";
-        } else {
-            file += "/fileChangeSummary.json";
-        }
-        return file;
-    }
-
     public static void clearFileChangeInfoSummaryData() {
         Map<String, FileChangeInfo> fileInfoMap = new HashMap<>();
-        FileManager.writeData(getFileChangeSummaryFile(), fileInfoMap);
+        FileUtilManager.writeData(FileUtilManager.getFileChangeSummaryFile(), fileInfoMap);
     }
 
     public static Map<String, FileChangeInfo> getFileChangeInfo() {
         Map<String, FileChangeInfo> fileInfoMap = new HashMap<>();
-        JsonObject jsonObj = FileManager.getFileContentAsJson(getFileChangeSummaryFile());
+        JsonObject jsonObj = FileUtilManager.getFileContentAsJson(FileUtilManager.getFileChangeSummaryFile());
         if (jsonObj != null) {
             Type type = new TypeToken<Map<String, FileChangeInfo>>() {}.getType();
             fileInfoMap = SoftwareUtil.gson.fromJson(jsonObj, type);
         } else {
             // create it
-            FileManager.writeData(getFileChangeSummaryFile(), fileInfoMap);
+            FileUtilManager.writeData(FileUtilManager.getFileChangeSummaryFile(), fileInfoMap);
         }
         return fileInfoMap;
     }
 
     public static void updateFileChangeInfo(Map<String, FileChangeInfo> fileInfoMap) {
-        FileManager.writeData(getFileChangeSummaryFile(), fileInfoMap);
+        FileUtilManager.writeData(FileUtilManager.getFileChangeSummaryFile(), fileInfoMap);
     }
 }

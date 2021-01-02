@@ -7,10 +7,7 @@ package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileAggregateDataManager;
-import com.swdc.netbeans.plugin.managers.FileManager;
-import com.swdc.netbeans.plugin.managers.OsaScriptManager;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
-import com.swdc.netbeans.plugin.managers.SlackClientManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
@@ -32,6 +29,8 @@ import org.openide.awt.ActionReference;
 import org.openide.windows.TopComponent;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.WindowManager;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.SlackManager;
 
 /**
  * Top component which displays something.
@@ -499,7 +498,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     }
     
     private static void rebuildMenuNodes() {
-        String name = FileManager.getItem("name");
+        String name = FileUtilManager.getItem("name");
         // check to see if we need to swap out the signup nodes with the signed up node
         MetricTreeNode loggedInNode = findNodeById(TreeHelper.LOGGED_IN_ID);
         if (StringUtils.isNotBlank(name) && loggedInNode == null) {
@@ -512,7 +511,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             loggedInNode = TreeHelper.buildLoggedInNode();
             ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(loggedInNode, 0);
         } else {
-            String authType = FileManager.getItem("authType");
+            String authType = FileUtilManager.getItem("authType");
             String iconName = "icons8-envelope-16.png";
             if ("google".equals(authType)) {
                 iconName = "google.png";
@@ -520,7 +519,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
                 iconName = "github.png";
             }
             
-            String email = FileManager.getItem("name");
+            String email = FileUtilManager.getItem("name");
             // update the logged in node
             updateNodeLabel(findNodeById(TreeHelper.LOGGED_IN_ID), email, iconName);
         }
@@ -537,15 +536,10 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     private static void rebuildFlowNodes() {
         MetricTreeNode connectSlackId = findNodeById(TreeHelper.CONNECT_SLACK_ID);
         if (connectSlackId != null) {
-            if (SlackClientManager.hasSlackWorkspaces()) {
+            if (SlackManager.hasSlackWorkspaces()) {
                 // remove this node
                 removeNodeById(TreeHelper.CONNECT_SLACK_ID);
             }
-        }
-        
-        MetricTreeNode switchOnDarkModeId = findNodeById(TreeHelper.SWITCH_ON_DARK_MODE_ID);
-        if (switchOnDarkModeId != null && OsaScriptManager.isDarkMode()) {
-            // remove it and add the other one
         }
     }
 }

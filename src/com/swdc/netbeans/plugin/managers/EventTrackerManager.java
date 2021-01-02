@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.project.Project;
+import swdc.java.ops.manager.FileUtilManager;
 
 public class EventTrackerManager {
     public static final Logger log = Logger.getLogger("EventTrackerManager");
@@ -162,7 +163,7 @@ public class EventTrackerManager {
 
     private AuthEntity getAuthEntity() {
         AuthEntity authEntity = new AuthEntity();
-        String jwt = FileManager.getItem("jwt");
+        String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isNotBlank(jwt)) {
             if (jwt.indexOf("JWT") == 0) {
                 authEntity.setJwt(jwt.split("JWT ")[1].trim());

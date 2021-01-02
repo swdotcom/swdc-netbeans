@@ -13,29 +13,20 @@ import com.swdc.netbeans.plugin.models.ElapsedTime;
 import com.swdc.netbeans.plugin.models.KeystrokeAggregate;
 import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.lang.reflect.Type;
+import swdc.java.ops.manager.FileUtilManager;
 
 public class SessionDataManager {
 
-    public static String getSessionDataSummaryFile() {
-        String file = SoftwareUtil.getSoftwareDir(true);
-        if (SoftwareUtil.isWindows()) {
-            file += "\\sessionSummary.json";
-        } else {
-            file += "/sessionSummary.json";
-        }
-        return file;
-    }
-
     public static void clearSessionSummaryData() {
         SessionSummary summary = new SessionSummary();
-        FileManager.writeData(getSessionDataSummaryFile(), summary);
+        FileUtilManager.writeData(FileUtilManager.getSessionDataSummaryFile(), summary);
     }
 
     public static SessionSummary getSessionSummaryData() {
-        JsonObject jsonObj = FileManager.getFileContentAsJson(getSessionDataSummaryFile());
+        JsonObject jsonObj = FileUtilManager.getFileContentAsJson(FileUtilManager.getSessionDataSummaryFile());
         if (jsonObj == null) {
             clearSessionSummaryData();
-            jsonObj = FileManager.getFileContentAsJson(getSessionDataSummaryFile());
+            jsonObj = FileUtilManager.getFileContentAsJson(FileUtilManager.getSessionDataSummaryFile());
         }
         JsonElement lastUpdatedToday = jsonObj.get("lastUpdatedToday");
         if (lastUpdatedToday != null) {
@@ -71,7 +62,7 @@ public class SessionDataManager {
         summary.setCurrentDayLinesRemoved(summary.getCurrentDayLinesRemoved() + aggregate.linesRemoved);
 
         // save the file
-        FileManager.writeData(getSessionDataSummaryFile(), summary);
+        FileUtilManager.writeData(FileUtilManager.getSessionDataSummaryFile(), summary);
     }
 
     public static ElapsedTime getTimeBetweenLastPayload() {
@@ -81,7 +72,7 @@ public class SessionDataManager {
         long sessionSeconds = 60;
         long elapsedSeconds = 60;
 
-        long lastPayloadEnd = FileManager.getNumericItem("latestPayloadTimestampEndUtc", 0);
+        long lastPayloadEnd = FileUtilManager.getNumericItem("latestPayloadTimestampEndUtc", 0);
         if (lastPayloadEnd > 0) {
             SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
             elapsedSeconds = Math.max(60, timesData.now - lastPayloadEnd);

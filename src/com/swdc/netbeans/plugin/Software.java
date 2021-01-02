@@ -29,6 +29,9 @@ import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
 import org.openide.windows.WindowManager;
+import swdc.java.ops.manager.AccountManager;
+import swdc.java.ops.manager.ConfigManager;
+import swdc.java.ops.manager.FileUtilManager;
 
 /**
  *
@@ -49,9 +52,9 @@ public class Software extends ModuleInstall implements Runnable {
 
     @Override
     public void run() {
-        String jwt = FileManager.getItem("jwt");
+        String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isBlank(jwt)) {
-            jwt = SoftwareUtil.createAnonymousUser(false);
+            jwt = AccountManager.createAnonymousUser(false);
             if (StringUtils.isBlank(jwt)) {
                 boolean serverIsOnline = SoftwareUtil.isServerOnline();
                 if (!serverIsOnline) {
@@ -69,17 +72,20 @@ public class Software extends ModuleInstall implements Runnable {
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
         LOG.log(Level.INFO, "Code Time: Loaded v{0}", SoftwareUtil.getVersion());
         
+        // initialize the swdc ops config
+        ConfigManager.init(SoftwareUtil.API_ENDPOINT, SoftwareUtil.LAUNCH_URL, SoftwareUtil.PLUGIN_ID, "Code Time", SoftwareUtil.getVersion());
+        
         // initialize the tracker
         EventTrackerManager.getInstance().init();
 
         // send the activate event
         EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
         
-        String readmeDisplayed = FileManager.getItem("netbeans_CtReadme");
+        String readmeDisplayed = FileUtilManager.getItem("netbeans_CtReadme");
         if (readmeDisplayed == null || Boolean.valueOf(readmeDisplayed) == false) {
             // send an initial plugin payload
             FileManager.openReadmeFile(UIInteractionType.keyboard);
-            FileManager.setItem("netbeans_CtReadme", "true");
+            FileUtilManager.setItem("netbeans_CtReadme", "true");
         }
 
         // setup the document change event listeners

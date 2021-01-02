@@ -15,21 +15,12 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import org.netbeans.api.project.Project;
+import swdc.java.ops.manager.FileUtilManager;
 
 public class TimeDataManager {
 
-    private static String getTimeDataSummaryFile() {
-        String file = SoftwareUtil.getSoftwareDir(true);
-        if (SoftwareUtil.isWindows()) {
-            file += "\\projectTimeData.json";
-        } else {
-            file += "/projectTimeData.json";
-        }
-        return file;
-    }
-
     public static void clearTimeDataSummary() {
-        FileManager.writeData(getTimeDataSummaryFile(), new JsonArray());
+        FileUtilManager.writeData(FileUtilManager.getTimeDataSummaryFile(), new JsonArray());
     }
 
     public static void incrementEditorSeconds(long editorSeconds) {
@@ -123,7 +114,7 @@ public class TimeDataManager {
     }
 
     private static List<TimeData> getTimeDataList() {
-        JsonArray jsonArr = FileManager.getFileContentAsJsonArray(getTimeDataSummaryFile());
+        JsonArray jsonArr = FileUtilManager.getFileContentAsJsonArray(FileUtilManager.getTimeDataSummaryFile());
         Type listType = new TypeToken<List<TimeData>>() {}.getType();
         List<TimeData> timeDataList = SoftwareUtil.gson.fromJson(jsonArr, listType);
         if (timeDataList == null) {
@@ -167,7 +158,7 @@ public class TimeDataManager {
 
         timeDataList.add(td);
         // write it then return it
-        FileManager.writeData(getTimeDataSummaryFile(), timeDataList);
+        FileUtilManager.writeData(FileUtilManager.getTimeDataSummaryFile(), timeDataList);
         return td;
     }
 
@@ -213,6 +204,6 @@ public class TimeDataManager {
         timeDataList.add(timeData);
 
         // write it all
-        FileManager.writeData(getTimeDataSummaryFile(), timeDataList);
+        FileUtilManager.writeData(FileUtilManager.getTimeDataSummaryFile(), timeDataList);
     }
 }

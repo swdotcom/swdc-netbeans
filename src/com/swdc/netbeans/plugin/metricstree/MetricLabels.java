@@ -6,11 +6,11 @@
 package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import swdc.java.ops.manager.FileUtilManager;
 
 public class MetricLabels {
     private static final SimpleDateFormat formatDay = new SimpleDateFormat("EEE");
@@ -39,7 +39,7 @@ public class MetricLabels {
 
     public void updateLabels(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
         String dayStr = formatDay.format(new Date());
-        String refClass = FileManager.getItem("reference-class", "user");
+        String refClass = FileUtilManager.getItem("reference-class", "user");
         long referenceValue = 0;
 
         if (sessionSummary != null) {

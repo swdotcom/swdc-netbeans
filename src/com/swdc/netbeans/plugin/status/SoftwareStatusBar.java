@@ -5,7 +5,6 @@
  */
 package com.swdc.netbeans.plugin.status;
 
-import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -20,6 +19,7 @@ import javax.swing.SwingConstants;
 import org.openide.awt.StatusLineElementProvider;
 import org.openide.util.ImageUtilities;
 import org.openide.util.lookup.ServiceProvider;
+import swdc.java.ops.manager.FileUtilManager;
 
 /**
  *
@@ -77,7 +77,7 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     }
 
     public void updateMessage(StatusBarType status, String text, String tooltip) {
-        String name = FileManager.getItem("name");
+        String name = FileUtilManager.getItem("name");
         
         tooltip = tooltip == null ? "" : tooltip;
         if (name != null && !name.equals("")) {

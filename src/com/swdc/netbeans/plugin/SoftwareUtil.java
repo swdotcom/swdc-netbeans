@@ -4,27 +4,18 @@
  */
 package com.swdc.netbeans.plugin;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
-import com.swdc.netbeans.plugin.managers.SoftwareHttpManager;
-import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import com.swdc.netbeans.plugin.managers.EventTrackerManager;
-import com.swdc.netbeans.plugin.managers.FileManager;
-import com.swdc.netbeans.plugin.managers.JsonManager;
 import com.swdc.netbeans.plugin.managers.OfflineManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import com.swdc.netbeans.plugin.models.FileDetails;
-import com.swdc.netbeans.plugin.models.Integration;
 import com.swdc.netbeans.plugin.models.NetbeansProject;
-import com.swdc.netbeans.plugin.models.SoftwareUser;
-import com.swdc.netbeans.plugin.models.UserLoginState;
 import com.swdc.snowplow.tracker.entities.UIElementEntity;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.io.BufferedReader;
@@ -39,11 +30,9 @@ import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,15 +51,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -81,14 +67,6 @@ import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.netbeans.api.autoupdate.UpdateElement;
 import org.netbeans.api.autoupdate.UpdateManager;
 import org.netbeans.api.autoupdate.UpdateUnit;
@@ -104,6 +82,10 @@ import org.openide.loaders.DataObject;
 import org.openide.text.Line;
 import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
+import swdc.java.ops.http.ClientResponse;
+import swdc.java.ops.http.OpsHttpClient;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.UtilManager;
 
 /**
  *
@@ -139,8 +121,6 @@ public class SoftwareUtil {
     public static final AtomicBoolean SEND_TELEMTRY = new AtomicBoolean(true);
 
     public final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
-    public static HttpClient httpClient;
-    public static HttpClient pingClient;
     
     private static final long DAYS_IN_SECONDS = 60 * 60 * 24;
     
@@ -162,44 +142,10 @@ public class SoftwareUtil {
     private static boolean showStatusText = true;
     
     private static Document lastDocument = null;
-    
-    // cached result of OS detection
-    protected static OSType detectedOS;
-    
-    static {
-        // initialize the HttpClient
-        RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(5000)
-                .setConnectionRequestTimeout(5000)
-                .setSocketTimeout(5000)
-                .build();
-
-        pingClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
-        httpClient = HttpClientBuilder.create().build();
-    }
+   
     
     private static String regex = "^\\S+@\\S+\\.\\S+$";
     private static Pattern pattern = Pattern.compile(regex);
-    
-    public enum OSType {
-        Windows, MacOS, Linux, Other
-    };
-    
-    public static OSType getOperatingSystemType() {
-        if (detectedOS == null) {
-          String OS = System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH);
-          if ((OS.indexOf("mac") >= 0) || (OS.indexOf("darwin") >= 0)) {
-            detectedOS = OSType.MacOS;
-          } else if (OS.indexOf("win") >= 0) {
-            detectedOS = OSType.Windows;
-          } else if (OS.indexOf("nux") >= 0) {
-            detectedOS = OSType.Linux;
-          } else {
-            detectedOS = OSType.Other;
-          }
-        }
-        return detectedOS;
-    }
     
     public static void updateServerStatus(boolean isOnlineStatus) {
         appAvailable = isOnlineStatus;
@@ -245,60 +191,21 @@ public class SoftwareUtil {
     
     public static boolean softwareSessionFileExists() {
         // don't auto create the file
-        String file = getSoftwareSessionFile(false);
+        String file = FileUtilManager.getSoftwareSessionFile(false);
         // check if it exists
         File f = new File(file);
         return f.exists();
     }
     
     public static boolean hasJwt() {
-        String jwt = FileManager.getItem("jwt");
+        
+        String jwt = FileUtilManager.getItem("jwt");
         return (jwt != null && !jwt.equals(""));
     }
     
-    public static String getSummaryInfoFile(boolean autoCreate) {
-        String file = getSoftwareDir(autoCreate);
-        if (isWindows()) {
-            file += "\\SummaryInfo.txt";
-        } else {
-            file += "/SummaryInfo.txt";
-        }
-        return file;
-    };
-
-    private static String getSoftwareSessionFile(boolean autoCreate) {
-        String file = getSoftwareDir(autoCreate);
-        if (isWindows()) {
-            file += "\\session.json";
-        } else {
-            file += "/session.json";
-        }
-        return file;
-    }
-
-    private static String getSoftwareDataStoreFile() {
-        String file = getSoftwareDir(true);
-        if (isWindows()) {
-            file += "\\data.json";
-        } else {
-            file += "/data.json";
-        }
-        return file;
-    }
-    
-    public static String getCodeTimeDashboardFile() {
-        String file = getSoftwareDir(true);
-        if (isWindows()) {
-            file += "\\CodeTime.txt";
-        } else {
-            file += "/CodeTime.txt";
-        }
-        return file;
-    }
-    
     public static String getReadmeFile() {
-        String file = getSoftwareDir(true);
-        if (isWindows()) {
+        String file = FileUtilManager.getSoftwareDir(true);
+        if (UtilManager.isWindows()) {
             file += "\\netbeansCt_README.txt";
         } else {
             file += "/netbeansCt_README.txt";
@@ -306,207 +213,12 @@ public class SoftwareUtil {
         return file;
     }
 
-    public static String getUserHomeDir() {
-        return System.getProperty("user.home");
-    }
-
-    public static String getOs() {
-        String osInfo = "";
-        try {
-            String osName = System.getProperty("os.name");
-            String osVersion = System.getProperty("os.version");
-            String osArch = System.getProperty("os.arch");
-
-            if (osArch != null) {
-                osInfo += osArch;
-            }
-            if (osInfo.length() > 0) {
-                osInfo += "_";
-            }
-            if (osVersion != null) {
-                osInfo += osVersion;
-            }
-            if (osInfo.length() > 0) {
-                osInfo += "_";
-            }
-            if (osName != null) {
-                osInfo += osName;
-            }
-        } catch (Exception e) {
-                //
-        }
-
-        return osInfo;
-    }
-
-    public static boolean isWindows() {
-        return getOperatingSystemType() == OSType.Windows;
-    }
-
-    public static boolean isMac() {
-        return getOperatingSystemType() == OSType.MacOS;
-    }
-    
-    public static boolean isLinux() {
-        return (!isMac() && !isWindows());
-    }
-
-    public static String getSoftwareDir(boolean autoCreate) {
-        String softwareDataDir = getUserHomeDir();
-        if (isWindows()) {
-            softwareDataDir += "\\.software";
-        } else {
-            softwareDataDir += "/.software";
-        }
-
-        File f = new File(softwareDataDir);
-        if (autoCreate && !f.exists()) {
-            // make the directory
-            f.mkdirs();
-        }
-
-        return softwareDataDir;
-    }
-
-    public static String getStringRepresentation(HttpEntity res, boolean isPlainText) throws IOException {
-        if (res == null) {
-            return null;
-        }
-
-        InputStream inputStream = res.getContent();
-
-        // Timing information--- verified that the data is still streaming
-        // when we are called (this interval is about 2s for a large response.)
-        // So in theory we should be able to do somewhat better by interleaving
-        // parsing and reading, but experiments didn't show any improvement.
-        StringBuilder sb = new StringBuilder();
-        InputStreamReader reader;
-        reader = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
-
-        try (BufferedReader br = new BufferedReader(reader)) {
-            boolean done = false;
-            while (!done) {
-                String aLine = br.readLine();
-                if (aLine != null) {
-                    sb.append(aLine);
-                    if (isPlainText) {
-                        sb.append("\n");
-                    }
-                } else {
-                    done = true;
-                }
-            }
-        }
-
-        return sb.toString();
-    }
-
-    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload) {
-        return makeApiCall(api, httpMethodName, payload, null);
-    }
-    
-    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload, String overridingJwt) { 
-        SoftwareResponse softwareResponse = new SoftwareResponse();
-        if (!TELEMETRY_ON) {
-            softwareResponse.setIsOk(true);
-            return softwareResponse;
-        }
-
-        SoftwareHttpManager httpTask = null;
-        if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard") || api.contains("/users/plugin/accounts")) {
-            // if the server is having issues, we'll timeout within 5 seconds for these calls
-            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, pingClient);
-        } else {
-            if (httpMethodName.equals(HttpPost.METHOD_NAME)) {
-                // continue, POSTS encapsulated in invoke laters with a timeout of 5 seconds
-                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, pingClient);
-            } else {
-                if (!appAvailable) {
-                    // bail out
-                    softwareResponse.setIsOk(false);
-                    return softwareResponse;
-                }
-                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
-            }
-        }
-        Future<HttpResponse> response = EXECUTOR_SERVICE.submit(httpTask);
-
-        //
-        // Handle the Future if it exist
-        //
-        if (response != null) {
-            try {
-                HttpResponse httpResponse = response.get();
-                if (httpResponse != null) {
-                    int statusCode = httpResponse.getStatusLine().getStatusCode();
-                    if (statusCode < 300) {
-                        softwareResponse.setIsOk(true);
-                    }
-                    HttpEntity entity = httpResponse.getEntity();
-                    
-                    ContentType contentType = ContentType.getOrDefault(entity);
-                    String mimeType = contentType.getMimeType();
-                    boolean isPlainText = (mimeType.indexOf("text/plain") == -1) ? false : true;
-                    
-                    JsonObject jsonObj = null;
-                    if (entity != null) {
-                        try {
-                            String jsonStr = getStringRepresentation(entity, isPlainText);
-                            softwareResponse.setJsonStr(jsonStr);
-                            
-                            if (jsonStr != null && !isPlainText) {
-                                LOG.log(Level.INFO, "Sofware.com: API response {0}", jsonStr);
-                                Object jsonEl = SoftwareUtil.readAsJsonObject(jsonStr);
-                                
-                                if (jsonEl instanceof JsonElement) {
-                                    try {
-                                        JsonElement el = (JsonElement)jsonEl;
-                                        if (el.isJsonPrimitive()) {
-                                            if (statusCode < 300) {
-                                                softwareResponse.setDataMessage(el.getAsString());
-                                            } else {
-                                                softwareResponse.setErrorMessage(el.getAsString());
-                                            }
-                                        } else {
-                                            jsonObj = ((JsonElement) jsonEl).getAsJsonObject();
-                                            softwareResponse.setJsonObj(jsonObj);
-                                        }
-                                    } catch (Exception e) {
-                                        LOG.log(Level.WARNING, "Unable to parse response data: {0}", e.getMessage());
-                                    }
-                                }
-                            }
-                        } catch (IOException e) {
-                            String errorMessage = "Code Time: Unable to get the response from the http request, error: " + e.getMessage();
-                            softwareResponse.setErrorMessage(errorMessage);
-                            LOG.log(Level.WARNING, errorMessage);
-                        }
-                    }
-                    
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                String errorMessage = "Code Time: Unable to get the response from the http request, error: " + e.getMessage();
-                softwareResponse.setErrorMessage(errorMessage);
-                LOG.log(Level.WARNING, errorMessage);
-            }
-        }
-
-        return softwareResponse;
-    }
-
-    private static void deleteFile(String file) {
-        File f = new File(file);
-        // if the file exists, delete it
-        if (f.exists()) {
-            f.delete();
-        }
-    }
     
     public static boolean isServerOnline() {
         long nowInSec = Math.round(System.currentTimeMillis() / 1000);
         boolean pastThreshold = (nowInSec - lastAppAvailableCheck > 120);
         if (pastThreshold) {
-            SoftwareResponse resp = makeApiCall("/ping", HttpGet.METHOD_NAME, null);
+            ClientResponse resp = OpsHttpClient.softwareGet("/ping", null);
             appAvailable = resp.isOk();
             lastAppAvailableCheck = nowInSec;
         }
@@ -667,8 +379,8 @@ public class SoftwareUtil {
     
     public static void fetchCodeTimeMetricsDashboard(JsonObject summary) {
         OfflineManager offlineMgr = OfflineManager.getInstance();
-        String summaryInfoFile = getSummaryInfoFile(true);
-        String dashboardFile = getCodeTimeDashboardFile();
+        String summaryInfoFile = FileUtilManager.getSummaryInfoFile();
+        String dashboardFile = FileUtilManager.getCodeTimeDashboardFile();
         
         Calendar cal = Calendar.getInstance();
         int dayOfMonth = cal.get(Calendar.DAY_OF_MONTH);
@@ -676,8 +388,10 @@ public class SoftwareUtil {
 
         if (lastDayOfMonth == 0 || lastDayOfMonth != dayOfMonth) {
             lastDayOfMonth = dayOfMonth;
-            String api = "/dashboard?linux=" + isLinux() + "&showToday=true";
-            String dashboardSummary = makeApiCall(api, HttpGet.METHOD_NAME, null).getJsonStr();
+            String api = "/dashboard?linux=" + UtilManager.isLinux() + "&showToday=true";
+            ClientResponse resp = OpsHttpClient.softwareGet(api, FileUtilManager.getItem("jwt"));
+            
+            String dashboardSummary = resp.getJsonStr();
             if (dashboardSummary == null || dashboardSummary.trim().isEmpty()) {
                 dashboardSummary = SERVICE_NOT_AVAIL;
             }
@@ -711,7 +425,7 @@ public class SoftwareUtil {
         JsonObject sessionSummary = OfflineManager.getInstance().getSessionSummaryFileAsJson();
         fetchCodeTimeMetricsDashboard(sessionSummary);
 
-        String codeTimeFile = getCodeTimeDashboardFile();
+        String codeTimeFile = FileUtilManager.getCodeTimeDashboardFile();
         File f = new File(codeTimeFile);
         
         try {
@@ -751,149 +465,6 @@ public class SoftwareUtil {
             }
         }
         return result;
-    }
-
-    public static String getOsUsername() {
-        String username = System.getProperty("user.name");
-        if (username == null || username.trim().equals("")) {
-            try {
-                List<String> cmd = new ArrayList<String>();
-                if (isWindows()) {
-                    cmd.add("cmd");
-                    cmd.add("/c");
-                    cmd.add("whoami");
-                } else {
-                    cmd.add("/bin/sh");
-                    cmd.add("-c");
-                    cmd.add("whoami");
-                }
-                username = getSingleLineResult(cmd, 1);
-            } catch (Exception e) {
-                //
-            }
-        }
-        return username;
-    }
-
-    public static String createAnonymousUser(boolean ignoreJwt) {
-        // make sure we've fetched the app jwt
-        String jwt = FileManager.getItem("jwt");
-
-        if (StringUtils.isBlank(jwt) || ignoreJwt) {
-            String timezone = TimeZone.getDefault().getID();
-
-            String plugin_uuid = FileManager.getPluginUuid();
-            String auth_callback_state = FileManager.getAuthCallbackState();
-
-            JsonObject payload = new JsonObject();
-            payload.addProperty("username", getOsUsername());
-            payload.addProperty("timezone", timezone);
-            payload.addProperty("hostname", getHostname());
-            payload.addProperty("auth_callback_state", auth_callback_state);
-            payload.addProperty("plugin_uuid", plugin_uuid);
-
-            String api = "/plugins/onboard";
-            SoftwareResponse resp = SoftwareUtil.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString());
-            if (resp.isOk()) {
-                // check if we have the data and jwt
-                // resp.data.jwt and resp.data.user
-                // then update the session.json for the jwt
-                JsonObject data = resp.getJsonObj();
-                // check if we have any data
-                if (data != null && data.has("jwt")) {
-                    String dataJwt = data.get("jwt").getAsString();
-                    FileManager.setItem("jwt", dataJwt);
-                    FileManager.setBooleanItem("switching_account", false);
-                    FileManager.setAuthCallbackState(null);
-                    return dataJwt;
-                }
-            }
-        }
-        return null;
-    }
-    
-    public static UserLoginState getUserLoginState(boolean isIntegrationRequest) {
-        UserLoginState userLoginState = new UserLoginState();
-        SoftwareUser softwareUser = new SoftwareUser();
-        
-        String name = FileManager.getItem("name");
-
-        String authType = FileManager.getItem("authType");
-        if (StringUtils.isBlank(authType)) {
-            authType = "software";
-        }
-        String jwt = FileManager.getItem("jwt");
-        String auth_callback_state = FileManager.getAuthCallbackState();
-        String token = (StringUtils.isNotBlank(auth_callback_state)) ? auth_callback_state : jwt;
-        String api = "/users/plugin/state";
-        SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null, token);
-
-        boolean foundUser = (resp.isOk() && resp.getJsonObj() != null && resp.getJsonObj().has("user"));
-        String state = (foundUser) ? resp.getJsonObj().get("state").getAsString() : "UNKNOWN";
-        boolean isEmailLogin = (authType.equals("software") || authType.equals("email"));
-        if (!state.equals("OK") && isEmailLogin) {
-            // check using the jwt
-            resp = makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
-            foundUser = (resp.isOk() && resp.getJsonObj() != null && resp.getJsonObj().has("user"));
-        }
-
-        if (foundUser) {
-            JsonObject obj = resp.getJsonObj().get("user").getAsJsonObject();
-            // get the integrations
-            JsonArray jsonIntegrations = JsonManager.getArrayVal(obj, "integrations");
-            
-            String payload_jwt = JsonManager.getStringVal(resp.getJsonObj(), "jwt", null);
-            String plugin_jwt = JsonManager.getStringVal(obj, "plugin_jwt", null);
-
-            softwareUser.plugin_jwt = plugin_jwt != null ? plugin_jwt : payload_jwt;
-            softwareUser.registered = JsonManager.getIntVal(obj, "registered", 0);
-            softwareUser.email = JsonManager.getStringVal(obj, "email", null);
-            
-            softwareUser.integrations = new ArrayList<>();
-            if (jsonIntegrations.size() > 0) {
-                for (JsonElement el : jsonIntegrations) {
-                    Integration integration = new Integration();
-                    integration.updateInfoWithResponse(el.getAsJsonObject());
-                    softwareUser.integrations.add(integration);
-                }
-            }
-
-            if (StringUtils.isNotBlank(plugin_jwt)) {
-                FileManager.setItem("jwt", plugin_jwt);
-            }
-            if (softwareUser.registered == 1) {
-                FileManager.setItem("name", softwareUser.email);
-            }
-
-            FileManager.setBooleanItem("switching_account", false);
-            FileManager.setAuthCallbackState(null);
-            
-            userLoginState.user = softwareUser;
-            userLoginState.loggedIn = (softwareUser.registered == 1);
-        }
-
-        return userLoginState;
-    }
-    
-    public static String getDecodedUserIdFromJwt(String jwt) {
-        String stippedDownJwt = jwt.indexOf("JWT ") != -1 ? jwt.substring("JWT ".length()) : jwt;
-        try {
-            String[] split_string = stippedDownJwt.split("\\.");
-            String base64EncodedBody = split_string[1];
-
-            org.apache.commons.codec.binary.Base64 base64Url = new Base64(true);
-            String body = new String(base64Url.decode(base64EncodedBody));
-            Map<String, String> jsonMap;
-
-            ObjectMapper mapper = new ObjectMapper();
-            // convert JSON string to Map
-            jsonMap = mapper.readValue(body,
-                    new TypeReference<Map<String, String>>() {
-                    });
-            Object idVal = jsonMap.getOrDefault("id", "");
-            return idVal.toString();
-        } catch (Exception ex) {}
-        return "";
     }
     
     public static String getDashboardRow(String label, String value) {
@@ -1118,7 +689,7 @@ public class SoftwareUtil {
     }
 
     public static boolean isNewDay() {
-        String currentDay = FileManager.getItem("currentDay", "");
+        String currentDay = FileUtilManager.getItem("currentDay", "");
         String day = getTodayInStandardFormat();
         return !day.equals(currentDay);
     }
