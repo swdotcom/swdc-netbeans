@@ -56,6 +56,9 @@ public class Software extends ModuleInstall implements Runnable {
 
     @Override
     public void run() {
+        // initialize the swdc ops config
+        ConfigManager.init(SoftwareUtil.API_ENDPOINT, SoftwareUtil.LAUNCH_URL, SoftwareUtil.PLUGIN_ID, "Code Time", SoftwareUtil.getVersion());
+        
         String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isBlank(jwt)) {
             jwt = AccountManager.createAnonymousUser(false);
@@ -75,9 +78,6 @@ public class Software extends ModuleInstall implements Runnable {
 
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
         LOG.log(Level.INFO, "Code Time: Loaded v{0}", SoftwareUtil.getVersion());
-        
-        // initialize the swdc ops config
-        ConfigManager.init(SoftwareUtil.API_ENDPOINT, SoftwareUtil.LAUNCH_URL, SoftwareUtil.PLUGIN_ID, "Code Time", SoftwareUtil.getVersion());
         
         // initialize the tracker
         EventTrackerManager.getInstance().init();

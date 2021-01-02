@@ -9,7 +9,6 @@ package com.swdc.netbeans.plugin.models;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.EventTrackerManager;
 import com.swdc.netbeans.plugin.managers.FileAggregateDataManager;
-import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import com.swdc.netbeans.plugin.managers.WallClockManager;
@@ -284,7 +283,7 @@ public class KeystrokeCount {
 
         // add the cumulative data
         this.workspace_name = SoftwareUtil.getWorkspaceName();
-        this.hostname = SoftwareUtil.getHostname();
+        this.hostname = UtilManager.getHostname();
         this.cumulative_session_seconds = 60;
         this.cumulative_editor_seconds = 60;
 

@@ -11,6 +11,7 @@ import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.UtilManager;
 
 public class MetricLabels {
     private static final SimpleDateFormat formatDay = new SimpleDateFormat("EEE");
@@ -45,19 +46,19 @@ public class MetricLabels {
         if (sessionSummary != null) {
             referenceValue = refClass.equals("user") ? sessionSummary.getAverageDailyKeystrokes() : sessionSummary.getGlobalAverageDailyKeystrokes();
             keystrokesReferenceAvg = getPercentOfReferenceAvg(sessionSummary.getCurrentDayKeystrokes(), referenceValue);
-            keystrokes = "Keystrokes: " + SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayKeystrokes()) + " " + keystrokesReferenceAvg;
+            keystrokes = "Keystrokes: " + UtilManager.humanizeLongNumbers(sessionSummary.getCurrentDayKeystrokes()) + " " + keystrokesReferenceAvg;
 
             keystrokesAvgIcon = referenceValue < sessionSummary.getCurrentDayKeystrokes() ? "bolt.png" : "bolt-grey.png";
 
             referenceValue = refClass.equals("user") ? sessionSummary.getAverageLinesAdded() : sessionSummary.getGlobalAverageLinesAdded();
             linesAddedReferenceAvg = getPercentOfReferenceAvg(sessionSummary.getCurrentDayLinesAdded(), referenceValue);
-            linesAdded = "Lines added: " + SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayLinesAdded()) + " " + linesAddedReferenceAvg;
+            linesAdded = "Lines added: " + UtilManager.humanizeLongNumbers(sessionSummary.getCurrentDayLinesAdded()) + " " + linesAddedReferenceAvg;
 
             linesAddedAvgIcon = referenceValue < sessionSummary.getCurrentDayLinesAdded() ? "bolt.png" : "bolt-grey.png";
 
             referenceValue = refClass.equals("user") ? sessionSummary.getAverageLinesRemoved() : sessionSummary.getGlobalAverageLinesRemoved();
             linesRemovedReferenceAvg = getPercentOfReferenceAvg(sessionSummary.getCurrentDayLinesRemoved(), referenceValue);
-            linesRemoved = "Lines removed: " + SoftwareUtil.humanizeLongNumbers(sessionSummary.getCurrentDayLinesRemoved()) + " " + linesRemovedReferenceAvg;
+            linesRemoved = "Lines removed: " + UtilManager.humanizeLongNumbers(sessionSummary.getCurrentDayLinesRemoved()) + " " + linesRemovedReferenceAvg;
 
             linesRemovedAvgIcon = referenceValue < sessionSummary.getCurrentDayLinesRemoved() ? "bolt.svg" : "bolt-grey.png";
         }
@@ -67,12 +68,12 @@ public class MetricLabels {
             referenceValue = refClass.equals("user") ? sessionSummary.getAverageDailyMinutes() : sessionSummary.getGlobalAverageDailyMinutes();
             activeCodeTimeReferenceAvg = getPercentOfReferenceAvg(codeTimeSummary.activeCodeTimeMinutes, referenceValue);
             
-            activeCodeTime = "Active code time: " + SoftwareUtil.humanizeMinutes(codeTimeSummary.activeCodeTimeMinutes) + " " + activeCodeTimeReferenceAvg;
+            activeCodeTime = "Active code time: " + UtilManager.humanizeMinutes(codeTimeSummary.activeCodeTimeMinutes) + " " + activeCodeTimeReferenceAvg;
 
             activeCodeTimeAvgIcon = referenceValue < sessionSummary.getCurrentDayMinutes() ? "bolt.png" : "bolt-grey.png";
 
             // Code Time
-            codeTime = "Code time: " + SoftwareUtil.humanizeMinutes(codeTimeSummary.codeTimeMinutes);
+            codeTime = "Code time: " + UtilManager.humanizeMinutes(codeTimeSummary.codeTimeMinutes);
         }
     }
     

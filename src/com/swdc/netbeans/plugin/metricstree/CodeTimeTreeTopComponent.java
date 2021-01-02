@@ -113,12 +113,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         }
     }
     
-    private static void updateNodeIconName(MetricTreeNode node, String iconName) {
-        if (node != null) {
-            node.updateIconName(iconName);
-        }
-    }
-    
     private static int findParentNodeRowById(String id) {
         int row = 0;
         try {
@@ -198,8 +192,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
-        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
-        
+
         updateMetrics(codeTimeSummary, sessionSummary);
     }
     
@@ -275,36 +268,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     void readProperties(java.util.Properties p) {
         String version = p.getProperty("version");
         // TODO read your settings according to their version
-    }
-    
-    private MetricTree buildMenuTreeView() {
-        MetricTree tree = new MetricTree(makeMenuNodeModel());
-
-        tree.setCellRenderer(new IconTreeCellRenderer());
-        tree.setRootVisible(false);
-        tree.setShowsRootHandles(false);
-
-        return tree;
-    }
-    
-    private MetricTree buildFlowTreeView() {
-        MetricTree tree = new MetricTree(makeFlowNodeModel());
-
-        tree.setCellRenderer(new IconTreeCellRenderer());
-        tree.setRootVisible(false);
-        tree.setShowsRootHandles(false);
-
-        return tree;
-    }
-    
-    private MetricTree buildKpmTreeView() {
-        MetricTree tree = new MetricTree(makeKpmNodeModel());
-
-        tree.setCellRenderer(new IconTreeCellRenderer());
-        tree.setRootVisible(false);
-        tree.setShowsRootHandles(false);
-
-        return tree;
     }
 
     private MetricTree buildCodeTimeTreeView() {

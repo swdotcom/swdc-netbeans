@@ -101,6 +101,9 @@ public class SoftwareSessionManager {
             // pull in any integrations
             SlackManager.getSlackAuth(loginState.user);
             
+            SessionDataManager.clearSessionSummaryData();
+            TimeDataManager.clearTimeDataSummary();
+            
             // clear the auth callback state
             FileUtilManager.setBooleanItem("switching_account", false);
             FileUtilManager.setAuthCallbackState(null);

@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.lang.StringUtils;
+import swdc.java.ops.manager.UtilManager;
 
 public class GitUtil {
 
@@ -103,16 +104,16 @@ public class GitUtil {
         if (projectDir != null &&  SoftwareUtil.isGitProject(projectDir)) {
             try {
                 String[] branchCmd = { "git", "symbolic-ref", "--short", "HEAD" };
-                String branch = SoftwareUtil.runCommand(branchCmd, projectDir);
+                String branch = UtilManager.runCommand(branchCmd, projectDir);
 
                 String[] identifierCmd = { "git", "config", "--get", "remote.origin.url" };
-                String identifier = SoftwareUtil.runCommand(identifierCmd, projectDir);
+                String identifier = UtilManager.runCommand(identifierCmd, projectDir);
 
                 String[] emailCmd = { "git", "config", "user.email" };
-                String email = SoftwareUtil.runCommand(emailCmd, projectDir);
+                String email = UtilManager.runCommand(emailCmd, projectDir);
 
                 String[] tagCmd = { "git", "describe", "--all" };
-                String tag = SoftwareUtil.runCommand(tagCmd, projectDir);
+                String tag = UtilManager.runCommand(tagCmd, projectDir);
 
                 if (StringUtils.isNotBlank(branch) && StringUtils.isNotBlank(identifier)) {
                     resourceInfo.setBranch(branch);
@@ -192,7 +193,7 @@ public class GitUtil {
             return "";
         }
         String[] emailCmd = { "git", "config", "user.email" };
-        String email = SoftwareUtil.runCommand(emailCmd, projectDir);
+        String email = UtilManager.runCommand(emailCmd, projectDir);
         return email;
     }
 

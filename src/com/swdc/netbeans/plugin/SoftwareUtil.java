@@ -18,13 +18,11 @@ import com.swdc.netbeans.plugin.models.FileDetails;
 import com.swdc.netbeans.plugin.models.NetbeansProject;
 import com.swdc.snowplow.tracker.entities.UIElementEntity;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
@@ -37,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -163,13 +160,6 @@ public class SoftwareUtil {
         public boolean loggedIn;
     }
     
-    public static String getHostname() {
-        List<String> cmd = new ArrayList<String>();
-        cmd.add("hostname");
-        String hostname = getSingleLineResult(cmd, 1);
-        return hostname;
-    }
-    
     public static String getWorkspaceName() {
         if (workspace_name == null) {
             workspace_name = generateToken();
@@ -270,16 +260,16 @@ public class SoftwareUtil {
         if (projectDir != null && !projectDir.equals("")) {
             try {
                 String[] branchCmd = {"git", "symbolic-ref", "--short", "HEAD"};
-                String branch = runCommand(branchCmd, projectDir);
+                String branch = UtilManager.runCommand(branchCmd, projectDir);
 
                 String[] identifierCmd = {"git", "config", "--get", "remote.origin.url"};
-                String identifier = runCommand(identifierCmd, projectDir);
+                String identifier = UtilManager.runCommand(identifierCmd, projectDir);
 
                 String[] emailCmd = {"git", "config", "user.email"};
-                String email = runCommand(emailCmd, projectDir);
+                String email = UtilManager.runCommand(emailCmd, projectDir);
 
                 String[] tagCmd = {"git", "describe", "--all"};
-                String tag = runCommand(tagCmd, projectDir);
+                String tag = UtilManager.runCommand(tagCmd, projectDir);
 
                 if (branch != null && !branch.equals("") && identifier != null && !identifier.equals("")) {
                     jsonObj.addProperty("identifier", identifier);
@@ -293,78 +283,6 @@ public class SoftwareUtil {
         }
 
         return jsonObj;
-    }
-    
-    public static String runCommand(String[] args) {
-        return runCommand(args, null);
-    }
-    
-    public static String runCommand(String[] args, String dir) {
-        String command = Arrays.toString(args);
-        
-        ProcessBuilder processBuilder = new ProcessBuilder(args);
-        if (StringUtils.isNotBlank(dir)) {
-            processBuilder.directory(new File(dir));
-        }
-
-        processBuilder.redirectErrorStream(true);
-
-        try {
-            Process process = processBuilder.start();
-            
-            StringBuilder processOutput = new StringBuilder();
-            BufferedReader processOutputReader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()));
-            String readLine;
-
-            while ((readLine = processOutputReader.readLine()) != null) {
-                processOutput.append(readLine).append(System.lineSeparator());
-            }
-
-            process.waitFor();
-            String result = processOutput.toString().trim();
-            return result;
-        } catch (IOException | InterruptedException e) {
-            LOG.log(Level.WARNING, "Code Time: Unable to complete command request: {0}", command);
-        }
-
-        return "";
-    }
-    
-    public static String humanizeMinutes(int minutes) {
-        String str = "";
-        if (minutes == 60) {
-            str = "1 hr";
-        } else if (minutes > 60) {
-            float hours = (float)minutes / 60;
-            try {
-                if (hours % 1 == 0) {
-                    // don't return a number with 2 decimal place precision
-                    str = String.format("%.0f", hours) + " hrs";
-                } else {
-                    hours = Math.round(hours * 10) / 10;
-                    str = String.format("%.1f", hours) + " hrs";
-                }
-            } catch (Exception e) {
-                str = String.valueOf(Math.round(hours)) + " hrs";
-            }
-        } else if (minutes == 1) {
-            str = "1 min";
-        } else {
-            str = minutes + " min";
-        }
-        return str;
-    }
-    
-    public static String humanizeDoubleNumbers(double number) {
-        NumberFormat nf = NumberFormat.getInstance();
-        nf.setMinimumFractionDigits(2);
-        return nf.format(number);
-    }
-
-    public static String humanizeLongNumbers(long number) {
-        NumberFormat nf = NumberFormat.getInstance();
-        return nf.format(number);
     }
     
     public static void launchSoftwareTopForty() {
@@ -448,7 +366,7 @@ public class SoftwareUtil {
     private static String getSingleLineResult(List<String> cmd, int maxLen) {
         String result = null;
         String[] cmdArgs = Arrays.copyOf(cmd.toArray(), cmd.size(), String[].class);
-        String content = runCommand(cmdArgs, null);
+        String content = UtilManager.runCommand(cmdArgs, null);
 
         // for now just get the 1st one found
         if (content != null) {
@@ -765,7 +683,7 @@ public class SoftwareUtil {
     public static List<String> getResultsForCommandArgs(String[] args, String dir) {
         List<String> results = new ArrayList<>();
         try {
-            String result = runCommand(args, dir);
+            String result = UtilManager.runCommand(args, dir);
             if (result == null || result.trim().length() == 0) {
                 return results;
             }
