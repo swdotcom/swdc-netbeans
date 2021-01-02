@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -108,12 +109,22 @@ public class SlackClientManager {
         }
     }
     
+    public static void disconnectSlackWorkspace() {
+        // pick at workspace to disconnect
+        Integration selectedIntegration = showSlackWorkspaceSelection();
+        if (selectedIntegration != null) {
+            // disconnect it
+            disconnectSlackAuth(selectedIntegration.authId);
+        }
+        
+    }
+    
     public static void disconnectSlackAuth(String authId) {
          String msg = "Are you sure you would like to disconnect this Slack workspace";
 
         Object[] options = {"Disconnect"};
         int choice = JOptionPane.showOptionDialog(
-                null, msg, "Disconnect", JOptionPane.YES_OPTION,
+                null, msg, "Disconnect", JOptionPane.OK_OPTION,
                 JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
         if (choice == 0) {
@@ -122,6 +133,13 @@ public class SlackClientManager {
             String api = "/auth/slack/disconnect";
             SoftwareResponse resp = SoftwareUtil.makeApiCall(api, HttpPut.METHOD_NAME, payload.toString());
             FileManager.removeSlackIntegration(authId);
+            
+            SwingUtilities.invokeLater(() -> {
+                String infoMsg = "Disconnected selected Slack workspace";
+                Object[] completionOptions = { "OK" };
+                JOptionPane.showOptionDialog(null, infoMsg, "Slack disconnect", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                        null, completionOptions, completionOptions[0]);
+            });
             
             CodeTimeTreeTopComponent.rebuildTree();
         }
@@ -142,11 +160,12 @@ public class SlackClientManager {
             }
         }
         if (updatedSnooze) {
-            // prompt they've completed the setup
-            String infoMsg = "Slack notifications are paused for 2 hours";
-            Object[] options = { "OK" };
-            JOptionPane.showOptionDialog(null, infoMsg, "Slack notifications", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
-                    null, options, options[0]);
+            SwingUtilities.invokeLater(() -> {
+                String infoMsg = "Slack notifications are paused for 2 hours";
+                Object[] options = { "OK" };
+                JOptionPane.showOptionDialog(null, infoMsg, "Slack notifications", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                        null, options, options[0]);
+            });
             
             CodeTimeTreeTopComponent.rebuildTree();
         }
@@ -168,12 +187,12 @@ public class SlackClientManager {
             }
         }
         if (updatedSnooze) {
-            // prompt they've completed the setup
-            String infoMsg = "Slack notifications enabled";
-            Object[] options = { "OK" };
-            JOptionPane.showOptionDialog(null, infoMsg, "Slack notifications", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
-                    null, options, options[0]);
-            
+            SwingUtilities.invokeLater(() -> {
+                String infoMsg = "Slack notifications enabled";
+                Object[] options = { "OK" };
+                JOptionPane.showOptionDialog(null, infoMsg, "Slack notifications", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                        null, options, options[0]);
+            });
             CodeTimeTreeTopComponent.rebuildTree();
         }
     }
@@ -186,7 +205,7 @@ public class SlackClientManager {
                 return dndInfo;
             }
         }
-        return null;
+        return new SlackDndInfo();
     }
     
     public static SlackUserPresence getSlackUserPresence() {
@@ -246,13 +265,12 @@ public class SlackClientManager {
         }
         
         if (updatedPresence) {
-            // prompt they've completed the setup
-            presence = presence.equals("auto") ? "active" : presence;
-            String infoMsg = "Slack presence updated to '" + presence + "'";
-            Object[] options = { "OK" };
-            JOptionPane.showOptionDialog(null, infoMsg, "Slack presence", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
-                    null, options, options[0]);
-            
+            SwingUtilities.invokeLater(() -> {
+                String infoMsg = "Slack presence updated";
+                Object[] options = { "OK" };
+                JOptionPane.showOptionDialog(null, infoMsg, "Slack presence", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                        null, options, options[0]);
+            });
             CodeTimeTreeTopComponent.rebuildTree();
         }
     }
@@ -369,11 +387,12 @@ public class SlackClientManager {
         } else {
             FileManager.setAuthCallbackState(null);
             
-            // prompt they've completed the setup
-            String infoMsg = "Successfully connected to Slack";
-            Object[] options = { "OK" };
-            JOptionPane.showOptionDialog(null, infoMsg, "Slack connect", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
-                    null, options, options[0]);
+            SwingUtilities.invokeLater(() -> {
+                String infoMsg = "Successfully connected to Slack";
+                Object[] options = { "OK" };
+                JOptionPane.showOptionDialog(null, infoMsg, "Slack connect", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                        null, options, options[0]);
+            });
             
             CodeTimeTreeTopComponent.rebuildTree();
         }
@@ -388,7 +407,7 @@ public class SlackClientManager {
 
                 Object[] options = {"Sign up"};
                 int choice = JOptionPane.showOptionDialog(
-                        null, msg, "Code Time", JOptionPane.YES_NO_OPTION,
+                        null, msg, "Code Time", JOptionPane.OK_OPTION,
                         JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
                 if (choice == 0) {
@@ -416,12 +435,12 @@ public class SlackClientManager {
     }
     
     private static String[] getWorkspaceOptions() {
-        List<String> options = new ArrayList<String>();
         List<Integration> workspaces = getSlackWorkspaces();
-        for (Integration workspace : workspaces) {
-            options.add(workspace.team_domain);
+        String[] options = new String[workspaces.size()];
+        for (int i = 0; i < workspaces.size(); i++) {
+            options[i] = workspaces.get(i).team_domain;
         }
-        return (String[]) options.toArray();
+        return options;
     }
     
     private static SlackDndInfo getSlackDnDInfoPerDomain(String team_domain) {

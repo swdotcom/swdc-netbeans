@@ -22,9 +22,11 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -160,9 +162,9 @@ public class TreeHelper {
             
             // snooze node
             if (slackDndInfo.snooze_enabled) {
-                list.add(getSwitchOnDndNode());
+                list.add(getUnPausenotificationsNode(slackDndInfo));
             } else {
-                list.add(getSwitchOffDndNode());
+                list.add(getPauseNotificationsNode());
             }
             // presence toggle
             SlackUserPresence slackUserPresence = SlackClientManager.getSlackUserPresence();
@@ -183,38 +185,39 @@ public class TreeHelper {
                 list.add(getSwitchOnDarkModeNode());
             }
             
-            list.add(new MetricTreeNode("Toggle dock position", "", TOGGLE_DOCK_POSITION_ID));
+            list.add(new MetricTreeNode("Toggle dock position", "settings.png", TOGGLE_DOCK_POSITION_ID));
         }
         
         return list;
     }
     
     public static MetricTreeNode getSwitchOffDarkModeNode() {
-        return new MetricTreeNode("Turn off dark mode", "", SWITCH_OFF_DARK_MODE_ID);
+        return new MetricTreeNode("Turn off dark mode", "light-mode.png", SWITCH_OFF_DARK_MODE_ID);
     }
     
     public static MetricTreeNode getSwitchOnDarkModeNode() {
-        return new MetricTreeNode("Turn on dark mode", "icons8-night-16.png", SWITCH_ON_DARK_MODE_ID);
+        return new MetricTreeNode("Turn on dark mode", "dark-mode.png", SWITCH_ON_DARK_MODE_ID);
     }
     
     public static MetricTreeNode getConnectSlackNode() {
         return new MetricTreeNode("Connect to set your status and pause notifications", "icons8-slack-new-16.png", CONNECT_SLACK_ID);
     }
     
-    public static MetricTreeNode getSwitchOffDndNode() {
-        return new MetricTreeNode("Turn off notifications", "", SWITCH_OFF_DND_ID);
+    public static MetricTreeNode getPauseNotificationsNode() {
+        return new MetricTreeNode("Pause notifications", "icons8-slack-new-16.png", SWITCH_OFF_DND_ID);
     }
     
-    public static MetricTreeNode getSwitchOnDndNode() {
-        return new MetricTreeNode("Turn on notifications", "", SWITCH_ON_DND_ID);
+    public static MetricTreeNode getUnPausenotificationsNode(SlackDndInfo slackDndInfo) {
+        String endTimeOfDay = SoftwareUtil.getTimeOfDay(SoftwareUtil.getJavaDateFromSeconds(slackDndInfo.snooze_endtime));
+        return new MetricTreeNode("Turn on notifications (ends at " + endTimeOfDay + ")", "icons8-slack-new-16.png", SWITCH_ON_DND_ID);
     }
     
     public static MetricTreeNode getSetAwayPresenceNode() {
-        return new MetricTreeNode("Set presence to away", "", SET_PRESENCE_AWAY_ID);
+        return new MetricTreeNode("Set presence to away", "icons8-slack-new-16.png", SET_PRESENCE_AWAY_ID);
     }
     
     public static MetricTreeNode getSetActivePresenceNode() {
-        return new MetricTreeNode("Set presence to active", "", SET_PRESENCE_ACTIVE_ID);
+        return new MetricTreeNode("Set presence to active", "icons8-slack-new-16.png", SET_PRESENCE_ACTIVE_ID);
     }
     
     public static MetricTreeNode buildSlackWorkspacesNode() {
@@ -233,134 +236,25 @@ public class TreeHelper {
     }
     
     public static MetricTreeNode buildActiveCodeTimeTree(MetricLabels mLabels) {
-        MetricTreeNode treeNode = new MetricTreeNode("Active code time", null, ACTIVE_CODETIME_PARENT_ID);
-        treeNode.add(new MetricTreeNode(mLabels.activeCodeTime, "rocket.png", ACTIVE_CODETIME_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.activeCodeTimeAvg, mLabels.activeCodeTimeAvgIcon, ACTIVE_CODETIME_AVG_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.activeCodeTimeGlobalAvg, "global-grey.png", ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID));
-        return treeNode;
+        return new MetricTreeNode(mLabels.activeCodeTime, mLabels.activeCodeTimeAvgIcon, ACTIVE_CODETIME_TODAY_ID);
     }
     
     public static MetricTreeNode buildCodeTimeTree(MetricLabels mLabels) {
-        MetricTreeNode treeNode = new MetricTreeNode("Code time", null, CODETIME_PARENT_ID);
-        treeNode.add(new MetricTreeNode(mLabels.codeTime, "rocket.png", CODETIME_TODAY_ID));
-        return treeNode;
+        return new MetricTreeNode(mLabels.codeTime, "rocket.png", CODETIME_TODAY_ID);
     }
     
     public static MetricTreeNode buildLinesAddedTree(MetricLabels mLabels) {
-        // create the lines added nodes
-        MetricTreeNode treeNode = new MetricTreeNode("Lines added", null, null);
-        treeNode.add(new MetricTreeNode(mLabels.linesAdded, "rocket.png", LINES_ADDED_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.linesAddedAvg, mLabels.linesAddedAvgIcon, LINES_ADDED_AVG_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.linesAddedGlobalAvg, "global-grey.png", LINES_ADDED_GLOBAL_AVG_TODAY_ID));
-
-        return treeNode;
+        return new MetricTreeNode(mLabels.linesAdded, mLabels.linesAddedAvgIcon, LINES_ADDED_TODAY_ID);
     }
 
     public static MetricTreeNode buildLinesRemovedTree(MetricLabels mLabels) {
-        // create the lines removed nodes
-        MetricTreeNode treeNode = new MetricTreeNode("Lines removed", null, null);
-        treeNode.add(new MetricTreeNode(mLabels.linesRemoved, "rocket.png", LINES_DELETED_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.linesRemovedAvg, mLabels.linesRemovedAvgIcon, LINES_DELETED_AVG_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.linesRemovedGlobalAvg, "global-grey.png", LINES_DELETED_GLOBAL_AVG_TODAY_ID));
-        return treeNode;
+        return new MetricTreeNode(mLabels.linesRemoved, mLabels.linesRemovedAvgIcon, LINES_DELETED_TODAY_ID);
     }
 
     public static MetricTreeNode buildKeystrokesTree(MetricLabels mLabels) {
-        // create the keystrokes nodes
-        MetricTreeNode treeNode = new MetricTreeNode("Keystrokes", null, null);
-        treeNode.add(new MetricTreeNode(mLabels.keystrokes, "rocket.png", KEYSTROKES_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.keystrokesAvg, mLabels.keystrokesAvgIcon, KEYSTROKES_AVG_TODAY_ID));
-        treeNode.add(new MetricTreeNode(mLabels.keystrokesGlobalAvg, "global-grey.png", KEYSTROKES_GLOBAL_AVG_TODAY_ID));
-        
-        return treeNode;
+        return new MetricTreeNode(mLabels.keystrokes, mLabels.keystrokesAvgIcon, KEYSTROKES_TODAY_ID);
     }
     
-    public static MetricTreeNode buildTopKeystrokesFilesTree(Map<String, FileChangeInfo> fileChangeInfoMap) {
-        return buildTopFilesTree("Top files by keystrokes", "keystrokes", fileChangeInfoMap);
-    }
-
-    public static MetricTreeNode buildTopKpmFilesTree(Map<String, FileChangeInfo> fileChangeInfoMap) {
-        return buildTopFilesTree("Top files by KPM", "kpm", fileChangeInfoMap);
-    }
-
-    public static MetricTreeNode buildTopCodeTimeFilesTree(Map<String, FileChangeInfo> fileChangeInfoMap) {
-        return buildTopFilesTree("Top files by code time", "codetime", fileChangeInfoMap);
-    }
-    
-    private static MetricTreeNode buildTopFilesTree(String parentName, String sortBy, Map<String, FileChangeInfo> fileChangeInfoMap) {
-        MetricTreeNode treeNode = new MetricTreeNode(parentName, null, getTopFileParentId(sortBy));
-
-        addNodesToTopFilesMetricParentTreeNode(treeNode, sortBy, fileChangeInfoMap);
-
-        return treeNode;
-    }
-    
-    public static void addNodesToTopFilesMetricParentTreeNode(MetricTreeNode treeNode, String sortBy, Map<String, FileChangeInfo> fileChangeInfoMap) {
-        // build the most edited files nodes
-        // sort the fileChangeInfoMap based on keystrokes
-        List<Map.Entry<String, FileChangeInfo>> entryList = null;
-        if (!fileChangeInfoMap.isEmpty()) {
-            if (sortBy.equals("kpm")) {
-                entryList = sortByKpm(fileChangeInfoMap);
-            } else if (sortBy.equals("keystrokes")) {
-                entryList = sortByKeystrokes(fileChangeInfoMap);
-            } else if (sortBy.equals("codetime")) {
-                entryList = sortByFileSeconds(fileChangeInfoMap);
-            } else {
-                entryList = new ArrayList<>(fileChangeInfoMap.entrySet());
-            }
-        }
-        
-        if (entryList != null && entryList.size() > 0) {
-            int count = 0;
-            // go from the end
-            for (int i = entryList.size() - 1; i >= 0; i--) {
-                if (count >= 3) {
-                    break;
-                }
-                Map.Entry<String, FileChangeInfo> fileChangeInfoEntry = entryList.get(i);
-                String name = fileChangeInfoEntry.getValue().name;
-                if (StringUtils.isBlank(name)) {
-                    Path path = Paths.get(fileChangeInfoEntry.getKey());
-                    if (path != null) {
-                        Path fileName = path.getFileName();
-                        if (fileName != null) {
-                            name = fileName.toString();
-                        } else {
-                            name = "Untitled";
-                        }
-                    }
-                }
-
-                String val = "";
-                if (sortBy.equals("kpm")) {
-                    val = SoftwareUtil.humanizeLongNumbers(fileChangeInfoEntry.getValue().kpm);
-                } else if (sortBy.equals("keystrokes")) {
-                    val = SoftwareUtil.humanizeLongNumbers(fileChangeInfoEntry.getValue().keystrokes);
-                } else if (sortBy.equals("codetime")) {
-                    val = SoftwareUtil.humanizeMinutes((int) (fileChangeInfoEntry.getValue().duration_seconds / 60));
-                }
-
-                String label = name + " | " + val;
-                MetricTreeNode editedFileNode = new MetricTreeNode(label, "files.png", getTopFilesId(name, sortBy));
-                editedFileNode.setData(fileChangeInfoEntry.getValue());
-                treeNode.add(editedFileNode);
-                count++;
-            }
-        } else {
-            MetricTreeNode node = new MetricTreeNode("<empty>", "files.png", null);
-            treeNode.add(node);
-        }
-    }
-    
-    public static String getTopFileParentId(String sortBy) {
-        return sortBy.toLowerCase() + "_topfiles_parent";
-    }
-    
-    public static String getTopFilesId(String name, String sortBy) {
-        String id = name.replaceAll("\\s", "_") + "_" + sortBy;
-        return id.toLowerCase();
-    }
 
     private static void launchFileClick(MetricTreeNode selectedNode) {
         if (selectedNode != null) {

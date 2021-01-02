@@ -570,7 +570,7 @@ public class FileManager {
     }
     
     public static void removeSlackIntegration(String authId) {
-        List<Integration> integrations = new ArrayList<Integration>();
+        List<Integration> integrations = getIntegrations();
         for (int i = integrations.size() - 1; i >= 0; i--) {
             if (integrations.get(i).authId.equals(authId)) {
                 integrations.remove(i);

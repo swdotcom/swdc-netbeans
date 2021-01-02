@@ -50,6 +50,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -88,7 +89,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.codehaus.plexus.util.CollectionUtils;
 import org.netbeans.api.autoupdate.UpdateElement;
 import org.netbeans.api.autoupdate.UpdateManager;
 import org.netbeans.api.autoupdate.UpdateUnit;
@@ -211,10 +211,6 @@ public class SoftwareUtil {
     
     public static boolean isAppAvailable() {
         return appAvailable;
-    }
-
-    private static boolean validateEmail(String email) {
-        return pattern.matcher(email).matches();
     }
     
     public static class UserStatus {
@@ -1103,6 +1099,16 @@ public class SoftwareUtil {
     public static TimesData getTimesData() {
         TimesData timesData = new TimesData();
         return timesData;
+    }
+    
+    public static Date getJavaDateFromSeconds(long seconds) {
+        Instant instant = Instant.ofEpochSecond( seconds );
+        Date date = Date.from( instant );
+        return date;
+    }
+    
+    public static String getTimeOfDay(Date d) {
+        return new SimpleDateFormat("h:mm a").format(d);
     }
 
     public static String getTodayInStandardFormat() {

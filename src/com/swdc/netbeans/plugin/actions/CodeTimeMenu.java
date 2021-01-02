@@ -6,8 +6,9 @@
 package com.swdc.netbeans.plugin.actions;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
+import com.swdc.netbeans.plugin.managers.FileManager;
+import com.swdc.netbeans.plugin.managers.SlackClientManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
-import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import com.swdc.netbeans.plugin.models.UserLoginState;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.event.ActionEvent;
@@ -18,7 +19,7 @@ import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
-import javax.swing.SwingUtilities;
+import org.apache.commons.lang.StringUtils;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
@@ -58,18 +59,20 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
     }
 
     private JComponent[] createMenu() {
-        UserLoginState loginState = SoftwareUtil.getUserLoginState(false);
         List<JComponent> items = new ArrayList<>();
 
         items.add(toMenuItem(new CodeTimeDashboardAction()));
-        items.add(toMenuItem(new CodeTimeTop40Action()));
         items.add(toMenuItem(new WebDashboardAction()));
 
-        if (!loginState.loggedIn) {
+        String name = FileManager.getItem("name");
+        if (StringUtils.isEmpty(name)) {
             // not logged in, show the login and signup menu items
-            items.add(toMenuItem(new CodeTimeLoginAction()));
+            items.add(toMenuItem(new CodeTimeSignupAction()));
         }
-        items.add(toMenuItem(new CodeTimeToggleStatusAction()));
+        if (SlackClientManager.hasSlackWorkspaces()) {
+            items.add(toMenuItem(new DisconnectSlackAction()));
+        }
+        items.add(toMenuItem(new ConnectSlackAction()));
         return items.toArray(new JComponent[items.size()]);
     }
 
@@ -93,6 +96,40 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
         return item;
     }
     
+    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.DisconnectSlackAction")
+    @ActionRegistration(displayName = "not-used", lazy = false)
+    public static class DisconnectSlackAction extends AbstractAction implements Presenter.Menu {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            SlackClientManager.disconnectSlackWorkspace();
+        }
+
+        @Override
+        public JMenuItem getMenuPresenter() {
+            JMenuItem item = new JMenuItem("Disconnect Slack workspace");
+            item.addActionListener(this);
+            return item;
+        }
+    }
+    
+    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.ConnectSlackAction")
+    @ActionRegistration(displayName = "not-used", lazy = false)
+    public static class ConnectSlackAction extends AbstractAction implements Presenter.Menu {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            SlackClientManager.connectSlackWorkspace();
+        }
+
+        @Override
+        public JMenuItem getMenuPresenter() {
+            JMenuItem item = new JMenuItem("Connect Slack workspace");
+            item.addActionListener(this);
+            return item;
+        }
+    }
+    
     @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.WebDashboardAction")
     @ActionRegistration(displayName = "not-used", lazy = false)
     public static class WebDashboardAction extends AbstractAction implements Presenter.Menu {
@@ -104,7 +141,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public JMenuItem getMenuPresenter() {
-            JMenuItem item = new JMenuItem("Web dashboard");
+            JMenuItem item = new JMenuItem("More data at Software.com");
             item.addActionListener(this);
             return item;
         }
@@ -121,74 +158,27 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public JMenuItem getMenuPresenter() {
-            JMenuItem item = new JMenuItem("Code time dashboard");
+            JMenuItem item = new JMenuItem("Dashboard");
             item.addActionListener(this);
             return item;
         }
     }
     
-    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeLoginAction")
+    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeSignupAction")
     @ActionRegistration(displayName = "not-used", lazy = false)
-    public static class CodeTimeLoginAction extends AbstractAction implements Presenter.Menu {
+    public static class CodeTimeSignupAction extends AbstractAction implements Presenter.Menu {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SoftwareSessionManager.launchLogin("email", UIInteractionType.keyboard, false);
+            SoftwareUtil.showAuthSelectPrompt(true);
         }
 
         @Override
         public JMenuItem getMenuPresenter() {
-            JMenuItem item = new JMenuItem("Log in to see your coding data");
+            JMenuItem item = new JMenuItem("Sign up to see your coding data");
             item.addActionListener(this);
             return item;
         }
     }
-    
-    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeTop40Action")
-    @ActionRegistration(displayName = "not-used", lazy = false)
-    public static class CodeTimeTop40Action extends AbstractAction implements Presenter.Menu {
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.launchSoftwareTopForty();
-        }
-
-        @Override
-        public JMenuItem getMenuPresenter() {
-            JMenuItem item = new JMenuItem("Software top 40");
-            item.addActionListener(this);
-            return item;
-        }
-    }
-    
-    @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeToggleStatusAction")
-    @ActionRegistration(displayName = "not-used", lazy = false)
-    public static class CodeTimeToggleStatusAction extends AbstractAction implements Presenter.Menu {
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            SoftwareUtil.toggleStatusBar(UIInteractionType.keyboard);
-
-            SwingUtilities.invokeLater(() -> {
-                try {
-                    CodeTimeTreeTopComponent.updateMetrics(null, null);
-                } catch (Exception ex) {
-                    System.err.println(ex);
-                }
-            });
-        }
-
-        @Override
-        public JMenuItem getMenuPresenter() {
-            String toggleText = "Hide status bar metrics";
-            if (!SoftwareUtil.showingStatusText()) {
-                toggleText = "Show status bar metrics";
-            }
-            JMenuItem item = new JMenuItem(toggleText);
-            item.addActionListener(this);
-            return item;
-        }
-    }
-    
 
 }

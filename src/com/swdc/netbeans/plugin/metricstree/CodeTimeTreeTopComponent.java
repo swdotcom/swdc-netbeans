@@ -61,7 +61,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     
     public static final Logger LOG = Logger.getLogger("CodeTimeTreeTopComponent");
     
-    private static MetricTree metricTree;
+    public static MetricTree metricTree;
     private static boolean expandInitialized = false;
     private static long last_refresh_millis = 0;
     private static long last_rebuild_millis = 0;
@@ -75,6 +75,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     }
     
     protected void init() {
+        
         metricTree = buildCodeTimeTreeView();
         
         if (!expandInitialized) {
@@ -201,8 +202,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
         
         updateMetrics(codeTimeSummary, sessionSummary);
-        
-        updateTopFileMetrics(fileChangeInfoMap);
     }
     
     public static void rebuildTree() {
@@ -246,11 +245,11 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+            .addComponent(scrollPane, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
+            .addComponent(scrollPane, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -278,9 +277,9 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         String version = p.getProperty("version");
         // TODO read your settings according to their version
     }
-
-    private MetricTree buildCodeTimeTreeView() {
-        MetricTree tree = new MetricTree(makeMetricNodeModel());
+    
+    private MetricTree buildMenuTreeView() {
+        MetricTree tree = new MetricTree(makeMenuNodeModel());
 
         tree.setCellRenderer(new IconTreeCellRenderer());
         tree.setRootVisible(false);
@@ -289,7 +288,85 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         return tree;
     }
     
-    private TreeModel makeMetricNodeModel() {
+    private MetricTree buildFlowTreeView() {
+        MetricTree tree = new MetricTree(makeFlowNodeModel());
+
+        tree.setCellRenderer(new IconTreeCellRenderer());
+        tree.setRootVisible(false);
+        tree.setShowsRootHandles(false);
+
+        return tree;
+    }
+    
+    private MetricTree buildKpmTreeView() {
+        MetricTree tree = new MetricTree(makeKpmNodeModel());
+
+        tree.setCellRenderer(new IconTreeCellRenderer());
+        tree.setRootVisible(false);
+        tree.setShowsRootHandles(false);
+
+        return tree;
+    }
+
+    private MetricTree buildCodeTimeTreeView() {
+        MetricTree tree = new MetricTree(makeCodetimeTreeModel());
+
+        tree.setCellRenderer(new IconTreeCellRenderer());
+        tree.setRootVisible(false);
+        tree.setShowsRootHandles(false);
+
+        return tree;
+    }
+    
+    private TreeModel makeMenuNodeModel() {
+        // "Root" will not be visible
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
+        
+        List<MetricTreeNode> loginNodes = TreeHelper.buildSignupNodes();
+        loginNodes.forEach(node -> {
+            root.add(node);
+        });
+        
+        List<MetricTreeNode> menuNodes = TreeHelper.buildMenuNodes();
+        menuNodes.forEach(node -> {
+            root.add(node);
+        });
+        return new DefaultTreeModel(root);
+    }
+    
+    private TreeModel makeFlowNodeModel() {
+        // "Root" will not be visible
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
+        
+        List<MetricTreeNode> flowNodes = TreeHelper.buildTreeFlowNodes();
+        flowNodes.forEach(node -> {
+            root.add(node);
+        });
+        return new DefaultTreeModel(root);
+    }
+    
+    private TreeModel makeKpmNodeModel() {
+        // "Root" will not be visible
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
+        
+        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
+        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
+        
+        MetricLabels mLabels = new MetricLabels();
+        mLabels.updateLabels(codeTimeSummary, sessionSummary);
+
+        root.add(TreeHelper.buildCodeTimeTree(mLabels));
+        root.add(TreeHelper.buildActiveCodeTimeTree(mLabels));
+        root.add(TreeHelper.buildLinesAddedTree(mLabels));
+        root.add(TreeHelper.buildLinesRemovedTree(mLabels));
+        root.add(TreeHelper.buildKeystrokesTree(mLabels));
+        
+        root.add(TreeHelper.buildSummaryButton());
+        root.add(TreeHelper.buildViewWebDashboardButton());
+        return new DefaultTreeModel(root);
+    }
+    
+    private TreeModel makeCodetimeTreeModel() {
         // "Root" will not be visible
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
         
@@ -314,7 +391,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
-        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
         
         MetricLabels mLabels = new MetricLabels();
         mLabels.updateLabels(codeTimeSummary, sessionSummary);
@@ -331,47 +407,13 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         return new DefaultTreeModel(root);
     }
     
-    private static void updateTopFileMetrics(Map<String, FileChangeInfo> fileChangeInfoMap) {
-        // get the 3 parents: keystrokes, kpm, codetime
-        MetricTreeNode parent = findNodeById(TreeHelper.getTopFileParentId("keystrokes"));
-        if (parent != null) {
-            parent.removeAllChildren();
-            TreeHelper.addNodesToTopFilesMetricParentTreeNode(parent, "keystrokes", fileChangeInfoMap);
-        }
-        
-        parent = findNodeById(TreeHelper.getTopFileParentId("kpm"));
-        if (parent != null) {
-            parent.removeAllChildren();
-            TreeHelper.addNodesToTopFilesMetricParentTreeNode(parent, "kpm", fileChangeInfoMap);
-        }
-        
-        parent = findNodeById(TreeHelper.getTopFileParentId("codetime"));
-        if (parent != null) {
-            parent.removeAllChildren();
-            TreeHelper.addNodesToTopFilesMetricParentTreeNode(parent, "codetime", fileChangeInfoMap);
-        }
-    }
-    
     public static void updateMetrics(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
         if (metricTree != null) {
-            // update the toggle node label
-            String toggleText = "Hide status bar metrics";
-            if (!SoftwareUtil.showingStatusText()) {
-                toggleText = "Show status bar metrics";
-            }
-
-            updateNodeLabel(findNodeById(TreeHelper.TOGGLE_METRICS_ID), toggleText);
 
             MetricLabels mLabels = new MetricLabels();
             mLabels.updateLabels(codeTimeSummary, sessionSummary);
 
             if (codeTimeSummary != null && sessionSummary != null) {
-                updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID), mLabels.activeCodeTimeGlobalAvg);
-
-                MetricTreeNode activeCodeTimeAvgNode = findNodeById(TreeHelper.ACTIVE_CODETIME_AVG_TODAY_ID);
-                updateNodeLabel(activeCodeTimeAvgNode, mLabels.activeCodeTimeAvg);
-                updateNodeIconName(activeCodeTimeAvgNode, mLabels.activeCodeTimeAvgIcon);
-
                 updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_TODAY_ID), mLabels.activeCodeTime);
 
                 updateNodeLabel(findNodeById(TreeHelper.CODETIME_TODAY_ID), mLabels.codeTime);
@@ -380,30 +422,12 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             if (sessionSummary != null) {
                 // all of the other metrics can be updated
                 // LINES DELETED
-                updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_GLOBAL_AVG_TODAY_ID), mLabels.linesRemovedGlobalAvg);
-
-                MetricTreeNode linesDeletedAvgNode = findNodeById(TreeHelper.LINES_DELETED_AVG_TODAY_ID);
-                updateNodeLabel(linesDeletedAvgNode, mLabels.linesRemovedAvg);
-                updateNodeIconName(linesDeletedAvgNode, mLabels.linesRemovedAvgIcon);
-
                 updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_TODAY_ID), mLabels.linesRemoved);
 
                 // LINES ADDED
-                updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_GLOBAL_AVG_TODAY_ID), mLabels.linesAddedGlobalAvg);
-
-                MetricTreeNode linesAddedAvgNode = findNodeById(TreeHelper.LINES_ADDED_AVG_TODAY_ID);
-                updateNodeLabel(linesAddedAvgNode, mLabels.linesAddedAvg);
-                updateNodeIconName(linesAddedAvgNode, mLabels.linesAddedAvgIcon);
-
                 updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_TODAY_ID), mLabels.linesAdded);
 
                 // KEYSTROKES
-                updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_GLOBAL_AVG_TODAY_ID), mLabels.keystrokesGlobalAvg);
-
-                MetricTreeNode keystrokesAvgNode = findNodeById(TreeHelper.KEYSTROKES_AVG_TODAY_ID);
-                updateNodeLabel(keystrokesAvgNode, mLabels.keystrokesAvg);
-                updateNodeIconName(keystrokesAvgNode, mLabels.keystrokesAvgIcon);
-
                 updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_TODAY_ID), mLabels.keystrokes);
             }
 
@@ -500,6 +524,14 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             // update the logged in node
             updateNodeLabel(findNodeById(TreeHelper.LOGGED_IN_ID), email, iconName);
         }
+        
+        // update the toggle node label
+        String toggleText = "Hide status bar metrics";
+        if (!SoftwareUtil.showingStatusText()) {
+            toggleText = "Show status bar metrics";
+        }
+
+        updateNodeLabel(findNodeById(TreeHelper.TOGGLE_METRICS_ID), toggleText);
     }
     
     private static void rebuildFlowNodes() {
