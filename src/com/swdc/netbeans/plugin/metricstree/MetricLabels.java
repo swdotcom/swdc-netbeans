@@ -5,7 +5,6 @@
  */
 package com.swdc.netbeans.plugin.metricstree;
 
-import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.text.SimpleDateFormat;
