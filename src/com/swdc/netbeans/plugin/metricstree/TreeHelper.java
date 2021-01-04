@@ -29,6 +29,7 @@ import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
 import swdc.java.ops.manager.UtilManager;
 import swdc.java.ops.model.Integration;
+import swdc.java.ops.model.MetricLabel;
 import swdc.java.ops.model.SlackDndInfo;
 import swdc.java.ops.model.SlackUserPresence;
 
@@ -232,23 +233,23 @@ public class TreeHelper {
         return new MetricTreeNode("Add workspace", "add.png", ADD_WORKSPACE_ID);
     }
     
-    public static MetricTreeNode buildActiveCodeTimeTree(MetricLabels mLabels) {
+    public static MetricTreeNode buildActiveCodeTimeTree(MetricLabel mLabels) {
         return new MetricTreeNode(mLabels.activeCodeTime, mLabels.activeCodeTimeAvgIcon, ACTIVE_CODETIME_TODAY_ID);
     }
     
-    public static MetricTreeNode buildCodeTimeTree(MetricLabels mLabels) {
+    public static MetricTreeNode buildCodeTimeTree(MetricLabel mLabels) {
         return new MetricTreeNode(mLabels.codeTime, "rocket.png", CODETIME_TODAY_ID);
     }
     
-    public static MetricTreeNode buildLinesAddedTree(MetricLabels mLabels) {
+    public static MetricTreeNode buildLinesAddedTree(MetricLabel mLabels) {
         return new MetricTreeNode(mLabels.linesAdded, mLabels.linesAddedAvgIcon, LINES_ADDED_TODAY_ID);
     }
 
-    public static MetricTreeNode buildLinesRemovedTree(MetricLabels mLabels) {
+    public static MetricTreeNode buildLinesRemovedTree(MetricLabel mLabels) {
         return new MetricTreeNode(mLabels.linesRemoved, mLabels.linesRemovedAvgIcon, LINES_DELETED_TODAY_ID);
     }
 
-    public static MetricTreeNode buildKeystrokesTree(MetricLabels mLabels) {
+    public static MetricTreeNode buildKeystrokesTree(MetricLabel mLabels) {
         return new MetricTreeNode(mLabels.keystrokes, mLabels.keystrokesAvgIcon, KEYSTROKES_TODAY_ID);
     }
     

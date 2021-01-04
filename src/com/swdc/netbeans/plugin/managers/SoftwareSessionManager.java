@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
 import org.openide.awt.HtmlBrowser;
@@ -178,6 +179,21 @@ public class SoftwareSessionManager {
     }
 
     public static void launchWebDashboard(UIInteractionType interactionType) {
+        if (StringUtils.isBlank(FileUtilManager.getItem("name"))) {
+            SwingUtilities.invokeLater(() -> {
+                String msg = "Sign up or log in to see more data visualizations.";
+
+                Object[] options = {"Sign up"};
+                int choice = JOptionPane.showOptionDialog(
+                        null, msg, "Sign up", JOptionPane.OK_OPTION,
+                        JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+
+                if (choice == 0) {
+                    SwitchAccountManager.initiateSignupFlow();
+                }
+            });
+            return;
+        }
         String url = SoftwareUtil.LAUNCH_URL + "/login";
         try {
             URL launchUrl = new URL(url);

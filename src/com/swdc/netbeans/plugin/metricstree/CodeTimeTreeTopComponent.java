@@ -6,15 +6,10 @@
 package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.managers.FileAggregateDataManager;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
-import com.swdc.netbeans.plugin.models.CodeTimeSummary;
-import com.swdc.netbeans.plugin.models.FileChangeInfo;
-import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
@@ -31,6 +26,9 @@ import org.openide.util.NbBundle.Messages;
 import org.openide.windows.WindowManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
+import swdc.java.ops.model.CodeTimeSummary;
+import swdc.java.ops.model.MetricLabel;
+import swdc.java.ops.model.SessionSummary;
 
 /**
  * Top component which displays something.
@@ -314,7 +312,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
         
-        MetricLabels mLabels = new MetricLabels();
+        MetricLabel mLabels = new MetricLabel();
         mLabels.updateLabels(codeTimeSummary, sessionSummary);
 
         root.add(TreeHelper.buildCodeTimeTree(mLabels));
@@ -354,7 +352,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
         SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
         
-        MetricLabels mLabels = new MetricLabels();
+        MetricLabel mLabels = new MetricLabel();
         mLabels.updateLabels(codeTimeSummary, sessionSummary);
 
         root.add(TreeHelper.buildCodeTimeTree(mLabels));
@@ -372,7 +370,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     public static void updateMetrics(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
         if (metricTree != null) {
 
-            MetricLabels mLabels = new MetricLabels();
+            MetricLabel mLabels = new MetricLabel();
             mLabels.updateLabels(codeTimeSummary, sessionSummary);
 
             if (codeTimeSummary != null && sessionSummary != null) {

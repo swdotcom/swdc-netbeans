@@ -11,9 +11,9 @@ import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.models.ElapsedTime;
 import com.swdc.netbeans.plugin.models.KeystrokeAggregate;
-import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.lang.reflect.Type;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.model.SessionSummary;
 
 public class SessionDataManager {
 

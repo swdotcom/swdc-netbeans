@@ -8,7 +8,6 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.models.KeystrokeProject;
 import com.swdc.netbeans.plugin.models.TimeData;
 import java.lang.reflect.Type;
@@ -16,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.netbeans.api.project.Project;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.model.CodeTimeSummary;
 
 public class TimeDataManager {
 

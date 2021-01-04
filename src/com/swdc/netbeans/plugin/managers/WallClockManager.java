@@ -10,7 +10,6 @@ import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import static com.swdc.netbeans.plugin.managers.SoftwareSessionManager.LOG;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
-import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,6 +17,7 @@ import javax.swing.SwingUtilities;
 import swdc.java.ops.http.ClientResponse;
 import swdc.java.ops.http.OpsHttpClient;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.model.SessionSummary;
 
 public class WallClockManager {
 
