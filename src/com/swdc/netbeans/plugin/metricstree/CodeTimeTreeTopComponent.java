@@ -59,7 +59,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     public static final Logger LOG = Logger.getLogger("CodeTimeTreeTopComponent");
     
     public static MetricTree metricTree;
-    private static boolean expandInitialized = false;
     private static long last_refresh_millis = 0;
     private static long last_rebuild_millis = 0;
 
@@ -74,22 +73,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     protected void init() {
         
         metricTree = buildCodeTimeTreeView();
-        
-        if (!expandInitialized) {
-            int activeCodeTimeParentRow = findParentNodeRowById(TreeHelper.ACTIVE_CODETIME_PARENT_ID);
-            if (activeCodeTimeParentRow != -1) {
-                metricTree.expandRow(activeCodeTimeParentRow);
-            }
-            int codeTimeParentRow = findParentNodeRowById(TreeHelper.CODETIME_PARENT_ID);
-            if (codeTimeParentRow != -1) {
-                metricTree.expandRow(codeTimeParentRow);
-            }
-            int loggedInParentRow = findParentNodeRowById(TreeHelper.LOGGED_IN_ID);
-            if (loggedInParentRow != -1) {
-                metricTree.expandRow(loggedInParentRow);
-            }
-            expandInitialized = true;
-        }
 
         scrollPane.setViewportView(metricTree);
         scrollPane.setVisible(true);
@@ -197,7 +180,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     public static void rebuildTree() {
         SwingUtilities.invokeLater(() -> {
             try {
-                expandInitialized = false;
                 CodeTimeTreeTopComponent topComp = (CodeTimeTreeTopComponent) WindowManager.getDefault().findTopComponent("CodeTimeTreeWindowTopComponent");
                 if (topComp != null && System.currentTimeMillis() - last_rebuild_millis > 3000) {
                     last_rebuild_millis = System.currentTimeMillis();
@@ -469,8 +451,8 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             removeNodeById(TreeHelper.SIGN_UP_ID);
             if (loggedInNode == null) {
                 // make sure the loggedin node is showing
-                loggedInNode = TreeHelper.buildLoggedInNode();
-                ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(loggedInNode, 0);
+                ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(TreeHelper.buildLoggedInNode(), 0);
+                ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(TreeHelper.buildSwitchAccountNode(), 1);
             } else {
                 // update the logged in node in case the user switched accounts
                 String authType = FileUtilManager.getItem("authType");
