@@ -29,6 +29,11 @@ import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
 import org.openide.windows.WindowManager;
+import swdc.java.ops.event.UserStateChangeModel;
+import swdc.java.ops.event.UserStateChangeObserver;
+import swdc.java.ops.manager.AccountManager;
+import swdc.java.ops.manager.ConfigManager;
+import swdc.java.ops.manager.FileUtilManager;
 
 /**
  *
@@ -46,12 +51,24 @@ public class Software extends ModuleInstall implements Runnable {
 
     private static int retry_counter = 0;
     private static final long check_online_interval_ms = 1000 * 60 * 10;
+    
+    private UserStateChangeObserver userStateChangeObserver;
 
     @Override
     public void run() {
-        String jwt = FileManager.getItem("jwt");
+        // initialize the swdc ops config
+        ConfigManager.init(
+                SoftwareUtil.API_ENDPOINT,
+                SoftwareUtil.LAUNCH_URL,
+                SoftwareUtil.PLUGIN_ID,
+                "codetime",
+                SoftwareUtil.getVersion(),
+                SoftwareUtil.IDE_NAME,
+                SoftwareUtil.IDE_VERSION);
+        
+        String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isBlank(jwt)) {
-            jwt = SoftwareUtil.createAnonymousUser(false);
+            jwt = AccountManager.createAnonymousUser(false);
             if (StringUtils.isBlank(jwt)) {
                 boolean serverIsOnline = SoftwareUtil.isServerOnline();
                 if (!serverIsOnline) {
@@ -75,12 +92,14 @@ public class Software extends ModuleInstall implements Runnable {
         // send the activate event
         EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
         
-        String readmeDisplayed = FileManager.getItem("netbeans_CtReadme");
+        String readmeDisplayed = FileUtilManager.getItem("netbeans_CtReadme");
         if (readmeDisplayed == null || Boolean.valueOf(readmeDisplayed) == false) {
             // send an initial plugin payload
             FileManager.openReadmeFile(UIInteractionType.keyboard);
-            FileManager.setItem("netbeans_CtReadme", "true");
+            FileUtilManager.setItem("netbeans_CtReadme", "true");
         }
+        
+        setupOpsListeners();
 
         // setup the document change event listeners
         setupEventListeners();
@@ -88,11 +107,19 @@ public class Software extends ModuleInstall implements Runnable {
         StatusBarManager.updateStatusBar();
         
         // initialize the wallclock manager
-        WallClockManager.getInstance().updateSessionSummaryFromServer(false /*rebuildTree*/);
+        WallClockManager.getInstance().refreshSessionDataAndTree();
         
         final Runnable checkFocusStateTimer = () -> checkFocusState();
         AsyncManager.getInstance().scheduleService(
                 checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);
+    }
+     
+    private void setupOpsListeners() {
+        if (userStateChangeObserver == null) {
+            userStateChangeObserver = new UserStateChangeObserver(new UserStateChangeModel(), () -> {
+                WallClockManager.getInstance().refreshSessionDataAndTree();
+            });
+        }
     }
 
     /**

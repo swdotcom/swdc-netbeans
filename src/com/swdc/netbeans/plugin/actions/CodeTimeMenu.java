@@ -7,9 +7,8 @@ package com.swdc.netbeans.plugin.actions;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileManager;
-import com.swdc.netbeans.plugin.managers.SlackClientManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
-import com.swdc.netbeans.plugin.models.UserLoginState;
+import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
@@ -26,6 +25,8 @@ import org.openide.awt.ActionRegistration;
 import org.openide.awt.Actions;
 import org.openide.awt.DynamicMenuContent;
 import org.openide.util.actions.Presenter;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.SlackManager;
 
 
 @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeMenu")
@@ -64,12 +65,12 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
         items.add(toMenuItem(new CodeTimeDashboardAction()));
         items.add(toMenuItem(new WebDashboardAction()));
 
-        String name = FileManager.getItem("name");
+        String name = FileUtilManager.getItem("name");
         if (StringUtils.isEmpty(name)) {
             // not logged in, show the login and signup menu items
             items.add(toMenuItem(new CodeTimeSignupAction()));
         }
-        if (SlackClientManager.hasSlackWorkspaces()) {
+        if (SlackManager.hasSlackWorkspaces()) {
             items.add(toMenuItem(new DisconnectSlackAction()));
         }
         items.add(toMenuItem(new ConnectSlackAction()));
@@ -102,7 +103,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SlackClientManager.disconnectSlackWorkspace();
+            SlackManager.disconnectSlackWorkspace(() -> {CodeTimeTreeTopComponent.rebuildTree();});
         }
 
         @Override
@@ -119,7 +120,7 @@ public class CodeTimeMenu extends AbstractAction implements DynamicMenuContent, 
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            SlackClientManager.connectSlackWorkspace();
+            SlackManager.connectSlackWorkspace(() -> {CodeTimeTreeTopComponent.rebuildTree();});
         }
 
         @Override

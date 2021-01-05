@@ -6,8 +6,9 @@
 package com.swdc.netbeans.plugin.managers;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.models.CodeTimeSummary;
 import com.swdc.netbeans.plugin.status.SoftwareStatusBar;
+import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.CodeTimeSummary;
 
 /**
  *
@@ -24,7 +25,7 @@ public class StatusBarManager {
         SoftwareStatusBar.StatusBarType barType = SoftwareUtil.showingStatusText()
                 ? SoftwareStatusBar.StatusBarType.PAW : SoftwareStatusBar.StatusBarType.OFF;
         String currentDayTimeStr = SoftwareUtil.showingStatusText()
-                ? SoftwareUtil.humanizeMinutes(ctSummary.activeCodeTimeMinutes) : "";
+                ? UtilManager.humanizeMinutes(ctSummary.activeCodeTimeMinutes) : "";
         
         StatusBarManager.setStatusLineMessage(barType, currentDayTimeStr, "Code time today. Click to see more from Code Time.");
     }

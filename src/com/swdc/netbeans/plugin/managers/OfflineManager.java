@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import swdc.java.ops.manager.FileUtilManager;
 
 /**
  *
@@ -70,18 +71,8 @@ public class OfflineManager {
         saveSessionSummaryToDisk();
     }
 
-    public String getSessionSummaryFile() {
-        String file = SoftwareUtil.getSoftwareDir(true);
-        if (SoftwareUtil.isWindows()) {
-            file += "\\sessionSummary.json";
-        } else {
-            file += "/sessionSummary.json";
-        }
-        return file;
-    }
-
     public void saveSessionSummaryToDisk() {
-        File f = new File(getSessionSummaryFile());
+        File f = new File(FileUtilManager.getSessionDataSummaryFile());
 
         final String summaryDataJson = SoftwareUtil.gson.toJson(sessionSummaryData);
 
@@ -102,7 +93,7 @@ public class OfflineManager {
     public JsonObject getSessionSummaryFileAsJson() {
         JsonObject data = null;
 
-        String sessionSummaryFile = getSessionSummaryFile();
+        String sessionSummaryFile = FileUtilManager.getSessionDataSummaryFile();
         File f = new File(sessionSummaryFile);
         if (f.exists()) {
             try {
@@ -123,7 +114,7 @@ public class OfflineManager {
     public String getSessionSummaryInfoFileContent() {
         String content = null;
 
-        String sessionSummaryFile = SoftwareUtil.getSummaryInfoFile(true);
+        String sessionSummaryFile = FileUtilManager.getSessionDataSummaryFile();
         File f = new File(sessionSummaryFile);
         if (f.exists()) {
             try {

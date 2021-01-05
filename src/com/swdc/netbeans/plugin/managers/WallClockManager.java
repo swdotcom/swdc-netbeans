@@ -8,15 +8,16 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.http.SoftwareResponse;
 import static com.swdc.netbeans.plugin.managers.SoftwareSessionManager.LOG;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
-import com.swdc.netbeans.plugin.models.SessionSummary;
 import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
-import org.apache.http.client.methods.HttpGet;
+import swdc.java.ops.http.ClientResponse;
+import swdc.java.ops.http.OpsHttpClient;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.model.SessionSummary;
 
 public class WallClockManager {
 
@@ -61,9 +62,6 @@ public class WallClockManager {
     public void newDayChecker() {
         if (SoftwareUtil.isNewDay()) {
 
-            // clear the last payload we have in memory
-            FileManager.clearLastSavedKeystrokeStats();
-
             // clear the wc time and the session summary and the file change info summary
             clearWcTime();
             
@@ -73,23 +71,34 @@ public class WallClockManager {
 
             // update the current day
             String day = SoftwareUtil.getTodayInStandardFormat();
-            FileManager.setItem("currentDay", day);
+            FileUtilManager.setItem("currentDay", day);
 
             // update the last payload timestamp
-            FileManager.setNumericItem("latestPayloadTimestampEndUtc", 0);
+            FileUtilManager.setNumericItem("latestPayloadTimestampEndUtc", 0);
 
             final Runnable service = () -> updateSessionSummaryFromServer(false);
             AsyncManager.getInstance().executeOnceInSeconds(service, 60);
 
         }
     }
+    
+    public void refreshSessionDataAndTree() {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // fetch the session summary
+                updateSessionSummaryFromServer(true /*rebuildTree*/);
+            } catch (Exception ex) {
+                LOG.log(Level.WARNING, "Refresh session data error: {0}", ex.getMessage());
+            }
+        });
+    }
 
     public void updateSessionSummaryFromServer(boolean rebuildTree) {
         SessionSummary summary = SessionDataManager.getSessionSummaryData();
 
-        String jwt = FileManager.getItem("jwt");
+        String jwt = FileUtilManager.getItem("jwt");
         String api = "/sessions/summary?refresh=true";
-        SoftwareResponse resp = SoftwareUtil.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+        ClientResponse resp = OpsHttpClient.softwareGet(api, jwt);
         if (resp.isOk()) {
             JsonObject jsonObj = resp.getJsonObj();
 
@@ -102,7 +111,7 @@ public class WallClockManager {
             TimeDataManager.updateSessionFromSummaryApi(fetchedSummary.getCurrentDayMinutes());
 
             // save the file
-            FileManager.writeData(SessionDataManager.getSessionDataSummaryFile(), summary);
+            FileUtilManager.writeData(FileUtilManager.getSessionDataSummaryFile(), summary);
         }
         
         dispatchStatusViewUpdate(rebuildTree);
@@ -116,7 +125,7 @@ public class WallClockManager {
                 boolean isActive = true; // TODO: figure out how to get focus state
                 if (isActive && SoftwareEventManager.isCurrentlyActive) {
                     long wctime = getWcTimeInSeconds() + SECONDS_INCREMENT;
-                    FileManager.setNumericItem("wctime", wctime);
+                    FileUtilManager.setNumericItem("wctime", wctime);
 
                     // update the json time data file
                     TimeDataManager.incrementEditorSeconds(SECONDS_INCREMENT);
@@ -147,11 +156,11 @@ public class WallClockManager {
     }
 
     public long getWcTimeInSeconds() {
-        return FileManager.getNumericItem("wctime", 0);
+        return FileUtilManager.getNumericItem("wctime", 0);
     }
 
     public void setWcTime(long seconds) {
-        FileManager.setNumericItem("wctime", seconds);
+        FileUtilManager.setNumericItem("wctime", seconds);
         updateWallClockTime();
     }
 
