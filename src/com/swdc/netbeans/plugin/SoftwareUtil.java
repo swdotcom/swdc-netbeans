@@ -62,7 +62,6 @@ import java.util.stream.Stream;
 import javax.swing.JOptionPane;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.autoupdate.UpdateElement;
 import org.netbeans.api.autoupdate.UpdateManager;
@@ -102,6 +101,8 @@ public class SoftwareUtil {
     public final static String API_ENDPOINT = "https://api.software.com";
     // set the launch url to use
     public final static String LAUNCH_URL = "https://app.software.com";
+    public static String IDE_NAME = "netbeans";
+    public static String IDE_VERSION = "";
     
     private static int DASHBOARD_LABEL_WIDTH = 25;
     private static int DASHBOARD_VALUE_WIDTH = 25;
@@ -140,9 +141,16 @@ public class SoftwareUtil {
     
     private static Document lastDocument = null;
    
-    
     private static String regex = "^\\S+@\\S+\\.\\S+$";
     private static Pattern pattern = Pattern.compile(regex);
+    
+    static {
+        try {
+            IDE_VERSION = System.getProperty("netbeans.buildnumber");
+        } catch (Exception e) {
+            IDE_VERSION = "unknown";
+        }
+    }
     
     public static void updateServerStatus(boolean isOnlineStatus) {
         appAvailable = isOnlineStatus;

@@ -57,7 +57,14 @@ public class Software extends ModuleInstall implements Runnable {
     @Override
     public void run() {
         // initialize the swdc ops config
-        ConfigManager.init(SoftwareUtil.API_ENDPOINT, SoftwareUtil.LAUNCH_URL, SoftwareUtil.PLUGIN_ID, "Code Time", SoftwareUtil.getVersion());
+        ConfigManager.init(
+                SoftwareUtil.API_ENDPOINT,
+                SoftwareUtil.LAUNCH_URL,
+                SoftwareUtil.PLUGIN_ID,
+                "codetime",
+                SoftwareUtil.getVersion(),
+                SoftwareUtil.IDE_NAME,
+                SoftwareUtil.IDE_VERSION);
         
         String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isBlank(jwt)) {

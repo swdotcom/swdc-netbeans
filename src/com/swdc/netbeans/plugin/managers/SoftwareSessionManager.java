@@ -189,7 +189,7 @@ public class SoftwareSessionManager {
                         JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
                 if (choice == 0) {
-                    SwitchAccountManager.initiateSignupFlow();
+                    AuthPromptManager.initiateSignupFlow();
                 }
             });
             return;

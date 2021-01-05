@@ -462,27 +462,28 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         String name = FileUtilManager.getItem("name");
         // check to see if we need to swap out the signup nodes with the signed up node
         MetricTreeNode loggedInNode = findNodeById(TreeHelper.LOGGED_IN_ID);
-        if (StringUtils.isNotBlank(name) && loggedInNode == null) {
-            // swap the nodes out
-            removeNodeById(TreeHelper.EMAIL_SIGNUP_ID);
-            removeNodeById(TreeHelper.GITHIUB_SIGNUP_ID);
-            removeNodeById(TreeHelper.GOOGLE_SIGNUP_ID);
 
-            // add the LOGGED_IN_ID node
-            loggedInNode = TreeHelper.buildLoggedInNode();
-            ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(loggedInNode, 0);
-        } else {
-            String authType = FileUtilManager.getItem("authType");
-            String iconName = "icons8-envelope-16.png";
-            if ("google".equals(authType)) {
-                iconName = "google.png";
-            } else if ("github".equals(authType)) {
-                iconName = "github.png";
+        // take the login and signup out if they're logged in
+        if (StringUtils.isNotBlank(name)) {
+            removeNodeById(TreeHelper.LOG_IN_ID);
+            removeNodeById(TreeHelper.SIGN_UP_ID);
+            if (loggedInNode == null) {
+                // make sure the loggedin node is showing
+                loggedInNode = TreeHelper.buildLoggedInNode();
+                ((DefaultMutableTreeNode)metricTree.getModel().getRoot()).insert(loggedInNode, 0);
+            } else {
+                // update the logged in node in case the user switched accounts
+                String authType = FileUtilManager.getItem("authType");
+                String iconName = "envelope.svg";
+                if ("google".equals(authType)) {
+                    iconName = "icons8-google.svg";
+                } else if ("github".equals(authType)) {
+                    iconName = "icons8-github.svg";
+                }
+
+                String email = FileUtilManager.getItem("name");
+                updateNodeLabel(findNodeById(TreeHelper.LOGGED_IN_ID), email, iconName);
             }
-            
-            String email = FileUtilManager.getItem("name");
-            // update the logged in node
-            updateNodeLabel(findNodeById(TreeHelper.LOGGED_IN_ID), email, iconName);
         }
         
         // update the toggle node label

@@ -8,7 +8,7 @@ package com.swdc.netbeans.plugin.metricstree;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
-import com.swdc.netbeans.plugin.managers.SwitchAccountManager;
+import com.swdc.netbeans.plugin.managers.AuthPromptManager;
 import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.Color;
@@ -38,8 +38,10 @@ public class TreeHelper {
     
     public static final Logger LOG = Logger.getLogger("TreeHelper");
     
+    public static final String SIGN_UP_ID = "signup";
+    public static final String LOG_IN_ID = "login";
     public static final String GOOGLE_SIGNUP_ID = "google";
-    public static final String GITHIUB_SIGNUP_ID = "github";
+    public static final String GITHUB_SIGNUP_ID = "github";
     public static final String EMAIL_SIGNUP_ID = "email";
     public static final String LOGGED_IN_ID = "logged_in";
     public static final String LEARN_MORE_ID = "learn_more";
@@ -86,30 +88,12 @@ public class TreeHelper {
         List<MetricTreeNode> list = new ArrayList<>();
         String name = FileUtilManager.getItem("name");
         if (name == null || name.equals("")) {
-            list.add(buildSignupNode("google"));
-            list.add(buildSignupNode("github"));
-            list.add(buildSignupNode("email"));
+            list.add(new MetricTreeNode("Sign up", "signup.png", SIGN_UP_ID));
+            list.add(new MetricTreeNode("Log in", "paw.png", LOG_IN_ID));
         } else {
             list.add(buildLoggedInNode());
         }
         return list;
-    }
-    
-    private static MetricTreeNode buildSignupNode(String type) {
-        String iconName = "icons8-envelope-16.png";
-        String text = "Sign up with email";
-        String id = EMAIL_SIGNUP_ID;
-        if (type.equals("google")) {
-            iconName = "google.png";
-            text = "Sign up with Google";
-            id = GOOGLE_SIGNUP_ID;
-        } else if (type.equals("github")) {
-            iconName = "github.png";
-            text = "Sign up with GitHub";
-            id = GITHIUB_SIGNUP_ID;
-        }
-        MetricTreeNode node = new MetricTreeNode(text, iconName, id);
-        return node;
     }
     
     public static MetricTreeNode buildLoggedInNode() {
@@ -275,10 +259,16 @@ public class TreeHelper {
     
     public static void handleClickEvent(MetricTreeNode node) {
         switch (node.getId()) {
+            case SIGN_UP_ID:
+                AuthPromptManager.initiateSignupFlow();
+                break;
+            case LOG_IN_ID:
+                AuthPromptManager.initiateLoginFlow();
+                break;
             case GOOGLE_SIGNUP_ID:
                 SoftwareSessionManager.launchLogin("google", UIInteractionType.click, false);
                 break;
-            case GITHIUB_SIGNUP_ID:
+            case GITHUB_SIGNUP_ID:
                 SoftwareSessionManager.launchLogin("github", UIInteractionType.click, false);
                 break;
             case EMAIL_SIGNUP_ID:
@@ -288,7 +278,7 @@ public class TreeHelper {
                 CodeTimeTreeTopComponent.expandCollapse(LOGGED_IN_ID);
                 break;
             case SWITCH_ACCOUNT_ID:
-                SwitchAccountManager.initiateSwitchAccountFlow();
+                AuthPromptManager.initiateSwitchAccountFlow();
                 break;
             case VIEW_SUMMARY_ID:
                 SoftwareUtil.launchCodeTimeMetricsDashboard();
