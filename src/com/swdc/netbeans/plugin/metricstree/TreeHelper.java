@@ -99,7 +99,7 @@ public class TreeHelper {
     public static MetricTreeNode buildLoggedInNode() {
         String authType = FileUtilManager.getItem("authType");
         String name = FileUtilManager.getItem("name");
-        String iconName = "icons8-envelope-16.png";
+        String iconName = "email.png";
         if ("google".equals(authType)) {
             iconName = "google.png";
         } else if ("github".equals(authType)) {
@@ -133,31 +133,26 @@ public class TreeHelper {
     }
     
     public static MetricTreeNode buildViewWebDashboardButton() {
-        return new MetricTreeNode("More data at Software.com", "paw-grey.png", ADVANCED_METRICS_ID);
+        return new MetricTreeNode("More data at Software.com", "paw.png", ADVANCED_METRICS_ID);
     }
     
     public static List<MetricTreeNode> buildTreeFlowNodes() {
         List<MetricTreeNode> list = new ArrayList<>();
         
-        if (SlackManager.hasSlackWorkspaces()) {
-            SlackDndInfo slackDndInfo = SlackManager.getSlackDnDInfo();
-            
-            // snooze node
-            if (slackDndInfo.snooze_enabled) {
-                list.add(getUnPausenotificationsNode(slackDndInfo));
-            } else {
-                list.add(getPauseNotificationsNode());
-            }
-            // presence toggle
-            SlackUserPresence slackUserPresence = SlackManager.getSlackUserPresence();
-            if (slackUserPresence != null && slackUserPresence.presence.equals("active")) {
-                list.add(getSetAwayPresenceNode());
-            } else {
-                list.add(getSetActivePresenceNode());
-            }
+        SlackDndInfo slackDndInfo = SlackManager.getSlackDnDInfo();
+
+        // snooze node
+        if (slackDndInfo.snooze_enabled) {
+            list.add(getUnPausenotificationsNode(slackDndInfo));
         } else {
-            // show the connect slack node
-            list.add(getConnectSlackNode());
+            list.add(getPauseNotificationsNode());
+        }
+        // presence toggle
+        SlackUserPresence slackUserPresence = SlackManager.getSlackUserPresence();
+        if (slackUserPresence != null && slackUserPresence.presence.equals("active")) {
+            list.add(getSetAwayPresenceNode());
+        } else {
+            list.add(getSetActivePresenceNode());
         }
         
         if (UtilManager.isMac()) {
@@ -167,46 +162,42 @@ public class TreeHelper {
                 list.add(getSwitchOnDarkModeNode());
             }
             
-            list.add(new MetricTreeNode("Toggle dock position", "settings.png", TOGGLE_DOCK_POSITION_ID));
+            list.add(new MetricTreeNode("Toggle dock position", "position.png", TOGGLE_DOCK_POSITION_ID));
         }
         
         return list;
     }
     
     public static MetricTreeNode getSwitchOffDarkModeNode() {
-        return new MetricTreeNode("Turn off dark mode", "light-mode.png", SWITCH_OFF_DARK_MODE_ID);
+        return new MetricTreeNode("Turn off dark mode", "adjust.png", SWITCH_OFF_DARK_MODE_ID);
     }
     
     public static MetricTreeNode getSwitchOnDarkModeNode() {
-        return new MetricTreeNode("Turn on dark mode", "dark-mode.png", SWITCH_ON_DARK_MODE_ID);
-    }
-    
-    public static MetricTreeNode getConnectSlackNode() {
-        return new MetricTreeNode("Connect to set your status and pause notifications", "icons8-slack-new-16.png", CONNECT_SLACK_ID);
+        return new MetricTreeNode("Turn on dark mode", "adjust.png", SWITCH_ON_DARK_MODE_ID);
     }
     
     public static MetricTreeNode getPauseNotificationsNode() {
-        return new MetricTreeNode("Pause notifications", "icons8-slack-new-16.png", SWITCH_OFF_DND_ID);
+        return new MetricTreeNode("Pause notifications", "notifications-off.png", SWITCH_OFF_DND_ID);
     }
     
     public static MetricTreeNode getUnPausenotificationsNode(SlackDndInfo slackDndInfo) {
         String endTimeOfDay = SoftwareUtil.getTimeOfDay(SoftwareUtil.getJavaDateFromSeconds(slackDndInfo.snooze_endtime));
-        return new MetricTreeNode("Turn on notifications (ends at " + endTimeOfDay + ")", "icons8-slack-new-16.png", SWITCH_ON_DND_ID);
+        return new MetricTreeNode("Turn on notifications (ends at " + endTimeOfDay + ")", "notifications-on.png", SWITCH_ON_DND_ID);
     }
     
     public static MetricTreeNode getSetAwayPresenceNode() {
-        return new MetricTreeNode("Set presence to away", "icons8-slack-new-16.png", SET_PRESENCE_AWAY_ID);
+        return new MetricTreeNode("Set presence to away", "presence.png", SET_PRESENCE_AWAY_ID);
     }
     
     public static MetricTreeNode getSetActivePresenceNode() {
-        return new MetricTreeNode("Set presence to active", "icons8-slack-new-16.png", SET_PRESENCE_ACTIVE_ID);
+        return new MetricTreeNode("Set presence to active", "presence.png", SET_PRESENCE_ACTIVE_ID);
     }
     
     public static MetricTreeNode buildSlackWorkspacesNode() {
         MetricTreeNode node = new MetricTreeNode("Slack workspaces", null, SLACK_WORKSPACES_NODE_ID);
         List<Integration> workspaces = SlackManager.getSlackWorkspaces();
         workspaces.forEach(workspace -> {
-            node.add(new MetricTreeNode(workspace.team_domain, "icons8-slack-new-16.png", workspace.authId));
+            node.add(new MetricTreeNode(workspace.team_domain, "slack.png", workspace.authId));
         });
         // add the add new workspace button
         node.add(getAddSlackWorkspaceNode());
@@ -323,59 +314,6 @@ public class TreeHelper {
                 launchFileClick(node);
                 break;
         }
-    }
-    
-    private static List<Map.Entry<String, FileChangeInfo>> sortByKpm(Map<String, FileChangeInfo> fileChangeInfoMap) {
-        List<Map.Entry<String, FileChangeInfo>> entryList = new ArrayList<Map.Entry<String, FileChangeInfo>>(fileChangeInfoMap.entrySet());
-        // natural ASC order
-        Collections.sort(
-                entryList, new Comparator<Map.Entry<String, FileChangeInfo>>() {
-                    @Override
-                    public int compare(Map.Entry<String, FileChangeInfo> entryA,
-                                       Map.Entry<String, FileChangeInfo> entryB) {
-
-                        Long a = entryA.getValue().kpm;
-                        Long b = entryB.getValue().kpm;
-                        return a.compareTo(b);
-                    }
-                }
-        );
-        return entryList;
-    }
-
-    private static List<Map.Entry<String, FileChangeInfo>> sortByKeystrokes(Map<String, FileChangeInfo> fileChangeInfoMap) {
-        List<Map.Entry<String, FileChangeInfo>> entryList = new ArrayList<Map.Entry<String, FileChangeInfo>>(fileChangeInfoMap.entrySet());
-        // natural ASC order
-        Collections.sort(
-                entryList, new Comparator<Map.Entry<String, FileChangeInfo>>() {
-                    @Override
-                    public int compare(Map.Entry<String, FileChangeInfo> entryA,
-                                       Map.Entry<String, FileChangeInfo> entryB) {
-
-                        Long a = entryA.getValue().keystrokes;
-                        Long b = entryB.getValue().keystrokes;
-                        return a.compareTo(b);
-                    }
-                }
-        );
-        return entryList;
-    }
-
-    private static List<Map.Entry<String, FileChangeInfo>> sortByFileSeconds(Map<String, FileChangeInfo> fileChangeInfoMap) {
-        List<Map.Entry<String, FileChangeInfo>> entryList = new ArrayList<Map.Entry<String, FileChangeInfo>>(fileChangeInfoMap.entrySet());
-        // natural ASC order
-        Collections.sort(
-                entryList, new Comparator<Map.Entry<String, FileChangeInfo>>() {
-                    @Override
-                    public int compare(Map.Entry<String, FileChangeInfo> entryA,
-                                       Map.Entry<String, FileChangeInfo> entryB) {
-                        Long a = entryA.getValue().duration_seconds;
-                        Long b = entryB.getValue().duration_seconds;
-                        return a.compareTo(b);
-                    }
-                }
-        );
-        return entryList;
     }
     
     public static JSeparator getSeparator() {
