@@ -122,7 +122,7 @@ public class SoftwareSessionManager {
 
     public static void launchLogin(String loginType, UIInteractionType interactionType, boolean switching_account) {
         try {
-            String auth_callback_state = FileUtilManager.getAuthCallbackState();
+            String auth_callback_state = FileUtilManager.getAuthCallbackState(true);
             FileUtilManager.setBooleanItem("switching_account", switching_account);
 
             String plugin_uuid = FileUtilManager.getPluginUuid();
