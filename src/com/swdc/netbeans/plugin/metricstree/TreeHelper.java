@@ -198,7 +198,7 @@ public class TreeHelper {
     
     public static MetricTreeNode buildSlackWorkspacesNode() {
         MetricTreeNode node = new MetricTreeNode("Slack workspaces", null, SLACK_WORKSPACES_NODE_ID);
-        List<Integration> workspaces = SlackManager.getSlackWorkspaces();
+        List<Integration> workspaces = SlackManager.getSlackWorkspaces(false);
         workspaces.forEach(workspace -> {
             node.add(new MetricTreeNode(workspace.team_domain, "slack.png", workspace.authId));
         });
