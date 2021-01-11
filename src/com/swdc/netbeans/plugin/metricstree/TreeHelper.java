@@ -16,13 +16,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JSeparator;
+import org.apache.commons.lang.StringUtils;
 import org.openide.awt.HtmlBrowser;
 import swdc.java.ops.manager.AppleScriptManager;
 import swdc.java.ops.manager.FileUtilManager;
@@ -32,6 +30,7 @@ import swdc.java.ops.model.Integration;
 import swdc.java.ops.model.MetricLabel;
 import swdc.java.ops.model.SlackDndInfo;
 import swdc.java.ops.model.SlackUserPresence;
+import swdc.java.ops.model.SlackUserProfile;
 
 
 public class TreeHelper {
@@ -55,6 +54,7 @@ public class TreeHelper {
     public static final String ACTIVE_CODETIME_TODAY_ID = "active_codetime_today";
     public static final String ACTIVE_CODETIME_AVG_TODAY_ID = "active_codetime_avg_today";
     public static final String ACTIVE_CODETIME_GLOBAL_AVG_TODAY_ID = "active_codetime_global_avg_today";
+    public static final String TODAY_VS_AVG_ID = "today_vs_average";
     
     public static final String LINES_ADDED_TODAY_ID = "lines_added_today";
     public static final String LINES_ADDED_AVG_TODAY_ID = "lines_added_avg_today";
@@ -80,7 +80,7 @@ public class TreeHelper {
     public static final String ADD_WORKSPACE_ID = "add_workspace";
     public static final String SET_PRESENCE_AWAY_ID = "set_presence_away";
     public static final String SET_PRESENCE_ACTIVE_ID = "set_presence_active";
-    
+    public static final String SET_SLACK_STATUS_ID = "set_slack_status";
 
     private static final SimpleDateFormat formatDay = new SimpleDateFormat("EEE");
     
@@ -142,6 +142,8 @@ public class TreeHelper {
     public static List<MetricTreeNode> buildTreeFlowNodes() {
         List<MetricTreeNode> list = new ArrayList<>();
         
+        list.add(getSetSlackStatusNode());
+        
         SlackDndInfo slackDndInfo = SlackManager.getSlackDnDInfo();
 
         // snooze node
@@ -169,6 +171,12 @@ public class TreeHelper {
         }
         
         return list;
+    }
+    
+    public static MetricTreeNode getSetSlackStatusNode() {
+        SlackUserProfile userProfile = SlackManager.getSlackStatus();
+        String status = (userProfile != null && StringUtils.isNotBlank(userProfile.status_text)) ? " (" + userProfile.status_text + ")" : "";
+        return new MetricTreeNode("Update profile status" + status, "profile.png", SET_SLACK_STATUS_ID);
     }
     
     public static MetricTreeNode getSwitchOffDarkModeNode() {
@@ -211,12 +219,18 @@ public class TreeHelper {
         return new MetricTreeNode("Add workspace", "add.png", ADD_WORKSPACE_ID);
     }
     
+    public static MetricTreeNode buildTodayVsAverageNode() {
+        String refClass = FileUtilManager.getItem("reference-class", "user");
+        String labelExt = refClass.equals("user") ? " your daily average" : " the global daily average";
+        return new MetricTreeNode("Today vs." + labelExt, "today.png", TODAY_VS_AVG_ID);
+    }
+    
     public static MetricTreeNode buildActiveCodeTimeTree(MetricLabel mLabels) {
         return new MetricTreeNode(mLabels.activeCodeTime, mLabels.activeCodeTimeAvgIcon, ACTIVE_CODETIME_TODAY_ID);
     }
     
     public static MetricTreeNode buildCodeTimeTree(MetricLabel mLabels) {
-        return new MetricTreeNode(mLabels.codeTime, "rocket.png", CODETIME_TODAY_ID);
+        return new MetricTreeNode(mLabels.codeTime, mLabels.codeTimeIcon, CODETIME_TODAY_ID);
     }
     
     public static MetricTreeNode buildLinesAddedTree(MetricLabel mLabels) {
@@ -289,29 +303,44 @@ public class TreeHelper {
                 break;
             case CONNECT_SLACK_ID:
             case ADD_WORKSPACE_ID:
-                SlackManager.connectSlackWorkspace(() -> {CodeTimeTreeTopComponent.rebuildTree();});
+                SlackManager.connectSlackWorkspace(() -> {CodeTimeTreeTopComponent.refresh();});
                 break;
             case SWITCH_OFF_DARK_MODE_ID:
             case SWITCH_ON_DARK_MODE_ID:
-                AppleScriptManager.toggleDarkMode(() -> {CodeTimeTreeTopComponent.rebuildTree();});
+                AppleScriptManager.toggleDarkMode(() -> {CodeTimeTreeTopComponent.refresh();});
                 break;
             case SWITCH_OFF_DND_ID:
-                SlackManager.pauseSlackNotifications(() -> {CodeTimeTreeTopComponent.rebuildTree();});
+                SlackManager.pauseSlackNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
                 break;
             case SWITCH_ON_DND_ID:
-                SlackManager.enableSlackNotifications(() -> {CodeTimeTreeTopComponent.rebuildTree();});
+                SlackManager.enableSlackNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
                 break;
             case SET_PRESENCE_ACTIVE_ID:
-                SlackManager.toggleSlackPresence("auto", () -> {CodeTimeTreeTopComponent.rebuildTree();});
+                SlackManager.toggleSlackPresence("auto", () -> {CodeTimeTreeTopComponent.refresh();});
                 break;
             case SET_PRESENCE_AWAY_ID:
-                SlackManager.toggleSlackPresence("away", () -> {CodeTimeTreeTopComponent.rebuildTree();});
+                SlackManager.toggleSlackPresence("away", () -> {CodeTimeTreeTopComponent.refresh();});
                 break;
             case TOGGLE_DOCK_POSITION_ID:
                 AppleScriptManager.toggleDock();
                 break;
-            default:
-                launchFileClick(node);
+            case SET_SLACK_STATUS_ID:
+                SlackManager.setProfileStatus(() -> {CodeTimeTreeTopComponent.refresh();});
+                break;
+            case SLACK_WORKSPACES_NODE_ID:
+                // expand/collapse
+                CodeTimeTreeTopComponent.expandCollapse(SLACK_WORKSPACES_NODE_ID);
+                break;
+            case TODAY_VS_AVG_ID:
+                // refresh and change the reference class
+                String refClass = FileUtilManager.getItem("reference-class", "user");
+                if (refClass.equals("user")) {
+                    refClass = "global";
+                } else {
+                    refClass = "user";
+                }
+                FileUtilManager.setItem("reference-class", refClass);
+                CodeTimeTreeTopComponent.refresh();
                 break;
         }
     }

@@ -142,11 +142,7 @@ public class WallClockManager {
             // STATUS BAR REFRESH
             StatusBarManager.updateStatusBar();
 
-            if (!rebuildTree) {
-                CodeTimeTreeTopComponent.refreshTree();
-            } else {
-                CodeTimeTreeTopComponent.rebuildTree();
-            }
+            CodeTimeTreeTopComponent.refresh();
         }
         dispatching = false;
     }
