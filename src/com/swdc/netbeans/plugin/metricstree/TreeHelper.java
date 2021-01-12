@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JSeparator;
+import javax.swing.SwingUtilities;
 import org.apache.commons.lang.StringUtils;
 import org.openide.awt.HtmlBrowser;
 import swdc.java.ops.manager.AppleScriptManager;
@@ -303,29 +304,45 @@ public class TreeHelper {
                 break;
             case CONNECT_SLACK_ID:
             case ADD_WORKSPACE_ID:
-                SlackManager.connectSlackWorkspace(() -> {CodeTimeTreeTopComponent.refresh();});
+                SwingUtilities.invokeLater(() -> {
+                    SlackManager.connectSlackWorkspace(() -> {CodeTimeTreeTopComponent.refresh();});
+                });
                 break;
             case SWITCH_OFF_DARK_MODE_ID:
             case SWITCH_ON_DARK_MODE_ID:
-                AppleScriptManager.toggleDarkMode(() -> {CodeTimeTreeTopComponent.refresh();});
+                SwingUtilities.invokeLater(() -> {
+                    AppleScriptManager.toggleDarkMode(() -> {CodeTimeTreeTopComponent.refresh();});
+                });
                 break;
             case SWITCH_OFF_DND_ID:
-                SlackManager.pauseSlackNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
+                SwingUtilities.invokeLater(() -> {
+                    SlackManager.pauseSlackNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
+                });
                 break;
             case SWITCH_ON_DND_ID:
-                SlackManager.enableSlackNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
+                SwingUtilities.invokeLater(() -> {
+                    SlackManager.enableSlackNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
+                });
                 break;
             case SET_PRESENCE_ACTIVE_ID:
-                SlackManager.toggleSlackPresence("auto", () -> {CodeTimeTreeTopComponent.refresh();});
+                SwingUtilities.invokeLater(() -> {
+                    SlackManager.toggleSlackPresence("auto", () -> {CodeTimeTreeTopComponent.refresh();});
+                });
                 break;
             case SET_PRESENCE_AWAY_ID:
-                SlackManager.toggleSlackPresence("away", () -> {CodeTimeTreeTopComponent.refresh();});
+                SwingUtilities.invokeLater(() -> {
+                    SlackManager.toggleSlackPresence("away", () -> {CodeTimeTreeTopComponent.refresh();});
+                });
                 break;
             case TOGGLE_DOCK_POSITION_ID:
-                AppleScriptManager.toggleDock();
+                SwingUtilities.invokeLater(() -> {
+                    AppleScriptManager.toggleDock();
+                });
                 break;
             case SET_SLACK_STATUS_ID:
-                SlackManager.setProfileStatus(() -> {CodeTimeTreeTopComponent.refresh();});
+                SwingUtilities.invokeLater(() -> {
+                    SlackManager.setProfileStatus(() -> {CodeTimeTreeTopComponent.refresh();});
+                });
                 break;
             case SLACK_WORKSPACES_NODE_ID:
                 // expand/collapse
