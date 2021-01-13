@@ -92,7 +92,7 @@ public class MetricTreeNode extends DefaultMutableTreeNode {
 
     public String getIconName() {
         if (isSeparator()) {
-            return "blue-line-96.png";
+            return "separator.png";
         }
         return iconName;
     }
