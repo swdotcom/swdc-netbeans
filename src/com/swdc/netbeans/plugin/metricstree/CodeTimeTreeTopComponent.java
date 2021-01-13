@@ -9,7 +9,9 @@ import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.SessionDataManager;
 import com.swdc.netbeans.plugin.managers.TimeDataManager;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
@@ -58,9 +60,11 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     
     public static final Logger LOG = Logger.getLogger("CodeTimeTreeTopComponent");
     
+    private static CodeTimeTreeTopComponent win;
+    
     public static MetricTree metricTree;
-    private static long last_refresh_millis = 0;
-    private static long last_rebuild_millis = 0;
+    private static boolean refreshingTree = false;
+    private static Map<String, Boolean> expandedMap = new HashMap<>();
 
     public CodeTimeTreeTopComponent() {
         initComponents();
@@ -68,6 +72,8 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         setToolTipText(Bundle.HINT_CodeTimeTreeWindowTopComponent());
         
         this.init();
+        
+        win = this;
     }
     
     protected void init() {
@@ -152,43 +158,26 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         return null;
     }
 
-    public static void refreshTree() {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // refresh if metric tree has been initialized
-                if (metricTree != null && (last_refresh_millis == 0 || System.currentTimeMillis() - last_refresh_millis > 3000)) {
-                    last_refresh_millis = System.currentTimeMillis();
-                    refresh();
-                }
-            } catch (Exception e) {
-                System.err.println(e);
-            }
-        });
-    }
-    
-    private static void refresh() {
-        rebuildMenuNodes();
-        
-        rebuildFlowNodes();
-        
-        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
-        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
+    public static void refresh() {
+        if (win != null && !refreshingTree) {
 
-        updateMetrics(codeTimeSummary, sessionSummary);
-    }
-    
-    public static void rebuildTree() {
-        SwingUtilities.invokeLater(() -> {
             try {
-                CodeTimeTreeTopComponent topComp = (CodeTimeTreeTopComponent) WindowManager.getDefault().findTopComponent("CodeTimeTreeWindowTopComponent");
-                if (topComp != null && System.currentTimeMillis() - last_rebuild_millis > 3000) {
-                    last_rebuild_millis = System.currentTimeMillis();
-                    topComp.init();
-                }
+                SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+                        refreshingTree = true;
+                        try {
+                            win.init();
+                        } catch (Exception e) {
+                            LOG.log(Level.WARNING, "Rebuild tree error: {0}", e.toString());
+                        } finally {
+                            refreshingTree = false;
+                        }
+                    }
+                });
             } catch (Exception e) {
-                LOG.log(Level.WARNING, "Failed to retrieve the code time top component: {0}", e.getMessage());
+                //
             }
-        });
+        }
     }
 
     public static void openTree() {
@@ -287,27 +276,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         return new DefaultTreeModel(root);
     }
     
-    private TreeModel makeKpmNodeModel() {
-        // "Root" will not be visible
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
-        
-        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
-        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
-        
-        MetricLabel mLabels = new MetricLabel();
-        mLabels.updateLabels(codeTimeSummary, sessionSummary);
-
-        root.add(TreeHelper.buildCodeTimeTree(mLabels));
-        root.add(TreeHelper.buildActiveCodeTimeTree(mLabels));
-        root.add(TreeHelper.buildLinesAddedTree(mLabels));
-        root.add(TreeHelper.buildLinesRemovedTree(mLabels));
-        root.add(TreeHelper.buildKeystrokesTree(mLabels));
-        
-        root.add(TreeHelper.buildSummaryButton());
-        root.add(TreeHelper.buildViewWebDashboardButton());
-        return new DefaultTreeModel(root);
-    }
-    
     private TreeModel makeCodetimeTreeModel() {
         // "Root" will not be visible
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
@@ -337,6 +305,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         MetricLabel mLabels = new MetricLabel();
         mLabels.updateLabels(codeTimeSummary, sessionSummary);
 
+        root.add(TreeHelper.buildTodayVsAverageNode());
         root.add(TreeHelper.buildCodeTimeTree(mLabels));
         root.add(TreeHelper.buildActiveCodeTimeTree(mLabels));
         root.add(TreeHelper.buildLinesAddedTree(mLabels));
@@ -377,6 +346,33 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         }
     }
     
+    public static void expandNode(String id) {
+        int row = 0;
+        try {
+            DefaultTreeModel model = (DefaultTreeModel) metricTree.getModel();
+
+            DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) model.getRoot();
+
+            if (treeNode != null) {
+                Enumeration<TreeNode> nodes = treeNode.children();
+                if (nodes != null) {
+                    while (nodes.hasMoreElements()) {
+                        MetricTreeNode node = (MetricTreeNode) nodes.nextElement();
+                        if (node != null && node.getId().equals(id)) {
+                            metricTree.expandRow(row);
+                            node.setExpanded(true);
+                            expandedMap.put(id, true);
+                            break;
+                        }
+                        row++;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Find node by ID error: {0}", e.toString());
+        }
+    }
+    
     public static void expandCollapse(String id) {
         int row = 0;
         try {
@@ -393,9 +389,11 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
                             if (!node.isExpanded()) {
                                 metricTree.expandRow(row);
                                 node.setExpanded(true);
+                                expandedMap.put(id, true);
                             } else {
                                 metricTree.collapseRow(row);
                                 node.setExpanded(false);
+                                expandedMap.put(id, false);
                             }
                             break;
                         }
