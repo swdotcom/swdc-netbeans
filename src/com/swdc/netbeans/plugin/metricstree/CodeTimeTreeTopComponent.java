@@ -14,8 +14,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
@@ -23,6 +27,7 @@ import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.settings.ConvertAsProperties;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
+import org.openide.util.ImageUtilities;
 import org.openide.windows.TopComponent;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.WindowManager;
@@ -241,6 +246,14 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
 
     private MetricTree buildCodeTimeTreeView() {
         MetricTree tree = new MetricTree(makeCodetimeTreeModel());
+        
+        DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer)tree.getCellRenderer();
+        renderer.setClosedIcon(null);
+        renderer.setOpenIcon(null);
+        Icon closeIcon = new ImageIcon(ImageUtilities.loadImage("com/swdc/netbeans/plugin/assets/collapsed.png"));
+        Icon openIcon = new ImageIcon(ImageUtilities.loadImage("com/swdc/netbeans/plugin/assets/expanded.png"));
+        UIManager.put("Tree.openIcon", openIcon);
+        UIManager.put("Tree.closedIcon", closeIcon);
 
         tree.setCellRenderer(new IconTreeCellRenderer());
         tree.setRootVisible(false);
