@@ -91,7 +91,7 @@ public class TreeHelper {
         List<MetricTreeNode> list = new ArrayList<>();
         String name = FileUtilManager.getItem("name");
         if (name == null || name.equals("")) {
-            list.add(new MetricTreeNode("Sign up", "signup.png", SIGN_UP_ID));
+            list.add(new MetricTreeNode("Sign up", "paw.png", SIGN_UP_ID));
             list.add(new MetricTreeNode("Log in", "paw.png", LOG_IN_ID));
         } else {
             list.add(buildLoggedInNode());

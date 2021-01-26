@@ -29,6 +29,60 @@ public class ScreenManager {
         return false;
     }
     
+    public static boolean enterFullScreenMode() {
+        boolean shouldExpand = false;
+        Frame frame = null;
+        try {
+            frame = WindowManager.getDefault().getMainWindow();
+            if (frame != null) {
+                int extState = frame.getExtendedState();
+                if (extState != JFrame.MAXIMIZED_BOTH) {
+                    shouldExpand = true;
+                }
+            }
+        } catch (Exception e) {
+            //
+        }
+        if (frame != null && shouldExpand) {
+            final Frame winFram = frame;
+            try {
+                SwingUtilities.invokeLater(() -> {
+                    winFram.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                });
+            } catch (Exception e) {
+                //
+            }
+        }
+        return false;
+    }
+    
+    public static boolean exitFullScreenMode() {
+        boolean shouldCollapse = false;
+        Frame frame = null;
+        try {
+            frame = WindowManager.getDefault().getMainWindow();
+            if (frame != null) {
+                int extState = frame.getExtendedState();
+                if (extState == JFrame.MAXIMIZED_BOTH) {
+                    shouldCollapse = true;
+                }
+            }
+        } catch (Exception e) {
+            //
+        }
+        if (frame != null && shouldCollapse) {
+            final Frame winFram = frame;
+            try {
+                SwingUtilities.invokeLater(() -> {
+                    winFram.setExtendedState(JFrame.NORMAL);
+                });
+            } catch (Exception e) {
+                //
+            }
+        }
+        return false;
+    }
+    
     public static void toggleFullScreenMode() {
         try {
             SwingUtilities.invokeLater(() -> {

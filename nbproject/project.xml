@@ -200,10 +200,6 @@
             </module-dependencies>
             <public-packages/>
             <class-path-extension>
-                <runtime-relative-path>ext/swdc-java-ops-1.1.0.jar</runtime-relative-path>
-                <binary-origin>release/modules/ext/swdc-java-ops-1.1.0.jar</binary-origin>
-            </class-path-extension>
-            <class-path-extension>
                 <runtime-relative-path>ext/swdc-java-tracker-1.1.1.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/swdc-java-tracker-1.1.1.jar</binary-origin>
             </class-path-extension>
@@ -222,6 +218,10 @@
             <class-path-extension>
                 <runtime-relative-path>ext/httpcore-4.4.11.jar</runtime-relative-path>
                 <binary-origin>release/modules/ext/httpcore-4.4.11.jar</binary-origin>
+            </class-path-extension>
+            <class-path-extension>
+                <runtime-relative-path>ext/swdc-java-ops-1.1.1.jar</runtime-relative-path>
+                <binary-origin>release/modules/ext/swdc-java-ops-1.1.1.jar</binary-origin>
             </class-path-extension>
         </data>
     </configuration>
