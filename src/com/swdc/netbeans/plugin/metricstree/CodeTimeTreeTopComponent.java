@@ -69,7 +69,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
     
     public static MetricTree metricTree;
     private static boolean refreshingTree = false;
-    private static Map<String, Boolean> expandedMap = new HashMap<>();
+    public static Map<String, Boolean> expandedMap = new HashMap<>();
 
     public CodeTimeTreeTopComponent() {
         initComponents();
@@ -87,6 +87,13 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
 
         scrollPane.setViewportView(metricTree);
         scrollPane.setVisible(true);
+        
+        for (String key : expandedMap.keySet()) {
+            boolean isExpanded = expandedMap.get(key).booleanValue();
+            if (isExpanded) {
+                expandNode(key);
+            }
+        }
 
         this.updateUI();
         this.setVisible(true);
