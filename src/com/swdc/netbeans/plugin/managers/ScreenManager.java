@@ -7,9 +7,12 @@ package com.swdc.netbeans.plugin.managers;
 
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import java.awt.Frame;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowStateListener;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.openide.windows.WindowManager;
+import java.util.logging.Logger;
 
 /**
  *
@@ -17,91 +20,93 @@ import org.openide.windows.WindowManager;
  */
 public class ScreenManager {
     
-    public static boolean isFullScreen() {
-        try {
-            Frame frame = WindowManager.getDefault().getMainWindow();
-            if (frame != null) {
-                return (frame.getExtendedState() == JFrame.MAXIMIZED_BOTH);
-            }
-        } catch (Exception e) {
-            //
-        }
-        return false;
-    }
-    
-    public static boolean enterFullScreenMode() {
-        boolean shouldExpand = false;
-        Frame frame = null;
-        try {
-            frame = WindowManager.getDefault().getMainWindow();
-            if (frame != null) {
-                int extState = frame.getExtendedState();
-                if (extState != JFrame.MAXIMIZED_BOTH) {
-                    shouldExpand = true;
-                }
-            }
-        } catch (Exception e) {
-            //
-        }
-        if (frame != null && shouldExpand) {
-            final Frame winFram = frame;
-            try {
-                SwingUtilities.invokeLater(() -> {
-                    winFram.setExtendedState(JFrame.MAXIMIZED_BOTH);
-                });
-            } catch (Exception e) {
-                //
-            }
-        }
-        return false;
-    }
-    
-    public static boolean exitFullScreenMode() {
-        boolean shouldCollapse = false;
-        Frame frame = null;
-        try {
-            frame = WindowManager.getDefault().getMainWindow();
-            if (frame != null) {
-                int extState = frame.getExtendedState();
-                if (extState == JFrame.MAXIMIZED_BOTH) {
-                    shouldCollapse = true;
-                }
-            }
-        } catch (Exception e) {
-            //
-        }
-        if (frame != null && shouldCollapse) {
-            final Frame winFram = frame;
-            try {
-                SwingUtilities.invokeLater(() -> {
-                    winFram.setExtendedState(JFrame.NORMAL);
-                });
-            } catch (Exception e) {
-                //
-            }
-        }
-        return false;
-    }
-    
-    public static void toggleFullScreenMode() {
-        try {
-            SwingUtilities.invokeLater(() -> {
-                Frame frame = WindowManager.getDefault().getMainWindow();
-                if (frame != null) {
-                    int extState = frame.getExtendedState();
-                    if (extState == JFrame.MAXIMIZED_BOTH) {
-                        frame.setExtendedState(JFrame.NORMAL);
-                    } else {
-                        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+    public static final Logger log = Logger.getLogger("ScreenManager");
+
+    private static Frame ideFrame = null;
+    private static double fullScreenHeight = 0;
+    private static double fullScreenWidth = 0;
+    protected static boolean checkingToDisableFlow = false;
+
+    private static Frame getIdeWindow() {
+        if (ideFrame == null) {
+            ideFrame = WindowManager.getDefault().getMainWindow();
+            if (ideFrame != null) {
+                ideFrame.addWindowStateListener(new WindowStateListener() {
+                    @Override
+                    public void windowStateChanged(WindowEvent e) {
+                        SwingUtilities.invokeLater(() -> {
+                            FlowManager.checkToDisableFlow();
+                        });
                     }
-                    SwingUtilities.invokeLater(() -> {
-                        CodeTimeTreeTopComponent.refresh();
-                    });
-                }
-            });
-        } catch (Exception e) {
-            //
+                });
+            }
         }
+        
+        return ideFrame;
+    }
+    
+    public static boolean isFullScreen() {
+        Frame win = getIdeWindow();
+
+        if (win != null) {
+
+            // maximized both is actually maximized screen, which we
+            // consider full screen as well
+            if (win.getExtendedState() == JFrame.MAXIMIZED_BOTH || win.getState() == JFrame.MAXIMIZED_BOTH) {
+                fullScreenHeight = win.getBounds().getHeight();
+                fullScreenWidth = win.getBounds().getWidth();
+                return true;
+            } else if (win.getX() > 0) {
+                return false;
+            }
+
+            // it may be full screen
+            if (win.getBounds().getHeight() >= fullScreenHeight && win.getBounds().getWidth() >= fullScreenWidth) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean enterFullScreen() {
+        Frame win = getIdeWindow();
+        if (win == null) {
+            return false;
+        }
+        if (!isFullScreen()) {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    win.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                    win.setBounds(win.getGraphicsConfiguration().getBounds());
+                    win.setVisible(true);
+                } catch (Exception e) {}
+
+                AsyncManager.getInstance().executeOnceInSeconds(
+                        () -> {CodeTimeTreeTopComponent.refresh();}, 1);
+            });
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean exitFullScreen() {
+        Frame win = getIdeWindow();
+        if (win == null) {
+            return false;
+        }
+        if (isFullScreen()) {
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    win.setExtendedState(JFrame.NORMAL);
+                    win.setBounds(win.getGraphicsConfiguration().getBounds());
+                    win.setVisible(true);
+                } catch (Exception e) {}
+                AsyncManager.getInstance().executeOnceInSeconds(
+                        () -> {CodeTimeTreeTopComponent.refresh();}, 1);
+            });
+            return true;
+        }
+        return false;
     }
     
 }

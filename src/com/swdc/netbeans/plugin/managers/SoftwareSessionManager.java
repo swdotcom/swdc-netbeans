@@ -108,6 +108,9 @@ public class SoftwareSessionManager {
             // clear the auth callback state
             FileUtilManager.setBooleanItem("switching_account", false);
             FileUtilManager.setAuthCallbackState(null);
+            
+            // pull in the users slack integrations
+            SlackManager.getSlackAuth(loginState.user);
 
             // prompt they've completed the setup
             String infoMsg = "Successfully logged onto Code Time";
