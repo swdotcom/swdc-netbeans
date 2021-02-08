@@ -1,4 +1,4 @@
-Manifest-Version: 2.2.5
+Manifest-Version: 2.2.6
 AutoUpdate-Show-In-Client: true
 OpenIDE-Module: com.swdc.netbeans.plugin
 OpenIDE-Module-Localizing-Bundle: com/swdc/netbeans/plugin/Bundle.properties
