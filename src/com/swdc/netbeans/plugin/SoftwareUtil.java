@@ -305,37 +305,12 @@ public class SoftwareUtil {
     
     public static void fetchCodeTimeMetricsDashboard(JsonObject summary) {
         OfflineManager offlineMgr = OfflineManager.getInstance();
-        String summaryInfoFile = FileUtilManager.getSummaryInfoFile();
         String dashboardFile = FileUtilManager.getCodeTimeDashboardFile();
-        
-        Calendar cal = Calendar.getInstance();
-        int dayOfMonth = cal.get(Calendar.DAY_OF_MONTH);
-        Writer writer = null;
 
-        if (lastDayOfMonth == 0 || lastDayOfMonth != dayOfMonth) {
-            lastDayOfMonth = dayOfMonth;
-            String api = "/dashboard?linux=" + UtilManager.isLinux() + "&showToday=true";
-            ClientResponse resp = OpsHttpClient.softwareGet(api, FileUtilManager.getItem("jwt"));
+        String api = "/dashboard?linux=" + UtilManager.isLinux() + "&showToday=true";
+        ClientResponse resp = OpsHttpClient.softwareGet(api, FileUtilManager.getItem("jwt"));
             
-            String dashboardSummary = resp.getJsonStr();
-            if (dashboardSummary == null || dashboardSummary.trim().isEmpty()) {
-                dashboardSummary = SERVICE_NOT_AVAIL;
-            }
-
-            // write the summary content
-            try {
-                writer = new BufferedWriter(new OutputStreamWriter(
-                        new FileOutputStream(summaryInfoFile), StandardCharsets.UTF_8));
-                writer.write(dashboardSummary);
-            } catch (IOException ex) {
-                // Report
-            } finally {
-                try {writer.close();} catch (Exception ex) {/*ignore*/}
-            }
-        }
-
-        // concat summary info with the dashboard file
-        String dashboardContent = "";
+        String dashboardContent = resp.getJsonStr();
 
         // append the summary content
         String summaryInfoContent = offlineMgr.getSessionSummaryInfoFileContent();
