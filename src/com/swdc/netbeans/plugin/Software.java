@@ -29,6 +29,8 @@ import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
 import org.openide.windows.WindowManager;
+import swdc.java.ops.event.SlackStateChangeModel;
+import swdc.java.ops.event.SlackStateChangeObserver;
 import swdc.java.ops.event.UserStateChangeModel;
 import swdc.java.ops.event.UserStateChangeObserver;
 import swdc.java.ops.manager.AccountManager;
@@ -54,6 +56,7 @@ public class Software extends ModuleInstall implements Runnable {
     private static final long check_online_interval_ms = 1000 * 60 * 10;
     
     private UserStateChangeObserver userStateChangeObserver;
+    private SlackStateChangeObserver slackStateChangeObserver;
 
     @Override
     public void run() {
@@ -125,6 +128,11 @@ public class Software extends ModuleInstall implements Runnable {
         if (userStateChangeObserver == null) {
             userStateChangeObserver = new UserStateChangeObserver(new UserStateChangeModel(), () -> {
                 WallClockManager.getInstance().refreshSessionDataAndTree();
+            });
+        }
+        if (slackStateChangeObserver == null) {
+            slackStateChangeObserver = new SlackStateChangeObserver(new SlackStateChangeModel(), () -> {
+            	WallClockManager.getInstance().refreshSessionDataAndTree();
             });
         }
     }
