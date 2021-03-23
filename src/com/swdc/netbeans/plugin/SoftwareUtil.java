@@ -18,20 +18,13 @@ import com.swdc.netbeans.plugin.models.FileDetails;
 import com.swdc.netbeans.plugin.models.NetbeansProject;
 import com.swdc.snowplow.tracker.entities.UIElementEntity;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,13 +34,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -133,9 +123,6 @@ public class SoftwareUtil {
     private static boolean appAvailable = true;
     private static boolean loggedInCacheState = false;
     private static long lastAppAvailableCheck = 0;
-    
-    public static final String UNTITLED_FILE = "Untitled";
-    public static final String UNNAMED_PROJECT = "Unnamed";
     
     private static boolean showStatusText = true;
     
@@ -260,38 +247,6 @@ public class SoftwareUtil {
         String uuid = UUID.randomUUID().toString();
         return uuid.replace("-", "");
     }
-
-    public static JsonObject getResourceInfo(String projectDir) {
-        JsonObject jsonObj = new JsonObject();
-
-        // is the project dir avail?
-        if (projectDir != null && !projectDir.equals("")) {
-            try {
-                String[] branchCmd = {"git", "symbolic-ref", "--short", "HEAD"};
-                String branch = UtilManager.runCommand(branchCmd, projectDir);
-
-                String[] identifierCmd = {"git", "config", "--get", "remote.origin.url"};
-                String identifier = UtilManager.runCommand(identifierCmd, projectDir);
-
-                String[] emailCmd = {"git", "config", "user.email"};
-                String email = UtilManager.runCommand(emailCmd, projectDir);
-
-                String[] tagCmd = {"git", "describe", "--all"};
-                String tag = UtilManager.runCommand(tagCmd, projectDir);
-
-                if (branch != null && !branch.equals("") && identifier != null && !identifier.equals("")) {
-                    jsonObj.addProperty("identifier", identifier);
-                    jsonObj.addProperty("branch", branch);
-                    jsonObj.addProperty("email", email);
-                    jsonObj.addProperty("tag", tag);
-                }
-            } catch (Exception e) {
-                //
-            }
-        }
-
-        return jsonObj;
-    }
     
     public static void launchSoftwareTopForty() {
         String url = "https://api.software.com/music/top40";
@@ -344,28 +299,6 @@ public class SoftwareUtil {
         if (legacyFile.exists()) {
             legacyFile.delete();
         }
-    }
-    
-    private static String getSingleLineResult(List<String> cmd, int maxLen) {
-        String result = null;
-        String[] cmdArgs = Arrays.copyOf(cmd.toArray(), cmd.size(), String[].class);
-        String content = UtilManager.runCommand(cmdArgs, null);
-
-        // for now just get the 1st one found
-        if (content != null) {
-            String[] contentList = content.split("\n");
-            if (contentList != null && contentList.length > 0) {
-                int len = (maxLen != -1) ? Math.min(maxLen, contentList.length) : contentList.length;
-                for (int i = 0; i < len; i++) {
-                    String line = contentList[i];
-                    if (line != null && line.trim().length() > 0) {
-                        result = line.trim();
-                        break;
-                    }
-                }
-            }
-        }
-        return result;
     }
     
     public static String getDashboardRow(String label, String value) {
@@ -521,8 +454,6 @@ public class SoftwareUtil {
         return localDateTimeToDate(startOfDay);
     }
 
-    
-
     public static Date atEndOfDay(Date date) {
         LocalDateTime localDateTime = dateToLocalDateTime(date);
         LocalDateTime endOfDay = localDateTime.with(LocalTime.MAX);
@@ -535,42 +466,6 @@ public class SoftwareUtil {
 
     private static Date localDateTimeToDate(LocalDateTime localDateTime) {
         return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
-    }
-
-    // the timestamps are all in seconds
-    public static class TimesData {
-        public Integer offset;
-        public long now;
-        public long local_now;
-        public String timezone;
-        public long local_start_day;
-        public long local_start_yesterday;
-        public Date local_start_of_week_date;
-        public Date local_start_of_yesterday_date;
-        public Date local_start_today_date;
-        public long local_start_of_week;
-        public long local_end_day;
-        public long utc_end_day;
-
-        public TimesData() {
-            offset = ZonedDateTime.now().getOffset().getTotalSeconds();
-            now = System.currentTimeMillis() / 1000;
-            local_now = now + offset;
-            timezone = TimeZone.getDefault().getID();
-            local_start_day = atStartOfDay(new Date(local_now * 1000)).toInstant().getEpochSecond();
-            local_start_yesterday = local_start_day - DAYS_IN_SECONDS;
-            local_start_of_week_date = atStartOfWeek(local_now);
-            local_start_of_yesterday_date = new Date(local_start_yesterday * 1000);
-            local_start_today_date = new Date(local_start_day * 1000);
-            local_start_of_week = local_start_of_week_date.toInstant().getEpochSecond();
-            local_end_day = atEndOfDay(new Date(local_now * 1000)).toInstant().getEpochSecond();
-            utc_end_day = atEndOfDay(new Date(now * 1000)).toInstant().getEpochSecond();
-        }
-    }
-
-    public static TimesData getTimesData() {
-        TimesData timesData = new TimesData();
-        return timesData;
     }
     
     public static Date getJavaDateFromSeconds(long seconds) {
@@ -593,16 +488,6 @@ public class SoftwareUtil {
         String currentDay = FileUtilManager.getItem("currentDay", "");
         String day = getTodayInStandardFormat();
         return !day.equals(currentDay);
-    }
-    
-    public static boolean isGitProject(String projectDir) {
-        if (projectDir == null || projectDir.equals("")) {
-            return false;
-        }
-
-        String gitFile = projectDir + File.separator + ".git";
-        File f = new File(gitFile);
-        return f.exists();
     }
 
     public static JsonArray readAsJsonArray(String data) {
@@ -661,34 +546,6 @@ public class SoftwareUtil {
         }
 
         return data;
-    }
-    
-    public static List<String> getResultsForCommandArgs(String[] args, String dir) {
-        List<String> results = new ArrayList<>();
-        try {
-            String result = UtilManager.runCommand(args, dir);
-            if (result == null || result.trim().length() == 0) {
-                return results;
-            }
-            String[] contentList = result.split("\n");
-            results = Arrays.asList(contentList);
-        } catch (Exception e) {
-            if (results == null) {
-                results = new ArrayList<>();
-            }
-        }
-        return results;
-    }
-
-    private static long copyLarge(InputStream input, OutputStream output, byte[] buffer) throws IOException {
-
-        long count = 0;
-        int n;
-        while (EOF != (n = input.read(buffer))) {
-            output.write(buffer, 0, n);
-            count += n;
-        }
-        return count;
     }
     
     public static Project getOpenProject() {

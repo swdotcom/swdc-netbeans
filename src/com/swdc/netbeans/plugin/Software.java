@@ -34,6 +34,7 @@ import swdc.java.ops.event.UserStateChangeObserver;
 import swdc.java.ops.manager.AccountManager;
 import swdc.java.ops.manager.ConfigManager;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.websockets.WebsocketClient;
 
 /**
  *
@@ -112,6 +113,12 @@ public class Software extends ModuleInstall implements Runnable {
         final Runnable checkFocusStateTimer = () -> checkFocusState();
         AsyncManager.getInstance().scheduleService(
                 checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);
+        
+        try {
+            WebsocketClient.connect();
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Error connecting websocket channel");
+        }
     }
      
     private void setupOpsListeners() {
