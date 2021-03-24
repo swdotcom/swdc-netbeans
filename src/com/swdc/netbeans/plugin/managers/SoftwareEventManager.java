@@ -8,7 +8,6 @@ package com.swdc.netbeans.plugin.managers;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.models.KeystrokeCount;
-import com.swdc.netbeans.plugin.models.KeystrokeProject;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +22,8 @@ import org.netbeans.api.project.Project;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
 import org.netbeans.modules.parsing.api.Source;
 import org.openide.filesystems.FileObject;
+import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.KeystrokeProject;
 
 public class SoftwareEventManager {
 
@@ -68,8 +69,8 @@ public class SoftwareEventManager {
         KeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount();
         if (keystrokeCount == null) {
             // create one
-            String projectName = proj != null ? proj.getProjectDirectory().getName() : SoftwareUtil.UNNAMED_PROJECT;
-            String projectDir = proj != null  ? proj.getProjectDirectory().getPath() : SoftwareUtil.UNTITLED_FILE;
+            String projectName = proj != null ? proj.getProjectDirectory().getName() : UtilManager.unnamed_project_name;
+            String projectDir = proj != null  ? proj.getProjectDirectory().getPath() : UtilManager.untitled_file_name;
             // create the keysrtroke count wrapper
             createKeystrokeCountWrapper(projectName, projectDir);
 

@@ -9,10 +9,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.models.ElapsedTime;
 import com.swdc.netbeans.plugin.models.KeystrokeAggregate;
 import java.lang.reflect.Type;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.ElapsedTime;
 import swdc.java.ops.model.SessionSummary;
 
 public class SessionDataManager {
@@ -74,7 +75,7 @@ public class SessionDataManager {
 
         long lastPayloadEnd = FileUtilManager.getNumericItem("latestPayloadTimestampEndUtc", 0);
         if (lastPayloadEnd > 0) {
-            SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
+            UtilManager.TimesData timesData = UtilManager.getTimesData();
             elapsedSeconds = Math.max(60, timesData.now - lastPayloadEnd);
             long sessionThresholdSeconds = 60 * 15;
             if (elapsedSeconds > 0 && elapsedSeconds <= sessionThresholdSeconds) {

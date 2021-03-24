@@ -9,6 +9,7 @@ import com.swdc.netbeans.plugin.SoftwareUtil;
 import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileObject;
 import org.openide.util.Lookup;
+import swdc.java.ops.manager.UtilManager;
 
 /**
  *
@@ -18,7 +19,7 @@ public class NetbeansProject implements Project {
 
     @Override
     public FileObject getProjectDirectory() {
-        return new NetbeansFileObject(SoftwareUtil.UNNAMED_PROJECT, SoftwareUtil.UNTITLED_FILE);
+        return new NetbeansFileObject(UtilManager.unnamed_project_name, UtilManager.untitled_file_name);
     }
 
     @Override

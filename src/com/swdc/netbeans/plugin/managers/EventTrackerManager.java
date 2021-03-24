@@ -8,7 +8,6 @@ package com.swdc.netbeans.plugin.managers;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.models.FileDetails;
 import com.swdc.netbeans.plugin.models.KeystrokeCount;
-import com.swdc.netbeans.plugin.models.ResourceInfo;
 import com.swdc.snowplow.tracker.entities.AuthEntity;
 import com.swdc.snowplow.tracker.entities.FileEntity;
 import com.swdc.snowplow.tracker.entities.PluginEntity;
@@ -30,6 +29,9 @@ import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.project.Project;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.GitUtilManager;
+import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.ResourceInfo;
 
 public class EventTrackerManager {
     public static final Logger log = Logger.getLogger("EventTrackerManager");
@@ -64,7 +66,7 @@ public class EventTrackerManager {
         if (!this.ready) {
             return;
         }
-        ResourceInfo resourceInfo = GitUtil.getResourceInfo(payload.getProject().getDirectory(), false);
+        ResourceInfo resourceInfo = GitUtilManager.getResourceInfo(payload.getProject().getDirectory(), false);
 
         Map<String, KeystrokeCount.FileInfo> fileInfoDataSet = payload.getFileInfos();
         for ( KeystrokeCount.FileInfo fileInfoData : fileInfoDataSet.values() ) {
@@ -148,7 +150,7 @@ public class EventTrackerManager {
         event.pluginEntity = this.getPluginEntity();
         event.projectEntity = this.getProjectEntity();
         event.fileEntity = this.getFileEntityFromFileName(full_file_name);
-        ResourceInfo resourceInfo = GitUtil.getResourceInfo(event.projectEntity.project_directory, false);
+        ResourceInfo resourceInfo = GitUtilManager.getResourceInfo(event.projectEntity.project_directory, false);
         event.repoEntity = this.getRepoEntity(resourceInfo);
 
         // execute async
@@ -205,8 +207,8 @@ public class EventTrackerManager {
             projectEntity.project_directory = activeProject.getProjectDirectory().getPath();
             projectEntity.project_name = activeProject.getProjectDirectory().getName();
         } else {
-            projectEntity.project_directory = SoftwareUtil.UNTITLED_FILE;
-            projectEntity.project_name = SoftwareUtil.UNNAMED_PROJECT;
+            projectEntity.project_directory = UtilManager.untitled_file_name;
+            projectEntity.project_name = UtilManager.unnamed_project_name;
         }
         return projectEntity;
     }

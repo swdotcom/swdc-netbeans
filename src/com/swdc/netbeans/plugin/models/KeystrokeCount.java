@@ -20,6 +20,9 @@ import java.util.logging.Logger;
 import org.netbeans.api.project.Project;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.ElapsedTime;
+import swdc.java.ops.model.KeystrokeProject;
+import swdc.java.ops.model.TimeData;
 
 public class KeystrokeCount {
     
@@ -87,7 +90,7 @@ public class KeystrokeCount {
         this.keystrokes = 0;
         this.source = new HashMap<>();
         if (this.project != null) {
-            this.project = new KeystrokeProject(SoftwareUtil.UNNAMED_PROJECT, SoftwareUtil.UNTITLED_FILE);
+            this.project = new KeystrokeProject(UtilManager.unnamed_project_name, UtilManager.untitled_file_name);
         }
         this.start = 0L;
         this.local_start = 0L;
@@ -180,7 +183,7 @@ public class KeystrokeCount {
             source = new HashMap<>();
         }
 
-        SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
+        UtilManager.TimesData timesData = UtilManager.getTimesData();
 
         // Keystrokes metadata needs to be initialized
         if (this.start == 0) {
@@ -200,7 +203,7 @@ public class KeystrokeCount {
     }
 
     public void endPreviousModifiedFiles(String fileName) {
-        SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
+        UtilManager.TimesData timesData = UtilManager.getTimesData();
         if (this.source != null) {
             for (String key : this.source.keySet()) {
                 FileInfo fileInfo = this.source.get(key);
@@ -231,12 +234,12 @@ public class KeystrokeCount {
                 // check to see if we need to find the main project if we don't have it
                 if (this.project == null || this.project.getDirectory() == null ||
                         this.project.getDirectory().equals("") ||
-                        this.project.getDirectory().equals(SoftwareUtil.UNTITLED_FILE)) {
+                        this.project.getDirectory().equals(UtilManager.untitled_file_name)) {
                     Project p = SoftwareUtil.getFirstActiveProject();
                     if (p != null) {
                         this.project = new KeystrokeProject(p.getProjectDirectory().getName(), p.getProjectDirectory().getPath());
                     } else {
-                        this.project = new KeystrokeProject(SoftwareUtil.UNNAMED_PROJECT, SoftwareUtil.UNTITLED_FILE);
+                        this.project = new KeystrokeProject(UtilManager.unnamed_project_name, UtilManager.untitled_file_name);
                     }
                 }
 
@@ -254,7 +257,7 @@ public class KeystrokeCount {
                 // refresh the code time tree view
                 WallClockManager.getInstance().dispatchStatusViewUpdate(false);
 
-                SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
+                UtilManager.TimesData timesData = UtilManager.getTimesData();
                 // set the latest payload timestamp utc so help with session time calculations
                 FileUtilManager.setNumericItem("latestPayloadTimestampEndUtc", timesData.now);
             }
@@ -305,7 +308,7 @@ public class KeystrokeCount {
         // set the elapsed seconds (last end time to this end time)
         this.elapsed_seconds = elapsedSeconds;
 
-        SoftwareUtil.TimesData timesData = SoftwareUtil.getTimesData();
+        UtilManager.TimesData timesData = UtilManager.getTimesData();
         Map<String, FileInfo> fileInfoDataSet = this.source;
         for ( FileInfo fileInfoData : fileInfoDataSet.values() ) {
             // end the ones that don't have an end time

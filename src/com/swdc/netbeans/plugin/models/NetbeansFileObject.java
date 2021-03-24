@@ -17,6 +17,7 @@ import org.openide.filesystems.FileLock;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileStateInvalidException;
 import org.openide.filesystems.FileSystem;
+import swdc.java.ops.manager.UtilManager;
 
 /**
  *
@@ -24,8 +25,8 @@ import org.openide.filesystems.FileSystem;
  */
 public class NetbeansFileObject extends FileObject {
     
-    private String name = SoftwareUtil.UNNAMED_PROJECT;
-    private String directory = SoftwareUtil.UNTITLED_FILE;
+    private String name = UtilManager.unnamed_project_name;
+    private String directory = UtilManager.untitled_file_name;
     
     public NetbeansFileObject(String name, String directory) {
         this.name = name;

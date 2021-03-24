@@ -84,45 +84,6 @@ public class SoftwareSessionManager {
         CodeTimeTreeTopComponent.openTree();
     }
 
-    protected static void lazilyFetchUserStatus(int retryCount) {
-        UserState loginState = AccountManager.getUserLoginState(false);
-
-        if (!loginState.loggedIn) {
-            if (retryCount > 0) {
-                final int newRetryCount = retryCount - 1;
-
-                final Runnable service = () -> lazilyFetchUserStatus(newRetryCount);
-                AsyncManager.getInstance().executeOnceInSeconds(service, 10);
-            } else {
-                // clear the auth callback state
-                FileUtilManager.setBooleanItem("switching_account", false);
-                FileUtilManager.setAuthCallbackState(null);
-            }
-        } else {
-            // pull in any integrations
-            SlackManager.getSlackAuth(loginState.user);
-            
-            SessionDataManager.clearSessionSummaryData();
-            TimeDataManager.clearTimeDataSummary();
-            
-            // clear the auth callback state
-            FileUtilManager.setBooleanItem("switching_account", false);
-            FileUtilManager.setAuthCallbackState(null);
-            
-            // pull in the users slack integrations
-            SlackManager.getSlackAuth(loginState.user);
-
-            // prompt they've completed the setup
-            String infoMsg = "Successfully logged onto Code Time";
-            Object[] options = { "OK" };
-            JOptionPane.showOptionDialog(null, infoMsg, "Code Time Setup Complete", JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE,
-                    null, options, options[0]);
-            
-            WallClockManager.getInstance().refreshSessionDataAndTree();
-            
-        }
-    }
-
     public static void launchLogin(String loginType, UIInteractionType interactionType, boolean switching_account) {
         try {
             String auth_callback_state = FileUtilManager.getAuthCallbackState(true);
@@ -164,10 +125,6 @@ public class SoftwareSessionManager {
         
             URL launchUrl = new URL(url);
             URLDisplayer.getDefault().showURL(launchUrl);
-            
-            // max of 5.3 minutes
-            final Runnable service = () -> lazilyFetchUserStatus(40);
-            AsyncManager.getInstance().executeOnceInSeconds(service, 8);
 
             UIElementEntity elementEntity = new UIElementEntity();
             elementEntity.element_name = element_name;
