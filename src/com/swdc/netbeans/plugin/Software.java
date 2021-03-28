@@ -68,7 +68,8 @@ public class Software extends ModuleInstall implements Runnable {
                 "codetime",
                 SoftwareUtil.getVersion(),
                 SoftwareUtil.IDE_NAME,
-                SoftwareUtil.IDE_VERSION);
+                SoftwareUtil.IDE_VERSION,
+                () -> WallClockManager.getInstance().refreshSessionDataAndTree());
         
         String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isBlank(jwt)) {
@@ -90,6 +91,12 @@ public class Software extends ModuleInstall implements Runnable {
         // INFO [Software]: Code Time: Loaded vUnknown on platform: null
         LOG.log(Level.INFO, "Code Time: Loaded v{0}", SoftwareUtil.getVersion());
         
+        try {
+            WebsocketClient.connect();
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Error connecting websocket channel");
+        }
+        
         // initialize the tracker
         EventTrackerManager.getInstance().init();
 
@@ -102,8 +109,6 @@ public class Software extends ModuleInstall implements Runnable {
             FileManager.openReadmeFile(UIInteractionType.keyboard);
             FileUtilManager.setItem("netbeans_CtReadme", "true");
         }
-        
-        setupOpsListeners();
 
         // setup the document change event listeners
         setupEventListeners();
@@ -116,25 +121,7 @@ public class Software extends ModuleInstall implements Runnable {
         final Runnable checkFocusStateTimer = () -> checkFocusState();
         AsyncManager.getInstance().scheduleService(
                 checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);
-        
-        try {
-            WebsocketClient.connect();
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Error connecting websocket channel");
-        }
-    }
-     
-    private void setupOpsListeners() {
-        if (userStateChangeObserver == null) {
-            userStateChangeObserver = new UserStateChangeObserver(new UserStateChangeModel(), () -> {
-                WallClockManager.getInstance().refreshSessionDataAndTree();
-            });
-        }
-        if (slackStateChangeObserver == null) {
-            slackStateChangeObserver = new SlackStateChangeObserver(new SlackStateChangeModel(), () -> {
-            	WallClockManager.getInstance().refreshSessionDataAndTree();
-            });
-        }
+       
     }
 
     /**
