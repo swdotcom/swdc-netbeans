@@ -5,6 +5,7 @@
  */
 package com.swdc.netbeans.plugin.models;
 
+//
 public class FileChangeInfo {
     public String name = "";
     public String fsPath = "";
