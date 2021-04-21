@@ -39,7 +39,7 @@ import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.websockets.WebsocketClient;
 
 /**
- *
+ * The module install class
  */
 @OnShowing
 public class Software extends ModuleInstall implements Runnable {

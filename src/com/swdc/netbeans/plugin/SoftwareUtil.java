@@ -547,7 +547,8 @@ public class SoftwareUtil {
 
         return data;
     }
-    
+
+    //
     public static Project getOpenProject() {
         if (lastDocument != null) {
             return getProject(lastDocument);
