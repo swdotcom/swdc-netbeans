@@ -28,7 +28,7 @@ public class KeystrokeCount {
     
     public static final Logger LOG = Logger.getLogger("KeystrokeCount");
 
-    // TODO: backend driven, we should look at getting a list of types at some point
+    // this file will be removed
     private String type = "Events";
 
     // non-hardcoded attributes

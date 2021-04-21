@@ -38,9 +38,7 @@ import swdc.java.ops.manager.ConfigManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.websockets.WebsocketClient;
 
-/**
- *
- */
+
 @OnShowing
 public class Software extends ModuleInstall implements Runnable {
 
@@ -54,10 +52,10 @@ public class Software extends ModuleInstall implements Runnable {
 
     private static int retry_counter = 0;
     private static final long check_online_interval_ms = 1000 * 60 * 10;
-    
+
     private UserStateChangeObserver userStateChangeObserver;
     private SlackStateChangeObserver slackStateChangeObserver;
-
+    
     @Override
     public void run() {
         // initialize the swdc ops config

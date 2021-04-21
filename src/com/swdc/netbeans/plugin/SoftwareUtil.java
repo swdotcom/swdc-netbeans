@@ -74,7 +74,7 @@ import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.UtilManager;
 
 /**
- *
+ * 
  */
 public class SoftwareUtil {
 
@@ -567,7 +567,8 @@ public class SoftwareUtil {
             Exceptions.printStackTrace(ex);
         }
     }
-    
+
+
     public static boolean showingStatusText() {
         return showStatusText;
     }
@@ -586,7 +587,7 @@ public class SoftwareUtil {
         elementEntity.icon_name = interactionType == UIInteractionType.click ? "slash-eye" : null;
         EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
     }
-    
+
     public static String buildQueryString(JsonObject obj) {
         StringBuilder sb = new StringBuilder();
         Iterator<String> keys = obj.keySet().iterator();
