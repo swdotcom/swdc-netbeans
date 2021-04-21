@@ -43,6 +43,7 @@ public class Software extends ModuleInstall implements Runnable {
 
     public static final Logger LOG = Logger.getLogger("Software");
 
+    // ...
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private final int ONE_MINUTE_SECONDS = 60;
