@@ -38,9 +38,6 @@ import swdc.java.ops.manager.ConfigManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.websockets.WebsocketClient;
 
-/**
- *
- */
 @OnShowing
 public class Software extends ModuleInstall implements Runnable {
 
