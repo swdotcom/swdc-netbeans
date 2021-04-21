@@ -5,7 +5,6 @@
  */
 package com.swdc.netbeans.plugin.models;
 
-//
 public class FileChangeInfo {
     public String name = "";
     public String fsPath = "";
@@ -32,6 +31,7 @@ public class FileChangeInfo {
     public long update_count = 0L;
     public long duration_seconds = 0L;
 
+    // aggregate
     public void aggregate(KeystrokeCount.FileInfo fileInfo) {
         this.add += fileInfo.add;
         this.keystrokes += fileInfo.keystrokes;
