@@ -30,8 +30,7 @@ public class FileChangeInfo {
     public long local_end = 0L;
     public long update_count = 0L;
     public long duration_seconds = 0L;
-
-    // aggregate keystrokes....
+    
     public void aggregate(KeystrokeCount.FileInfo fileInfo) {
         this.add += fileInfo.add;
         this.keystrokes += fileInfo.keystrokes;
