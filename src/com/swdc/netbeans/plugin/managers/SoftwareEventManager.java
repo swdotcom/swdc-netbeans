@@ -7,7 +7,6 @@ package com.swdc.netbeans.plugin.managers;
 
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.models.KeystrokeCount;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,12 +17,13 @@ import javax.swing.text.Document;
 import javax.swing.text.Element;
 import org.apache.commons.lang.StringUtils;
 import org.netbeans.api.project.FileOwnerQuery;
-import org.netbeans.api.project.Project;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
 import org.netbeans.modules.parsing.api.Source;
 import org.openide.filesystems.FileObject;
+import swdc.java.ops.manager.EventTrackerManager;
 import swdc.java.ops.manager.UtilManager;
-import swdc.java.ops.model.KeystrokeProject;
+import swdc.java.ops.model.CodeTime;
+import swdc.java.ops.model.Project;
 
 public class SoftwareEventManager {
 
@@ -65,8 +65,8 @@ public class SoftwareEventManager {
         return count;
     }
 
-    private KeystrokeCount getCurrentKeystrokeCount(Project proj) {
-        KeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount();
+    private CodeTime getCurrentKeystrokeCount(org.netbeans.api.project.Project proj) {
+        CodeTime keystrokeCount = keystrokeMgr.getKeystrokeCount();
         if (keystrokeCount == null) {
             // create one
             String projectName = proj != null ? proj.getProjectDirectory().getName() : UtilManager.unnamed_project_name;
@@ -80,7 +80,7 @@ public class SoftwareEventManager {
         return keystrokeCount;
     }
 
-    private void updateFileInfoMetrics(DocumentEvent e, KeystrokeCount.FileInfo fileInfo, KeystrokeCount keystrokeCount) {
+    private void updateFileInfoMetrics(DocumentEvent e, CodeTime.FileInfo fileInfo, CodeTime keystrokeCount) {
         int changeLength = e.getLength();
 
         ElementChange lineChange = e.getChange(lastDocument.getDefaultRootElement());
@@ -179,21 +179,21 @@ public class SoftwareEventManager {
     }
 
     // this is used to close unended files
-    public void handleSelectionChangedEvents(String fileName, Project project) {
-        KeystrokeCount keystrokeCount = getCurrentKeystrokeCount(project);
+    public void handleSelectionChangedEvents(String fileName, org.netbeans.api.project.Project project) {
+        CodeTime keystrokeCount = getCurrentKeystrokeCount(project);
 
-        KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
+        CodeTime.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
         if (fileInfo == null) {
             return;
         }
         keystrokeCount.endPreviousModifiedFiles(fileName);
     }
 
-    public void handleFileOpenedEvents(String fileName, Project project) {
+    public void handleFileOpenedEvents(String fileName, org.netbeans.api.project.Project project) {
         
-        KeystrokeCount keystrokeCount = getCurrentKeystrokeCount(project);
+        CodeTime keystrokeCount = getCurrentKeystrokeCount(project);
 
-        KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
+        CodeTime.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
         if (fileInfo == null) {
             return;
         }
@@ -205,9 +205,9 @@ public class SoftwareEventManager {
         tracker.trackEditorAction("file", "open", fileName);
     }
 
-    public void handleFileClosedEvents(String fileName, Project project) {
-        KeystrokeCount keystrokeCount = getCurrentKeystrokeCount(project);
-        KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
+    public void handleFileClosedEvents(String fileName, org.netbeans.api.project.Project project) {
+        CodeTime keystrokeCount = getCurrentKeystrokeCount(project);
+        CodeTime.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
         if (fileInfo == null) {
             return;
         }
@@ -237,10 +237,10 @@ public class SoftwareEventManager {
         
         String fileName = fileObj.getPath();
         
-        Project p = getProject();
-        KeystrokeCount keystrokeCount = getCurrentKeystrokeCount(p);
+        org.netbeans.api.project.Project p = getProject();
+        CodeTime keystrokeCount = getCurrentKeystrokeCount(p);
         
-        KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
+        CodeTime.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
         if (StringUtils.isBlank(fileInfo.syntax)) {
             // get the grammar
             fileInfo.syntax = DocumentUtilities.getMimeType(lastDocument);
@@ -257,9 +257,9 @@ public class SoftwareEventManager {
         // Create one since it hasn't been created yet
         // and set the start time (in seconds)
         //
-        KeystrokeCount keystrokeCount = new KeystrokeCount();
+        CodeTime keystrokeCount = new CodeTime();
 
-        KeystrokeProject keystrokeProject = new KeystrokeProject(projectName, projectFilepath );
+        Project keystrokeProject = new Project(projectName, projectFilepath);
         keystrokeCount.setProject( keystrokeProject );
 
         //
@@ -291,7 +291,7 @@ public class SoftwareEventManager {
         return fileObject;
     }
 
-    private Project getProject() {
+    private org.netbeans.api.project.Project getProject() {
         if (lastDocument == null)
             return null;
         Source source = Source.create(lastDocument);

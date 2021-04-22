@@ -8,11 +8,11 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.models.FileChangeInfo;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.model.FileChangeInfo;
 
 public class FileAggregateDataManager {
 

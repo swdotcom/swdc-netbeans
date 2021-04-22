@@ -11,11 +11,10 @@ import com.swdc.netbeans.plugin.SoftwareUtil;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import org.netbeans.api.project.Project;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.UtilManager;
 import swdc.java.ops.model.CodeTimeSummary;
-import swdc.java.ops.model.KeystrokeProject;
+import swdc.java.ops.model.Project;
 import swdc.java.ops.model.TimeData;
 
 public class TimeDataManager {
@@ -26,9 +25,9 @@ public class TimeDataManager {
 
     public static void incrementEditorSeconds(long editorSeconds) {
         UtilManager.TimesData timesData = UtilManager.getTimesData();
-        Project activeProject = SoftwareUtil.getFirstActiveProject();
+        org.netbeans.api.project.Project activeProject = SoftwareUtil.getFirstActiveProject();
         if (activeProject != null) {
-            KeystrokeProject project = new KeystrokeProject(activeProject.getProjectDirectory().getName(), activeProject.getProjectDirectory().getPath());
+            Project project = new Project(activeProject.getProjectDirectory().getName(), activeProject.getProjectDirectory().getPath());
             TimeData td = getTodayTimeDataSummary(project);
             if (td != null) {
                 // increment the editor seconds
@@ -44,7 +43,7 @@ public class TimeDataManager {
         }
     }
 
-    public static TimeData incrementSessionAndFileSeconds(KeystrokeProject project, long sessionSeconds) {
+    public static TimeData incrementSessionAndFileSeconds(Project project, long sessionSeconds) {
 
         TimeData td = getTodayTimeDataSummary(project);
         if (td != null) {
@@ -74,10 +73,10 @@ public class TimeDataManager {
         long diffActiveCodeMinutesToAdd = ctSummary.activeCodeTimeMinutes < currentDayMinutes ?
                 currentDayMinutes - ctSummary.activeCodeTimeMinutes : 0;
 
-        Project activeProject = SoftwareUtil.getFirstActiveProject();
+        org.netbeans.api.project.Project activeProject = SoftwareUtil.getFirstActiveProject();
         TimeData td = null;
         if (activeProject != null) {
-            KeystrokeProject project = new KeystrokeProject(
+            Project project = new Project(
                     activeProject.getProjectDirectory().getName(), activeProject.getProjectDirectory().getPath());
             td = getTodayTimeDataSummary(project);
         } else {
@@ -95,7 +94,7 @@ public class TimeDataManager {
         }
 
         if (td == null) {
-            KeystrokeProject project = new KeystrokeProject(
+            Project project = new Project(
                     UtilManager.unnamed_project_name, UtilManager.untitled_file_name);
             td = new TimeData();
             td.setDay(day);
@@ -128,7 +127,7 @@ public class TimeDataManager {
      * Get the current time data info that is saved on disk. If not found create an empty one.
      * @return
      */
-    public static TimeData getTodayTimeDataSummary(KeystrokeProject p) {
+    public static TimeData getTodayTimeDataSummary(Project p) {
         if (p == null || p.getDirectory() == null) {
             return null;
         }

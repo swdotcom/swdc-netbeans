@@ -10,14 +10,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
-import com.swdc.netbeans.plugin.managers.EventTrackerManager;
 import com.swdc.netbeans.plugin.managers.OfflineManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
-import com.swdc.netbeans.plugin.models.FileDetails;
 import com.swdc.netbeans.plugin.models.NetbeansProject;
-import com.swdc.snowplow.tracker.entities.UIElementEntity;
-import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -70,8 +66,12 @@ import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
 import swdc.java.ops.http.ClientResponse;
 import swdc.java.ops.http.OpsHttpClient;
+import swdc.java.ops.manager.EventTrackerManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.FileDetails;
+import swdc.java.ops.snowplow.entities.UIElementEntity;
+import swdc.java.ops.snowplow.events.UIInteractionType;
 
 /**
  *

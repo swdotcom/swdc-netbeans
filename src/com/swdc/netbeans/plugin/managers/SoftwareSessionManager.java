@@ -8,8 +8,6 @@ package com.swdc.netbeans.plugin.managers;
 import com.google.gson.JsonObject;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
-import com.swdc.snowplow.tracker.entities.UIElementEntity;
-import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Set;
@@ -24,11 +22,11 @@ import org.openide.awt.HtmlBrowser;
 import org.openide.awt.HtmlBrowser.URLDisplayer;
 import swdc.java.ops.http.ClientResponse;
 import swdc.java.ops.http.OpsHttpClient;
-import swdc.java.ops.manager.AccountManager;
+import swdc.java.ops.manager.EventTrackerManager;
 import swdc.java.ops.manager.FileUtilManager;
-import swdc.java.ops.manager.SlackManager;
 import swdc.java.ops.manager.UtilManager;
-import swdc.java.ops.model.UserState;
+import swdc.java.ops.snowplow.entities.UIElementEntity;
+import swdc.java.ops.snowplow.events.UIInteractionType;
 
 public class SoftwareSessionManager {
 

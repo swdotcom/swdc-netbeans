@@ -11,8 +11,6 @@ import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.AuthPromptManager;
 import com.swdc.netbeans.plugin.managers.FlowManager;
 import com.swdc.netbeans.plugin.managers.ScreenManager;
-import com.swdc.netbeans.plugin.models.FileChangeInfo;
-import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.Color;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -31,11 +29,13 @@ import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
 import swdc.java.ops.manager.UtilManager;
 import swdc.java.ops.model.ConfigSettings;
+import swdc.java.ops.model.FileChangeInfo;
 import swdc.java.ops.model.Integration;
 import swdc.java.ops.model.MetricLabel;
 import swdc.java.ops.model.SlackDndInfo;
 import swdc.java.ops.model.SlackUserPresence;
 import swdc.java.ops.model.SlackUserProfile;
+import swdc.java.ops.snowplow.events.UIInteractionType;
 
 
 public class TreeHelper {

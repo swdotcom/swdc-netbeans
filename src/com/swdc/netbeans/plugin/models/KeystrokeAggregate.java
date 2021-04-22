@@ -5,6 +5,8 @@
  */
 package com.swdc.netbeans.plugin.models;
 
+import swdc.java.ops.model.CodeTime;
+
 public class KeystrokeAggregate {
     public int add = 0;
     public int close = 0;
@@ -16,7 +18,7 @@ public class KeystrokeAggregate {
     public int keystrokes = 0;
     public String directory = "";
 
-    public void aggregate(KeystrokeCount.FileInfo fileInfo) {
+    public void aggregate(CodeTime.FileInfo fileInfo) {
         this.add += fileInfo.add;
         this.keystrokes += fileInfo.keystrokes;
         this.paste += fileInfo.paste;

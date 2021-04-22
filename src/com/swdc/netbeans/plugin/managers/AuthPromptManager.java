@@ -5,12 +5,12 @@
  */
 package com.swdc.netbeans.plugin.managers;
 
-import com.swdc.snowplow.tracker.events.UIInteractionType;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import org.apache.commons.lang.StringUtils;
 import org.openide.util.ImageUtilities;
+import swdc.java.ops.snowplow.events.UIInteractionType;
 
 /**
  *

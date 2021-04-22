@@ -6,14 +6,13 @@ package com.swdc.netbeans.plugin;
 
 import com.swdc.netbeans.plugin.listeners.DocumentChangeEventListener;
 import com.swdc.netbeans.plugin.managers.AsyncManager;
-import com.swdc.netbeans.plugin.managers.EventTrackerManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
+import com.swdc.netbeans.plugin.managers.NetbeansProject;
 import com.swdc.netbeans.plugin.managers.SoftwareEventManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import com.swdc.netbeans.plugin.managers.WallClockManager;
-import com.swdc.netbeans.plugin.models.KeystrokeCount;
-import com.swdc.snowplow.tracker.events.UIInteractionType;
+import com.swdc.netbeans.plugin.models.KeystrokeCountUtil;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.concurrent.Executors;
@@ -29,13 +28,14 @@ import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;
 import org.openide.windows.WindowManager;
-import swdc.java.ops.event.SlackStateChangeModel;
 import swdc.java.ops.event.SlackStateChangeObserver;
-import swdc.java.ops.event.UserStateChangeModel;
 import swdc.java.ops.event.UserStateChangeObserver;
 import swdc.java.ops.manager.AccountManager;
 import swdc.java.ops.manager.ConfigManager;
+import swdc.java.ops.manager.EventTrackerManager;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.model.CodeTime;
+import swdc.java.ops.snowplow.events.UIInteractionType;
 import swdc.java.ops.websockets.WebsocketClient;
 
 /**
@@ -69,7 +69,8 @@ public class Software extends ModuleInstall implements Runnable {
                 SoftwareUtil.getVersion(),
                 SoftwareUtil.IDE_NAME,
                 SoftwareUtil.IDE_VERSION,
-                () -> WallClockManager.getInstance().refreshSessionDataAndTree());
+                () -> WallClockManager.getInstance().refreshSessionDataAndTree(),
+                ConfigManager.IdeType.netbeans);
         
         String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isBlank(jwt)) {
@@ -98,7 +99,7 @@ public class Software extends ModuleInstall implements Runnable {
         }
         
         // initialize the tracker
-        EventTrackerManager.getInstance().init();
+        EventTrackerManager.getInstance().init(new NetbeansProject());
 
         // send the activate event
         EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
@@ -156,11 +157,10 @@ public class Software extends ModuleInstall implements Runnable {
             boolean focusStateChanged = isActive != SoftwareEventManager.isCurrentlyActive;
             if (focusStateChanged) {
                 if (!isActive) {
-                    KeystrokeCount keystrokeCount = KeystrokeManager.getInstance().getKeystrokeCount();
-                    if (keystrokeCount != null) {
+                    CodeTime keystrokeCount = KeystrokeManager.getInstance().getKeystrokeCount();
+                    if (keystrokeCount != null && keystrokeCount.hasData()) {
                         // set the flag the "unfocusStateChangeHandler" will look for in order to process payloads early
-                        keystrokeCount.triggered = false;
-                        keystrokeCount.processKeystrokes();
+                        KeystrokeCountUtil.preProcessKeystrokeData(keystrokeCount, check_online_interval_ms, check_online_interval_ms);
                     }
                     EventTrackerManager.getInstance().trackEditorAction("editor", "unfocus");
                 } else {
