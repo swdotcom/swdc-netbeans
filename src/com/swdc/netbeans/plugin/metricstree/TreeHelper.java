@@ -145,7 +145,7 @@ public class TreeHelper {
     }
     
     public static MetricTreeNode buildSummaryButton() {
-        return new MetricTreeNode("Dashboard", "dashboard.png", VIEW_SUMMARY_ID);
+        return new MetricTreeNode("View dashboard", "dashboard.png", VIEW_SUMMARY_ID);
     }
     
     public static MetricTreeNode buildViewWebDashboardButton() {

@@ -277,7 +277,7 @@ public class SoftwareUtil {
     
     public static void launchCodeTimeMetricsDashboard() {
         SwingUtilities.invokeLater(() -> {
-            UtilManager.launchUrl(ConfigManager.app_url + "/dashboard");
+            UtilManager.launchUrl(ConfigManager.app_url + "/dashboard/code_time");
         });
     }
     
