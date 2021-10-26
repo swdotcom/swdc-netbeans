@@ -84,51 +84,51 @@ public class SoftwareUtil {
 
     private final static Object UTIL_LOCK = new Object();
     private static SoftwareUtil instance = null;
-    
+
     public static final Gson gson = new GsonBuilder().create();
 
     public final static String API_ENDPOINT = "https://api.software.com";
     public final static String APP_URL = "https://app.software.com";
     public final static String SOFTWARE_DIR = ".software";
-    
+
     public static String IDE_NAME = "netbeans";
     public static String IDE_VERSION = "";
-    
+
     private static int DASHBOARD_LABEL_WIDTH = 25;
     private static int DASHBOARD_VALUE_WIDTH = 25;
     private static int MARKER_WIDTH = 4;
-    
+
     private static String SERVICE_NOT_AVAIL =
             "Our service is temporarily unavailable.\n\nPlease try again later.\n";
-    
+
     private static int lastDayOfMonth = 0;
-    
+
     // netbeans plugin id
     public final static int PLUGIN_ID = 11;
 
     public static final AtomicBoolean SEND_TELEMTRY = new AtomicBoolean(true);
 
     public final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
-    
+
     private static final long DAYS_IN_SECONDS = 60 * 60 * 24;
-    
+
     private final static int EOF = -1;
-    
+
     private static String workspace_name = null;
-    
+
     private final static Map<String, String> sessionMap = new HashMap<String, String>();
-    
+
     public static boolean TELEMETRY_ON = true;
-    
+
     private static boolean appAvailable = true;
     private static boolean loggedInCacheState = false;
     private static long lastAppAvailableCheck = 0;
-    
+
     private static Document lastDocument = null;
-   
+
     private static String regex = "^\\S+@\\S+\\.\\S+$";
     private static Pattern pattern = Pattern.compile(regex);
-    
+
     static {
         try {
             IDE_VERSION = System.getProperty("netbeans.buildnumber");
@@ -136,23 +136,23 @@ public class SoftwareUtil {
             IDE_VERSION = "unknown";
         }
     }
-    
+
     public static void updateServerStatus(boolean isOnlineStatus) {
         appAvailable = isOnlineStatus;
     }
-    
+
     public static void updateLastDocument(Document doc) {
         lastDocument = doc;
     }
-    
+
     public static boolean isAppAvailable() {
         return appAvailable;
     }
-    
+
     public static class UserStatus {
         public boolean loggedIn;
     }
-    
+
     public static String getWorkspaceName() {
         if (workspace_name == null) {
             workspace_name = generateToken();
@@ -171,7 +171,7 @@ public class SoftwareUtil {
         }
         return "2.3.0";
     }
-    
+
     public static boolean softwareSessionFileExists() {
         // don't auto create the file
         String file = FileUtilManager.getSoftwareSessionFile(false);
@@ -179,13 +179,13 @@ public class SoftwareUtil {
         File f = new File(file);
         return f.exists();
     }
-    
+
     public static boolean hasJwt() {
-        
+
         String jwt = FileUtilManager.getItem("jwt");
         return (jwt != null && !jwt.equals(""));
     }
-    
+
     public static String getReadmeFile() {
         String file = FileUtilManager.getSoftwareDir(true);
         if (UtilManager.isWindows()) {
@@ -196,7 +196,7 @@ public class SoftwareUtil {
         return file;
     }
 
-    
+
     public static boolean isServerOnline() {
         long nowInSec = Math.round(System.currentTimeMillis() / 1000);
         boolean pastThreshold = (nowInSec - lastAppAvailableCheck > 120);
@@ -209,7 +209,7 @@ public class SoftwareUtil {
     }
 
     public static void showLoginPrompt() {
-        
+
         boolean isOnline = isServerOnline();
 
         if (isOnline) {
@@ -225,7 +225,7 @@ public class SoftwareUtil {
             }
         }
     }
-    
+
     public static void showAuthSelectPrompt(boolean isSignup) {
         String promptText = isSignup ? "Sign up" : "Log in";
         String[] options = new String[]{ "Google", "GitHub", "Email" };
@@ -245,7 +245,7 @@ public class SoftwareUtil {
         String uuid = UUID.randomUUID().toString();
         return uuid.replace("-", "");
     }
-    
+
     public static void launchSoftwareTopForty() {
         String url = "https://api.software.com/music/top40";
         try {
@@ -255,37 +255,18 @@ public class SoftwareUtil {
             LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, e.getMessage()});
         }
     }
-    
-    public static void fetchCodeTimeMetricsDashboard(JsonObject summary) {
-        OfflineManager offlineMgr = OfflineManager.getInstance();
-        String dashboardFile = FileUtilManager.getCodeTimeDashboardFile();
 
-        String api = "/dashboard?linux=" + UtilManager.isLinux() + "&showToday=true";
-        ClientResponse resp = OpsHttpClient.softwareGet(api, FileUtilManager.getItem("jwt"));
-            
-        String dashboardContent = resp.getJsonStr();
-
-        // append the summary content
-        String summaryInfoContent = offlineMgr.getSessionSummaryInfoFileContent();
-        if (summaryInfoContent != null) {
-            dashboardContent += summaryInfoContent;
-        }
-
-        // write the dashboard content to the dashboard file
-        offlineMgr.saveFileContent(dashboardContent, dashboardFile);
-    }
-    
     public static void launchCodeTimeMetricsDashboard() {
         SwingUtilities.invokeLater(() -> {
-            UtilManager.launchUrl(ConfigManager.app_url + "/dashboard/code_time");
+            UtilManager.launchUrl(ConfigManager.app_url + "/dashboard/code_time?view=summary");
         });
     }
-    
+
     public static Project getProjectForPath(String fullFileName) {
         File f = new File(fullFileName);
         return FileOwnerQuery.getOwner(f.toURI());
     }
-    
+
     public static Project getProject(Document d) {
         Source source = Source.create(d);
         if (source == null) {
@@ -297,14 +278,14 @@ public class SoftwareUtil {
         }
         return FileOwnerQuery.getOwner(fileObject);
     }
-    
+
     public static Project getFirstActiveProject() {
         Set<Project> modifiedProjects = ProjectManager.getDefault().getModifiedProjects();
         if (modifiedProjects.size() > 0) {
             // return the 1st one
             return modifiedProjects.iterator().next();
         }
-        
+
         JTextComponent jtc = EditorRegistry.lastFocusedComponent();
         if (jtc != null) {
             Document d = jtc.getDocument();
@@ -312,12 +293,12 @@ public class SoftwareUtil {
         }
         return new NetbeansProject();
     }
-    
+
     public static FileDetails getFileDetails(String fullFileName) {
         FileDetails fileDetails = new FileDetails();
         if (StringUtils.isNotBlank(fullFileName)) {
             fileDetails.full_file_name = fullFileName;
-            
+
             File f = new File(fullFileName);
 
             if (f.exists()) {
@@ -326,7 +307,7 @@ public class SoftwareUtil {
                     fileDetails.project_directory = p.getProjectDirectory().getPath();
                     fileDetails.project_name = p.getProjectDirectory().getName();
                 }
-            
+
                 fileDetails.character_count = f.length();
                 fileDetails.file_name = f.getName();
                 if (StringUtils.isNotBlank(fileDetails.project_directory) && fullFileName.indexOf(fileDetails.project_directory) != -1) {
@@ -341,9 +322,9 @@ public class SoftwareUtil {
                     fileDetails.project_file_name = fullFileName;
                 }
                 fileDetails.line_count = getLineCount(fullFileName);
-                
+
                 fileDetails.syntax = (fullFileName.contains(".")) ? fullFileName.substring(fullFileName.lastIndexOf(".") + 1) : "";
- 
+
             }
         }
 
@@ -368,7 +349,7 @@ public class SoftwareUtil {
             }
         }
     }
-    
+
     public static Date atStartOfWeek(long local_now) {
         // find out how many days to go back
         int daysBack = 0;
@@ -388,7 +369,7 @@ public class SoftwareUtil {
 
         return new Date(startOfWeekInSec * 1000);
     }
-    
+
     public static Date atStartOfDay(Date date) {
         LocalDateTime localDateTime = dateToLocalDateTime(date);
         LocalDateTime startOfDay = localDateTime.with(LocalTime.MIN);
@@ -408,13 +389,13 @@ public class SoftwareUtil {
     private static Date localDateTimeToDate(LocalDateTime localDateTime) {
         return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
-    
+
     public static Date getJavaDateFromSeconds(long seconds) {
         Instant instant = Instant.ofEpochSecond( seconds );
         Date date = Date.from( instant );
         return date;
     }
-    
+
     public static String getTimeOfDay(Date d) {
         return new SimpleDateFormat("h:mm a").format(d);
     }
@@ -488,17 +469,17 @@ public class SoftwareUtil {
 
         return data;
     }
-    
+
     public static Project getOpenProject() {
         if (lastDocument != null) {
             return getProject(lastDocument);
         }
         return getFirstActiveProject();
     }
-    
+
     public static void launchFile(String fsPath) {
         File f = new File(fsPath);
-        
+
         try {
             // open the file in the editor
             FileObject fo = FileUtil.createData(f);
@@ -508,7 +489,7 @@ public class SoftwareUtil {
             Exceptions.printStackTrace(ex);
         }
     }
-    
+
     public static String buildQueryString(JsonObject obj) {
         StringBuilder sb = new StringBuilder();
         Iterator<String> keys = obj.keySet().iterator();
