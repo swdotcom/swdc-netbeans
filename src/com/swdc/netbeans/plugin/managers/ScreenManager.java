@@ -7,8 +7,6 @@ package com.swdc.netbeans.plugin.managers;
 
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import java.awt.Frame;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowStateListener;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.openide.windows.WindowManager;
@@ -30,16 +28,6 @@ public class ScreenManager {
     private static Frame getIdeWindow() {
         if (ideFrame == null) {
             ideFrame = WindowManager.getDefault().getMainWindow();
-            if (ideFrame != null) {
-                ideFrame.addWindowStateListener(new WindowStateListener() {
-                    @Override
-                    public void windowStateChanged(WindowEvent e) {
-                        SwingUtilities.invokeLater(() -> {
-                            FlowManager.checkToDisableFlow();
-                        });
-                    }
-                });
-            }
         }
         
         return ideFrame;

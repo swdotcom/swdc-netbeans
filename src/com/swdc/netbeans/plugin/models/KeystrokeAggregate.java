@@ -7,6 +7,7 @@ package com.swdc.netbeans.plugin.models;
 
 import swdc.java.ops.model.CodeTime;
 
+//
 public class KeystrokeAggregate {
     public int add = 0;
     public int close = 0;

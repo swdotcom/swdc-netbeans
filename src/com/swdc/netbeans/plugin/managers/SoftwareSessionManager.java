@@ -6,6 +6,7 @@
 package com.swdc.netbeans.plugin.managers;
 
 import com.google.gson.JsonObject;
+import static com.swdc.netbeans.plugin.Software.LOG;
 import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import java.net.MalformedURLException;
@@ -39,6 +40,17 @@ public class SoftwareSessionManager {
             instance = new SoftwareSessionManager();
         }
         return instance;
+    }
+    
+    public void refreshSessionDataAndTree() {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                SessionDataManager.updateSessionSummaryFromServer();
+                CodeTimeTreeTopComponent.refresh();
+            } catch (Exception ex) {
+                LOG.log(Level.WARNING, "Refresh session data error: {0}", ex.getMessage());
+            }
+        });
     }
 
     public static String getReadmeFile() {
@@ -95,7 +107,7 @@ public class SoftwareSessionManager {
             obj.addProperty("pluginVersion", SoftwareUtil.getVersion());
             obj.addProperty("plugin_id", SoftwareUtil.PLUGIN_ID);
             obj.addProperty("auth_callback_state", auth_callback_state);
-            obj.addProperty("redirect", SoftwareUtil.LAUNCH_URL);
+            obj.addProperty("redirect", SoftwareUtil.APP_URL);
 
             String url = "";
             String element_name = "ct_sign_up_google_btn";
@@ -107,7 +119,7 @@ public class SoftwareSessionManager {
                 cta_text = "Sign up with email";
                 icon_name = "envelope";
                 icon_color = "gray";
-                url = SoftwareUtil.LAUNCH_URL + "/email-signup";
+                url = SoftwareUtil.APP_URL + "/email-signup";
             } else if (loginType.equals("google")) {
                 url = SoftwareUtil.API_ENDPOINT + "/auth/google";
             } else if (loginType.equals("github")) {
@@ -152,7 +164,7 @@ public class SoftwareSessionManager {
             });
             return;
         }
-        String url = SoftwareUtil.LAUNCH_URL + "/login";
+        String url = SoftwareUtil.APP_URL + "/login";
         try {
             URL launchUrl = new URL(url);
             HtmlBrowser.URLDisplayer.getDefault().showURL(launchUrl);

@@ -29,14 +29,12 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,6 +44,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import org.apache.commons.lang.StringUtils;
@@ -66,6 +65,7 @@ import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
 import swdc.java.ops.http.ClientResponse;
 import swdc.java.ops.http.OpsHttpClient;
+import swdc.java.ops.manager.ConfigManager;
 import swdc.java.ops.manager.EventTrackerManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.UtilManager;
@@ -87,10 +87,10 @@ public class SoftwareUtil {
     
     public static final Gson gson = new GsonBuilder().create();
 
-    // set the api endpoint to use
     public final static String API_ENDPOINT = "https://api.software.com";
-    // set the launch url to use
-    public final static String LAUNCH_URL = "https://app.software.com";
+    public final static String APP_URL = "https://app.software.com";
+    public final static String SOFTWARE_DIR = ".software";
+    
     public static String IDE_NAME = "netbeans";
     public static String IDE_VERSION = "";
     
@@ -123,8 +123,6 @@ public class SoftwareUtil {
     private static boolean appAvailable = true;
     private static boolean loggedInCacheState = false;
     private static long lastAppAvailableCheck = 0;
-    
-    private static boolean showStatusText = true;
     
     private static Document lastDocument = null;
    
@@ -171,7 +169,7 @@ public class SoftwareUtil {
                 }
             }
         }
-        return "Unknown";
+        return "2.3.0";
     }
     
     public static boolean softwareSessionFileExists() {
@@ -278,66 +276,9 @@ public class SoftwareUtil {
     }
     
     public static void launchCodeTimeMetricsDashboard() {
-        JsonObject sessionSummary = OfflineManager.getInstance().getSessionSummaryFileAsJson();
-        fetchCodeTimeMetricsDashboard(sessionSummary);
-
-        String codeTimeFile = FileUtilManager.getCodeTimeDashboardFile();
-        File f = new File(codeTimeFile);
-        
-        try {
-            // open the file in the editor
-            FileObject fo = FileUtil.createData(f);
-            DataObject d = DataObject.find(fo);
-            NbDocument.openDocument(d, PLUGIN_ID, Line.ShowOpenType.OPEN, Line.ShowVisibilityType.FOCUS);
-        } catch (IOException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-        
-        // delete the legacy file
-        String legacyFileName = codeTimeFile.substring(0, codeTimeFile.lastIndexOf("."));
-        File legacyFile = new File(legacyFileName);
-        if (legacyFile.exists()) {
-            legacyFile.delete();
-        }
-    }
-    
-    public static String getDashboardRow(String label, String value) {
-        String content = getDashboardLabel(label) + " : " + getDashboardValue(value) + "\n";
-        return content;
-    }
-
-    public static String getSectionHeader(String label) {
-        String content = label + "\n";
-        // add 3 to account for the " : " between the columns
-        int dashLen = DASHBOARD_LABEL_WIDTH + DASHBOARD_VALUE_WIDTH + 15;
-        for (int i = 0; i < dashLen; i++) {
-            content += "-";
-        }
-        content += "\n";
-        return content;
-    }
-
-    public static String getDashboardLabel(String label) {
-        return getDashboardDataDisplay(DASHBOARD_LABEL_WIDTH, label);
-    }
-
-    public static String getDashboardValue(String value) {
-        String valueContent = getDashboardDataDisplay(DASHBOARD_VALUE_WIDTH, value);
-        String paddedContent = "";
-        for (int i = 0; i < 11; i++) {
-            paddedContent += " ";
-        }
-        paddedContent += valueContent;
-        return paddedContent;
-    }
-
-    public static String getDashboardDataDisplay(int widthLen, String data) {
-        int len = widthLen - data.length();
-        String content = "";
-        for (int i = 0; i < len; i++) {
-            content += " ";
-        }
-        return content + "" + data;
+        SwingUtilities.invokeLater(() -> {
+            UtilManager.launchUrl(ConfigManager.app_url + "/dashboard");
+        });
     }
     
     public static Project getProjectForPath(String fullFileName) {
@@ -566,25 +507,6 @@ public class SoftwareUtil {
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
-    }
-    
-    public static boolean showingStatusText() {
-        return showStatusText;
-    }
-    
-    public static void toggleStatusBar(UIInteractionType interactionType) {
-        String cta_text = !showStatusText ? "Show status bar metrics" : "Hide status bar metrics";
-        showStatusText = !showStatusText;
-
-        StatusBarManager.updateStatusBar();
-
-        UIElementEntity elementEntity = new UIElementEntity();
-        elementEntity.element_name = interactionType == UIInteractionType.click ? "ct_toggle_status_bar_metrics_btn" : "ct_toggle_status_bar_metrics_cmd";
-        elementEntity.element_location = interactionType == UIInteractionType.click ? "ct_menu_tree" : "ct_command_palette";
-        elementEntity.color = interactionType == UIInteractionType.click ? "blue" : null;
-        elementEntity.cta_text = cta_text;
-        elementEntity.icon_name = interactionType == UIInteractionType.click ? "slash-eye" : null;
-        EventTrackerManager.getInstance().trackUIInteraction(interactionType, elementEntity);
     }
     
     public static String buildQueryString(JsonObject obj) {

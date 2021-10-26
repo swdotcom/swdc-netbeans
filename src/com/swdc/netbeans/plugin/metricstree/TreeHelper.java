@@ -6,11 +6,10 @@
 package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.AuthPromptManager;
 import com.swdc.netbeans.plugin.managers.FlowManager;
-import com.swdc.netbeans.plugin.managers.ScreenManager;
+import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import java.awt.Color;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -23,18 +22,13 @@ import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 import org.apache.commons.lang.StringUtils;
 import org.openide.awt.HtmlBrowser;
-import swdc.java.ops.manager.AppleScriptManager;
 import swdc.java.ops.manager.ConfigManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
 import swdc.java.ops.manager.UtilManager;
 import swdc.java.ops.model.ConfigSettings;
 import swdc.java.ops.model.FileChangeInfo;
-import swdc.java.ops.model.Integration;
-import swdc.java.ops.model.MetricLabel;
-import swdc.java.ops.model.SlackDndInfo;
-import swdc.java.ops.model.SlackUserPresence;
-import swdc.java.ops.model.SlackUserProfile;
+import swdc.java.ops.model.IntegrationConnection;
 import swdc.java.ops.snowplow.events.UIInteractionType;
 
 
@@ -49,8 +43,10 @@ public class TreeHelper {
     public static final String EMAIL_SIGNUP_ID = "email";
     public static final String LOGGED_IN_ID = "logged_in";
     public static final String LEARN_MORE_ID = "learn_more";
+    public static final String CONFIGURE_SETTINGS_ID = "configure_settings";
     public static final String SEND_FEEDBACK_ID = "send_feedback";
     public static final String ADVANCED_METRICS_ID = "advanced_metrics";
+    public static final String PROJECT_REPORTS_ID = "project_reports";
     public static final String TOGGLE_METRICS_ID = "toggle_metrics";
     public static final String VIEW_SUMMARY_ID = "view_summary";
     public static final String CODETIME_PARENT_ID = "codetime_parent";
@@ -133,16 +129,17 @@ public class TreeHelper {
     public static List<MetricTreeNode> buildMenuNodes() {
         List<MetricTreeNode> list = new ArrayList<>();
         
+        list.add(new MetricTreeNode("Configure settings", "profile.png", CONFIGURE_SETTINGS_ID));
+        
         String toggleText = "Hide status bar metrics";
-        if (!SoftwareUtil.showingStatusText()) {
+        if (!StatusBarManager.isShowingStatusBarMetrics()) {
             toggleText = "Show status bar metrics";
         }
         
-        list.add(new MetricTreeNode("Learn more", "readme.png", LEARN_MORE_ID));
-        list.add(new MetricTreeNode("Submit feedback", "message.png", SEND_FEEDBACK_ID));
         list.add(new MetricTreeNode(toggleText, "visible.png", TOGGLE_METRICS_ID));
         
-        list.add(buildSlackWorkspacesNode());
+        list.add(new MetricTreeNode("Learn more", "readme.png", LEARN_MORE_ID));
+        list.add(new MetricTreeNode("Submit an issue", "message.png", SEND_FEEDBACK_ID));
         
         return list;
     }
@@ -155,49 +152,8 @@ public class TreeHelper {
         return new MetricTreeNode("More data at Software.com", "paw.png", ADVANCED_METRICS_ID);
     }
     
-    public static List<MetricTreeNode> buildTreeFlowNodes() {
-        List<MetricTreeNode> list = new ArrayList<>();
-
-        list.add(getFlowModeNode());
-
-        list.add(getFlowModeSettingNodes());
-
-        MetricTreeNode automationsFolder = new MetricTreeNode("Automations", null, AUTOMATIONS_NODE_ID);
-        list.add(automationsFolder);
-
-        // full screen toggle node
-        automationsFolder.add(getToggleFullScreenNode());
-
-        // change slack status
-        automationsFolder.add(getSetSlackStatusNode());
-
-        SlackDndInfo slackDndInfo = SlackManager.getSlackDnDInfo();
-
-        // snooze node
-        if (slackDndInfo.snooze_enabled) {
-            automationsFolder.add(getUnPausenotificationsNode(slackDndInfo));
-        } else {
-            automationsFolder.add(getPauseNotificationsNode());
-        }
-        // presence toggle
-        SlackUserPresence slackUserPresence = SlackManager.getSlackUserPresence();
-        if (slackUserPresence != null && slackUserPresence.presence.equals("active")) {
-            automationsFolder.add(getSetAwayPresenceNode());
-        } else {
-            automationsFolder.add(getSetActivePresenceNode());
-        }
-
-        if (UtilManager.isMac()) {
-            if (AppleScriptManager.isDarkMode()) {
-                automationsFolder.add(getSwitchOffDarkModeNode());
-            } else {
-                automationsFolder.add(getSwitchOnDarkModeNode());
-            }
-
-            automationsFolder.add(new MetricTreeNode("Toggle dock position", "position.png", TOGGLE_DOCK_POSITION_ID));
-        }
-
-        return list;
+    public static MetricTreeNode buildProjectReportsButton() {
+        return new MetricTreeNode("Project reports", "files.png", PROJECT_REPORTS_ID);
     }
     
     public static MetricTreeNode getFlowModeSettingNodes() {
@@ -226,7 +182,7 @@ public class TreeHelper {
         String label = "Enable flow mode";
         String icon = "dot-outlined.png";
         String id = ENABLE_FLOW_MODE_ID;
-        if (FlowManager.isInFlowMode()) {
+        if (FlowManager.isFlowModeEnabled()) {
             label = "Pause Flow Mode";
             icon = "dot.png";
             id = PAUSE_FLOW_MODE_ID;
@@ -234,54 +190,11 @@ public class TreeHelper {
         return new MetricTreeNode(label, icon, id);
     }
     
-    public static MetricTreeNode getToggleFullScreenNode() {
-        String label = "Enter full screen";
-        String icon = "expand.png";
-        String id = ENTER_FULL_SCREEN_MODE_ID;
-        if (ScreenManager.isFullScreen()) {
-            label = "Exit full screen";
-            icon = "compress.png";
-            id = EXIT_FULL_SCREEN_MODE_ID;
-        }
-        return new MetricTreeNode(label, icon, id);
-    }
-    
-    public static MetricTreeNode getSetSlackStatusNode() {
-        SlackUserProfile userProfile = SlackManager.getSlackStatus();
-        String status = (userProfile != null && StringUtils.isNotBlank(userProfile.status_text)) ? " (" + userProfile.status_text + ")" : "";
-        return new MetricTreeNode("Update profile status" + status, "profile.png", SET_SLACK_STATUS_ID);
-    }
-    
-    public static MetricTreeNode getSwitchOffDarkModeNode() {
-        return new MetricTreeNode("Turn off dark mode", "adjust.png", SWITCH_OFF_DARK_MODE_ID);
-    }
-    
-    public static MetricTreeNode getSwitchOnDarkModeNode() {
-        return new MetricTreeNode("Turn on dark mode", "adjust.png", SWITCH_ON_DARK_MODE_ID);
-    }
-    
-    public static MetricTreeNode getPauseNotificationsNode() {
-        return new MetricTreeNode("Pause notifications", "notifications-off.png", SWITCH_OFF_DND_ID);
-    }
-    
-    public static MetricTreeNode getUnPausenotificationsNode(SlackDndInfo slackDndInfo) {
-        String endTimeOfDay = SoftwareUtil.getTimeOfDay(SoftwareUtil.getJavaDateFromSeconds(slackDndInfo.snooze_endtime));
-        return new MetricTreeNode("Turn on notifications (ends at " + endTimeOfDay + ")", "notifications-on.png", SWITCH_ON_DND_ID);
-    }
-    
-    public static MetricTreeNode getSetAwayPresenceNode() {
-        return new MetricTreeNode("Set presence to away", "presence.png", SET_PRESENCE_AWAY_ID);
-    }
-    
-    public static MetricTreeNode getSetActivePresenceNode() {
-        return new MetricTreeNode("Set presence to active", "presence.png", SET_PRESENCE_ACTIVE_ID);
-    }
-    
     public static MetricTreeNode buildSlackWorkspacesNode() {
         MetricTreeNode node = new MetricTreeNode("Slack workspaces", null, SLACK_WORKSPACES_NODE_ID);
-        List<Integration> workspaces = SlackManager.getSlackWorkspaces();
+        List<IntegrationConnection> workspaces = SlackManager.getSlackWorkspaces();
         workspaces.forEach(workspace -> {
-            node.add(new MetricTreeNode(workspace.team_domain, "slack.png", workspace.authId));
+            node.add(new MetricTreeNode(workspace.team_domain, "slack.png", workspace.auth_id));
         });
         // add the add new workspace button
         node.add(getAddSlackWorkspaceNode());
@@ -290,32 +203,6 @@ public class TreeHelper {
     
     public static MetricTreeNode getAddSlackWorkspaceNode() {
         return new MetricTreeNode("Add workspace", "add.png", ADD_WORKSPACE_ID);
-    }
-    
-    public static MetricTreeNode buildTodayVsAverageNode() {
-        String refClass = FileUtilManager.getItem("reference-class", "user");
-        String labelExt = refClass.equals("user") ? " your daily average" : " the global daily average";
-        return new MetricTreeNode("Today vs." + labelExt, "today.png", TODAY_VS_AVG_ID);
-    }
-    
-    public static MetricTreeNode buildActiveCodeTimeTree(MetricLabel mLabels) {
-        return new MetricTreeNode(mLabels.activeCodeTime, mLabels.activeCodeTimeAvgIcon, ACTIVE_CODETIME_TODAY_ID);
-    }
-    
-    public static MetricTreeNode buildCodeTimeTree(MetricLabel mLabels) {
-        return new MetricTreeNode(mLabels.codeTime, mLabels.codeTimeIcon, CODETIME_TODAY_ID);
-    }
-    
-    public static MetricTreeNode buildLinesAddedTree(MetricLabel mLabels) {
-        return new MetricTreeNode(mLabels.linesAdded, mLabels.linesAddedAvgIcon, LINES_ADDED_TODAY_ID);
-    }
-
-    public static MetricTreeNode buildLinesRemovedTree(MetricLabel mLabels) {
-        return new MetricTreeNode(mLabels.linesRemoved, mLabels.linesRemovedAvgIcon, LINES_DELETED_TODAY_ID);
-    }
-
-    public static MetricTreeNode buildKeystrokesTree(MetricLabel mLabels) {
-        return new MetricTreeNode(mLabels.keystrokes, mLabels.keystrokesAvgIcon, KEYSTROKES_TODAY_ID);
     }
     
 
@@ -362,17 +249,23 @@ public class TreeHelper {
                 SoftwareUtil.launchCodeTimeMetricsDashboard();
                 break;
             case TOGGLE_METRICS_ID:
-                SoftwareUtil.toggleStatusBar(UIInteractionType.click);
-                CodeTimeTreeTopComponent.updateMetrics(null, null);
+                SwingUtilities.invokeLater(() -> {
+                    StatusBarManager.toggleStatusBarText();
+                    CodeTimeTreeTopComponent.refresh();
+                });
                 break;
             case ADVANCED_METRICS_ID:
                 SoftwareSessionManager.launchWebDashboard(UIInteractionType.click);
                 break;
             case SEND_FEEDBACK_ID:
-                SoftwareSessionManager.submitFeedback(UIInteractionType.click);
+                SwingUtilities.invokeLater(() -> {
+                    UtilManager.launchUrl("https://github.com/swdotcom/swdc-netbeans/issues");
+                });
                 break;
             case LEARN_MORE_ID:
-                FileManager.openReadmeFile(UIInteractionType.click);
+                SwingUtilities.invokeLater(() -> {
+                    UtilManager.launchUrl("https://github.com/swdotcom/swdc-netbeans");
+                });
                 break;
             case CONNECT_SLACK_ID:
             case ADD_WORKSPACE_ID:
@@ -380,86 +273,21 @@ public class TreeHelper {
                     SlackManager.connectSlackWorkspace(() -> {CodeTimeTreeTopComponent.refresh();});
                 });
                 break;
-            case SWITCH_OFF_DARK_MODE_ID:
-            case SWITCH_ON_DARK_MODE_ID:
-                SwingUtilities.invokeLater(() -> {
-                    AppleScriptManager.toggleDarkMode(() -> {CodeTimeTreeTopComponent.refresh();});
-                });
-                break;
-            case SWITCH_OFF_DND_ID:
-                SwingUtilities.invokeLater(() -> {
-                    SlackManager.pauseSlackNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
-                });
-                break;
-            case SWITCH_ON_DND_ID:
-                SwingUtilities.invokeLater(() -> {
-                    SlackManager.enableSlackNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
-                });
-                break;
-            case SET_PRESENCE_ACTIVE_ID:
-                SwingUtilities.invokeLater(() -> {
-                    SlackManager.toggleSlackPresence("auto", () -> {CodeTimeTreeTopComponent.refresh();});
-                });
-                break;
-            case SET_PRESENCE_AWAY_ID:
-                SwingUtilities.invokeLater(() -> {
-                    SlackManager.toggleSlackPresence("away", () -> {CodeTimeTreeTopComponent.refresh();});
-                });
-                break;
-            case TOGGLE_DOCK_POSITION_ID:
-                SwingUtilities.invokeLater(() -> {
-                    AppleScriptManager.toggleDock();
-                });
-                break;
-            case SET_SLACK_STATUS_ID:
-                SwingUtilities.invokeLater(() -> {
-                    SlackManager.setProfileStatus(() -> {CodeTimeTreeTopComponent.refresh();});
-                });
-                break;
-            case SLACK_WORKSPACES_NODE_ID:
-            case AUTOMATIONS_NODE_ID:
-            case FLOW_MODE_SETTINGS_ID:
-                // expand/collapse
-                CodeTimeTreeTopComponent.expandCollapse(node.getId());
-                break;
-            case TODAY_VS_AVG_ID:
-                // refresh and change the reference class
-                String refClass = FileUtilManager.getItem("reference-class", "user");
-                if (refClass.equals("user")) {
-                    refClass = "global";
-                } else {
-                    refClass = "user";
-                }
-                FileUtilManager.setItem("reference-class", refClass);
-                CodeTimeTreeTopComponent.refresh();
-                break;
-            case ENTER_FULL_SCREEN_MODE_ID:
-                SwingUtilities.invokeLater(() -> {
-                    ScreenManager.enterFullScreen();
-                });
-                break;
-            case EXIT_FULL_SCREEN_MODE_ID:
-                SwingUtilities.invokeLater(() -> {
-                    ScreenManager.exitFullScreen();
-                });
-                break;
             case ENABLE_FLOW_MODE_ID:
-                FlowManager.initiateFlow();
+                FlowManager.enterFlowMode(false);
                 break;
             case PAUSE_FLOW_MODE_ID:
-                FlowManager.pauseFlowInitiate();
+                FlowManager.exitFlowMode();
                 break;
-            case SCREEN_MODE_SETTING_ID:
-                ConfigManager.modifyScreenMode(() -> {CodeTimeTreeTopComponent.refresh();});
+            case CONFIGURE_SETTINGS_ID:
+                SwingUtilities.invokeLater(() -> {
+                    UtilManager.launchUrl(SoftwareUtil.APP_URL + "/preferences");
+                });
                 break;
-            case PAUSE_NOTIFICATIONS_SETTING_ID:
-                ConfigManager.modifyPauseNotifications(() -> {CodeTimeTreeTopComponent.refresh();});
-                break;
-            case SLACK_AWAY_STATUS_SETTING_ID:
-                ConfigManager.modifySlackAwayStatus(() -> {CodeTimeTreeTopComponent.refresh();});
-                break;
-            case SLACK_AWAY_STATUS_TEXT_SETTING_ID:
-                ConfigManager.modifySlackStatusText(() -> {CodeTimeTreeTopComponent.refresh();});
+            case PROJECT_REPORTS_ID:
+                SwingUtilities.invokeLater(() -> {
+                    UtilManager.launchUrl(SoftwareUtil.APP_URL + "/reports");
+                });
                 break;
         }
     }

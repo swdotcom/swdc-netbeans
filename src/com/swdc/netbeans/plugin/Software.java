@@ -9,9 +9,15 @@ import com.swdc.netbeans.plugin.managers.AsyncManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
 import com.swdc.netbeans.plugin.managers.NetbeansProject;
+import com.swdc.netbeans.plugin.managers.SessionDataManager;
+import com.swdc.netbeans.plugin.managers.SessionStatusUpdateManager;
 import com.swdc.netbeans.plugin.managers.SoftwareEventManager;
+import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
+import com.swdc.netbeans.plugin.managers.ThemeModeInfoManager;
 import com.swdc.netbeans.plugin.managers.WallClockManager;
+import com.swdc.netbeans.plugin.managers.WebsocketMessageManager;
+import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import com.swdc.netbeans.plugin.models.KeystrokeCountUtil;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -35,12 +41,11 @@ import swdc.java.ops.manager.ConfigManager;
 import swdc.java.ops.manager.EventTrackerManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.model.CodeTime;
+import swdc.java.ops.model.ConfigOptions;
 import swdc.java.ops.snowplow.events.UIInteractionType;
 import swdc.java.ops.websockets.WebsocketClient;
 
-/**
- * commit test.....
- */
+
 @OnShowing
 public class Software extends ModuleInstall implements Runnable {
 
@@ -60,16 +65,25 @@ public class Software extends ModuleInstall implements Runnable {
 
     @Override
     public void run() {
+        ConfigOptions options = new ConfigOptions();
+        options.ideName = SoftwareUtil.IDE_NAME;
+        options.pluginType = "codetime";
+        options.appUrl = SoftwareUtil.APP_URL;
+        options.ideVersion = SoftwareUtil.getVersion();
+        options.metricsEndpoint = SoftwareUtil.API_ENDPOINT;
+        options.pluginId = SoftwareUtil.PLUGIN_ID;
+        options.pluginName = "codetime";
+        options.pluginVersion = SoftwareUtil.getVersion();
+        options.pluginEditor = "netbans";
+        options.softwareDir = SoftwareUtil.SOFTWARE_DIR;
+        
         // initialize the swdc ops config
         ConfigManager.init(
-                SoftwareUtil.API_ENDPOINT,
-                SoftwareUtil.LAUNCH_URL,
-                SoftwareUtil.PLUGIN_ID,
-                "codetime",
-                SoftwareUtil.getVersion(),
-                SoftwareUtil.IDE_NAME,
-                SoftwareUtil.IDE_VERSION,
-                () -> WallClockManager.getInstance().refreshSessionDataAndTree(),
+                options,
+                () -> SoftwareSessionManager.getInstance().refreshSessionDataAndTree(),
+                new WebsocketMessageManager(),
+                new SessionStatusUpdateManager(),
+                new ThemeModeInfoManager(),
                 ConfigManager.IdeType.netbeans);
         
         String jwt = FileUtilManager.getItem("jwt");
@@ -114,10 +128,7 @@ public class Software extends ModuleInstall implements Runnable {
         // setup the document change event listeners
         setupEventListeners();
 
-        StatusBarManager.updateStatusBar();
-        
-        // initialize the wallclock manager
-        WallClockManager.getInstance().refreshSessionDataAndTree();
+        SoftwareSessionManager.getInstance().refreshSessionDataAndTree();
         
         final Runnable checkFocusStateTimer = () -> checkFocusState();
         AsyncManager.getInstance().scheduleService(

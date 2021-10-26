@@ -7,64 +7,79 @@ package com.swdc.netbeans.plugin.managers;
 
 
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
+import javax.swing.Icon;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.apache.commons.lang.StringUtils;
-import swdc.java.ops.manager.ConfigManager;
+import swdc.java.ops.http.FlowModeClient;
+import swdc.java.ops.manager.AccountManager;
+import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
-import swdc.java.ops.model.ConfigSettings;
-import swdc.java.ops.model.SlackDndInfo;
-import swdc.java.ops.model.SlackUserPresence;
-import swdc.java.ops.model.SlackUserProfile;
+import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.FlowMode;
 
 public class FlowManager {
     public static boolean enabledFlow = false;
 
-    private static boolean enablingFlow = false;
-    private static boolean useSlackSettings = true;
-
-    public static void checkToDisableFlow() {
-        ScreenManager.isFullScreen();
-        if (!enabledFlow || enablingFlow) {
-            return;
-        } else if (!useSlackSettings && !isScreenStateInFlow()) {
-            // slack isn't connected but the screen state changed out of flow
-            pauseFlowInitiate();
-            return;
-        }
-
-        if (enabledFlow && !isInFlowMode()) {
-            // disable it
-            pauseFlowInitiate();
+    public static void initFlowStatus() {
+        boolean originalState = enabledFlow;
+        enabledFlow = FlowModeClient.isFlowModeOn();
+        if (originalState != enabledFlow) {
+            updateFlowStateDisplay();
         }
     }
 
-    public static void initiateFlow() {
-        boolean isRegistered = SlackManager.checkRegistration(false, null);
-        if (!isRegistered) {
-            // show the flow mode prompt
-            SlackManager.showModalSignupPrompt("To use Flow Mode, please first sign up or login.", () -> { CodeTimeTreeTopComponent.refresh();});
+    public static void toggleFlowMode(boolean automated) {
+        if (!enabledFlow) {
+            enterFlowMode(automated);
+        } else {
+            exitFlowMode();
+        }
+    }
+
+    public static void enterFlowMode(boolean automated) {
+        if (enabledFlow) {
+            updateFlowStateDisplay();
             return;
         }
-        enablingFlow = true;
 
-        ConfigSettings configSettings = ConfigManager.getConfigSettings();
-
-        // set slack status to away
-        if (configSettings.slackAwayStatus) {
-            SlackManager.setSlackPresence("away");
+        boolean isRegistered = AccountManager.checkRegistration(false, null);
+        if (!isRegistered) {
+            // show the flow mode prompt
+            AccountManager.showModalSignupPrompt("To use Flow Mode, please first sign up or login.", () -> {
+            	CodeTimeTreeTopComponent.refresh();
+            });
+            return;
         }
 
-        // set the status text to what the user set in the settings
-        boolean clearStatusText = StringUtils.isBlank(configSettings.slackAwayStatusText) ? true : false;
-        SlackManager.updateSlackStatusText(configSettings.slackAwayStatusText, ":large_purple_circle:", clearStatusText);
+        boolean eclipse_CtskipSlackConnect = FileUtilManager.getBooleanItem("eclipse_CtskipSlackConnect");
+        boolean workspaces = SlackManager.hasSlackWorkspaces();
+        if (!workspaces && !eclipse_CtskipSlackConnect) {
+            String msg = "Connect a Slack workspace to pause\nnotifications and update your status?";
 
+            Object[] options = {"Connect", "Skip"};
+            Icon icon = UtilManager.getResourceIcon("app-icon-blue.png", FlowManager.class.getClassLoader());
 
-        // pause slack notifications
-        if (configSettings.pauseSlackNotifications) {
-            SlackManager.pauseSlackNotifications();
+            SwingUtilities.invokeLater(() -> {
+                int choice = JOptionPane.showOptionDialog(
+                        null, msg, "Slack connect", JOptionPane.OK_OPTION,
+                        JOptionPane.QUESTION_MESSAGE, icon, options, options[0]);
+
+                if (choice == 0) {
+                    SlackManager.connectSlackWorkspace(() -> {
+                    	   CodeTimeTreeTopComponent.refresh();
+                    });
+                } else {
+                    FileUtilManager.setBooleanItem("eclipse_CtskipSlackConnect", true);
+                    FlowManager.enterFlowMode(automated);
+                }
+            });
+            return;
         }
 
-        if (configSettings.screenMode.contains("Full Screen")) {
+        FlowModeClient.enterFlowMode(automated);
+
+        if (fullScreeConfigured()) {
             ScreenManager.enterFullScreen();
         } else {
             ScreenManager.exitFullScreen();
@@ -72,87 +87,49 @@ public class FlowManager {
 
         SlackManager.clearSlackCache();
 
-        SwingUtilities.invokeLater(() -> {
-            CodeTimeTreeTopComponent.refresh();
-        });
-
         enabledFlow = true;
-        enablingFlow = false;
+
+        updateFlowStateDisplay();
     }
 
-    public static void pauseFlowInitiate() {
-        ConfigSettings configSettings = ConfigManager.getConfigSettings();
+    public static void exitFlowMode() {
+        if (!enabledFlow) {
+            updateFlowStateDisplay();
+            return;
+        }
 
-        SlackManager.enableSlackNotifications();
-        SlackManager.setSlackPresence("auto");
-        SlackManager.updateSlackStatusText("", "", true);
+        FlowModeClient.exitFlowMode();
+
         ScreenManager.exitFullScreen();
 
         SlackManager.clearSlackCache();
 
-        SwingUtilities.invokeLater(() -> {
-            CodeTimeTreeTopComponent.refresh();
-        });
-
         enabledFlow = false;
-        enablingFlow = false;
+
+        updateFlowStateDisplay();
     }
 
-    public static boolean isInFlowMode() {
-        if (enablingFlow) {
-            return true;
-        } else if (!enabledFlow) {
-            return false;
-        }
-
-        ConfigSettings settings = ConfigManager.getConfigSettings();
-
-        useSlackSettings = SlackManager.hasSlackWorkspaces();
-
-        boolean screenInFlowState = isScreenStateInFlow();
-
-        SlackUserProfile slackUserProfile = SlackManager.getSlackStatus();
-        SlackDndInfo slackDndInfo = SlackManager.getSlackDnDInfo();
-        SlackUserPresence slackUserPresence = SlackManager.getSlackUserPresence();
-
-        boolean pauseSlackNotificationsInFlowState = false;
-        if (!useSlackSettings) {
-            pauseSlackNotificationsInFlowState = true;
-        } else if (settings.pauseSlackNotifications && slackDndInfo.snooze_enabled) {
-            pauseSlackNotificationsInFlowState = true;
-        } else if (!settings.pauseSlackNotifications && !slackDndInfo.snooze_enabled) {
-            pauseSlackNotificationsInFlowState = true;
-        }
-
-        // determine if the slack away status text is in flow
-        boolean slackAwayStatusMsgInFlowState = false;
-        if (!useSlackSettings) {
-            slackAwayStatusMsgInFlowState = true;
-        } else if (settings.slackAwayStatusText.equals(slackUserProfile.status_text)) {
-            slackAwayStatusMsgInFlowState = true;
-        }
-
-        boolean slackAwayPresenceInFlowState = false;
-        if (!useSlackSettings) {
-            slackAwayPresenceInFlowState = true;
-        } else if (settings.slackAwayStatus && slackUserPresence.presence.equals("")) {
-            slackAwayPresenceInFlowState = true;
-        } else if (!settings.slackAwayStatus && slackUserPresence.presence.equals("active")) {
-            slackAwayPresenceInFlowState = true;
-        }
-
-        return screenInFlowState && pauseSlackNotificationsInFlowState && slackAwayStatusMsgInFlowState && slackAwayPresenceInFlowState;
+    private static void updateFlowStateDisplay() {
+    	SwingUtilities.invokeLater(() -> {
+    		// at least update the status bar
+            AsyncManager.getInstance().executeOnceInSeconds(() -> {
+            	CodeTimeTreeTopComponent.refresh();
+            }, 2);
+            SessionDataManager.updateFileSummaryAndStatsBar(null);
+    	});
     }
 
-    public static boolean isScreenStateInFlow() {
-        ConfigSettings settings = ConfigManager.getConfigSettings();
-        boolean screenInFlowState = false;
-        if (settings.screenMode.contains("Full Screen") && ScreenManager.isFullScreen()) {
-            screenInFlowState = true;
-        } else if (settings.screenMode.contains("None") && !ScreenManager.isFullScreen()) {
-            screenInFlowState = true;
-        }
+    public static boolean isFlowModeEnabled() {
+        return enabledFlow;
+    }
 
-        return screenInFlowState;
+    public static boolean fullScreeConfigured() {
+        String flowModePreferences = FileUtilManager.getItem("flowMode");
+        if (StringUtils.isNotBlank(flowModePreferences)) {
+            FlowMode flowMode = UtilManager.gson.fromJson(flowModePreferences, FlowMode.class);
+
+            return flowMode.editor.intellij.screenMode.contains("Full Screen") ? true : false;
+        }
+        return false;
     }
 }
