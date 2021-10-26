@@ -4,7 +4,7 @@
  */
 package com.swdc.netbeans.plugin.managers;
 
-import com.swdc.netbeans.plugin.models.KeystrokeCount;
+import swdc.java.ops.model.CodeTime;
 
 
 public class KeystrokeManager {
@@ -27,14 +27,14 @@ public class KeystrokeManager {
         return instance;
     }
 
-    public KeystrokeCount getKeystrokeCount() {
+    public CodeTime getKeystrokeCount() {
         if (wrapper != null) {
             return wrapper.getKeystrokeCount();
         }
         return null;
     }
 
-    public void setKeystrokeCount(String projectName, KeystrokeCount keystrokeCount) {
+    public void setKeystrokeCount(String projectName, CodeTime keystrokeCount) {
         if (wrapper == null) {
             wrapper = new KeystrokeCountWrapper();
         }
@@ -48,14 +48,14 @@ public class KeystrokeManager {
 
     public class KeystrokeCountWrapper {
         // KeystrokeCount cache metadata
-        protected KeystrokeCount keystrokeCount;
+        protected CodeTime keystrokeCount;
         protected String projectName = "";
 
-        public KeystrokeCount getKeystrokeCount() {
+        public CodeTime getKeystrokeCount() {
             return keystrokeCount;
         }
 
-        public void setKeystrokeCount(KeystrokeCount keystrokeCount) {
+        public void setKeystrokeCount(CodeTime keystrokeCount) {
             this.keystrokeCount = keystrokeCount;
         }
 

@@ -6,10 +6,8 @@
 package com.swdc.netbeans.plugin.actions;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
 import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
-import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +25,7 @@ import org.openide.awt.DynamicMenuContent;
 import org.openide.util.actions.Presenter;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
+import swdc.java.ops.snowplow.events.UIInteractionType;
 
 
 @ActionID(category = "CodeTimeMenu", id = "com.swdc.netbeans.plugin.actions.CodeTimeMenu")

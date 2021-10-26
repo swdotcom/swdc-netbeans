@@ -6,8 +6,9 @@
 package com.swdc.netbeans.plugin.metricstree;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.netbeans.plugin.managers.SessionDataManager;
-import com.swdc.netbeans.plugin.managers.TimeDataManager;
+import com.swdc.netbeans.plugin.managers.StatusBarManager;
+import static com.swdc.netbeans.plugin.metricstree.TreeHelper.buildSlackWorkspacesNode;
+import static com.swdc.netbeans.plugin.metricstree.TreeHelper.getFlowModeNode;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -33,9 +34,6 @@ import org.openide.util.NbBundle.Messages;
 import org.openide.windows.WindowManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
-import swdc.java.ops.model.CodeTimeSummary;
-import swdc.java.ops.model.MetricLabel;
-import swdc.java.ops.model.SessionSummary;
 
 /**
  * Top component which displays something.
@@ -110,32 +108,6 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
             }
             node.updateLabel(label);
         }
-    }
-    
-    private static int findParentNodeRowById(String id) {
-        int row = 0;
-        try {
-            DefaultTreeModel model = (DefaultTreeModel) metricTree.getModel();
-
-            DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) model.getRoot();
-            
-            if (treeNode != null) {
-                Enumeration<TreeNode> nodes = treeNode.children();
-                if (nodes != null) {
-                    while (nodes.hasMoreElements()) {
-                        MetricTreeNode node = (MetricTreeNode) nodes.nextElement();
-                        if (node != null && node.getId().equals(id)) {
-                            return row;
-                        }
-                        row++;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOG.log(Level.INFO, "Find node by ID error: {0}", e.toString());
-        }
-        
-        return -1; 
     }
     
     private static MetricTreeNode findNodeById(String id) {
@@ -285,20 +257,19 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         return new DefaultTreeModel(root);
     }
     
-    private TreeModel makeFlowNodeModel() {
-        // "Root" will not be visible
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
-        
-        List<MetricTreeNode> flowNodes = TreeHelper.buildTreeFlowNodes();
-        flowNodes.forEach(node -> {
-            root.add(node);
-        });
-        return new DefaultTreeModel(root);
-    }
-    
     private TreeModel makeCodetimeTreeModel() {
         // "Root" will not be visible
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("Root");
+        
+        root.add(TreeHelper.getFlowModeNode());
+        
+        root.add(new MetricTreeNode(true /*isSeparator*/));
+        
+        root.add(TreeHelper.buildSummaryButton());
+        root.add(TreeHelper.buildProjectReportsButton());
+        root.add(TreeHelper.buildViewWebDashboardButton());
+        
+        root.add(new MetricTreeNode(true /*isSeparator*/));
         
         List<MetricTreeNode> loginNodes = TreeHelper.buildSignupNodes();
         loginNodes.forEach(node -> {
@@ -312,58 +283,9 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         
         root.add(new MetricTreeNode(true /*isSeparator*/));
         
-        List<MetricTreeNode> flowNodes = TreeHelper.buildTreeFlowNodes();
-        flowNodes.forEach(node -> {
-            root.add(node);
-        });
-        
-        root.add(new MetricTreeNode(true /*isSeparator*/));
-        
-        CodeTimeSummary codeTimeSummary = TimeDataManager.getCodeTimeSummary();
-        SessionSummary sessionSummary = SessionDataManager.getSessionSummaryData();
-        
-        MetricLabel mLabels = new MetricLabel();
-        mLabels.updateLabels(codeTimeSummary, sessionSummary);
-
-        root.add(TreeHelper.buildTodayVsAverageNode());
-        root.add(TreeHelper.buildCodeTimeTree(mLabels));
-        root.add(TreeHelper.buildActiveCodeTimeTree(mLabels));
-        root.add(TreeHelper.buildLinesAddedTree(mLabels));
-        root.add(TreeHelper.buildLinesRemovedTree(mLabels));
-        root.add(TreeHelper.buildKeystrokesTree(mLabels));
-        
-        root.add(TreeHelper.buildSummaryButton());
-        root.add(TreeHelper.buildViewWebDashboardButton());
+        root.add(TreeHelper.buildSlackWorkspacesNode());
         
         return new DefaultTreeModel(root);
-    }
-    
-    public static void updateMetrics(CodeTimeSummary codeTimeSummary, SessionSummary sessionSummary) {
-        if (metricTree != null) {
-
-            MetricLabel mLabels = new MetricLabel();
-            mLabels.updateLabels(codeTimeSummary, sessionSummary);
-
-            if (codeTimeSummary != null && sessionSummary != null) {
-                updateNodeLabel(findNodeById(TreeHelper.ACTIVE_CODETIME_TODAY_ID), mLabels.activeCodeTime);
-
-                updateNodeLabel(findNodeById(TreeHelper.CODETIME_TODAY_ID), mLabels.codeTime);
-            }
-
-            if (sessionSummary != null) {
-                // all of the other metrics can be updated
-                // LINES DELETED
-                updateNodeLabel(findNodeById(TreeHelper.LINES_DELETED_TODAY_ID), mLabels.linesRemoved);
-
-                // LINES ADDED
-                updateNodeLabel(findNodeById(TreeHelper.LINES_ADDED_TODAY_ID), mLabels.linesAdded);
-
-                // KEYSTROKES
-                updateNodeLabel(findNodeById(TreeHelper.KEYSTROKES_TODAY_ID), mLabels.keystrokes);
-            }
-
-            metricTree.updateUI();
-        }
     }
     
     public static void expandNode(String id) {
@@ -488,7 +410,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         
         // update the toggle node label
         String toggleText = "Hide status bar metrics";
-        if (!SoftwareUtil.showingStatusText()) {
+        if (!StatusBarManager.isShowingStatusBarMetrics()) {
             toggleText = "Show status bar metrics";
         }
 

@@ -31,7 +31,6 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     private JPanel panel = new JPanel(new BorderLayout());
     private long last_click_time = -1;
     
-    private static boolean showStatusText = true;
     private static StatusBarType lastStatusType = StatusBarType.PAW;
     private static String lastMsg = "";
     private static String lastTooltip = "";
@@ -51,7 +50,6 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     }
 
     public SoftwareStatusBar() {
-        
         statusLabel.setIcon(StatusBarType.PAW.icon);
         if (!registeredMouseClick) {
             registeredMouseClick = true;
@@ -65,16 +63,6 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
         panel.add(new JSeparator(SwingConstants.VERTICAL), BorderLayout.WEST);
         panel.add(statusLabel, BorderLayout.CENTER);
     }
-    
-    public void toggleStatusBarText() {
-        showStatusText = !showStatusText;
-        if (showStatusText) {
-            updateMessage(lastStatusType, lastMsg, lastTooltip);
-        } else {
-            // set status line will update it to a clock
-            updateMessage(StatusBarType.OFF, "", lastTooltip);
-        }
-    }
 
     public void updateMessage(StatusBarType status, String text, String tooltip) {
         String name = FileUtilManager.getItem("name");
@@ -84,9 +72,8 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
             tooltip += " (" + name + ")";
         }
 
-        text = text == null ? "" : text + " ";
+        text = text == null || status.equals(StatusBarType.OFF) ? "" : text + " ";
         
-        statusLabel.setToolTipText(tooltip);
         statusLabel.setText(text);
         switch (status) {
             case ROCKET:

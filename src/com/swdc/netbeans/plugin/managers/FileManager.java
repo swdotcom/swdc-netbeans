@@ -6,8 +6,6 @@
 package com.swdc.netbeans.plugin.managers;
 
 import com.swdc.netbeans.plugin.SoftwareUtil;
-import com.swdc.snowplow.tracker.entities.UIElementEntity;
-import com.swdc.snowplow.tracker.events.UIInteractionType;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -18,6 +16,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import org.netbeans.api.project.Project;
+import swdc.java.ops.manager.EventTrackerManager;
+import swdc.java.ops.snowplow.entities.UIElementEntity;
+import swdc.java.ops.snowplow.events.UIInteractionType;
 
 public class FileManager {
 
