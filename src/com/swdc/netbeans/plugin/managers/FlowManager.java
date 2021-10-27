@@ -10,13 +10,11 @@ import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import javax.swing.Icon;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import org.apache.commons.lang.StringUtils;
 import swdc.java.ops.http.FlowModeClient;
 import swdc.java.ops.manager.AccountManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
 import swdc.java.ops.manager.UtilManager;
-import swdc.java.ops.model.FlowMode;
 
 public class FlowManager {
     public static boolean enabledFlow = false;
@@ -79,14 +77,6 @@ public class FlowManager {
 
         FlowModeClient.enterFlowMode(automated);
 
-        if (fullScreeConfigured()) {
-            ScreenManager.enterFullScreen();
-        } else {
-            ScreenManager.exitFullScreen();
-        }
-
-        SlackManager.clearSlackCache();
-
         enabledFlow = true;
 
         updateFlowStateDisplay();
@@ -99,10 +89,6 @@ public class FlowManager {
         }
 
         FlowModeClient.exitFlowMode();
-
-        ScreenManager.exitFullScreen();
-
-        SlackManager.clearSlackCache();
 
         enabledFlow = false;
 
@@ -121,15 +107,5 @@ public class FlowManager {
 
     public static boolean isFlowModeEnabled() {
         return enabledFlow;
-    }
-
-    public static boolean fullScreeConfigured() {
-        String flowModePreferences = FileUtilManager.getItem("flowMode");
-        if (StringUtils.isNotBlank(flowModePreferences)) {
-            FlowMode flowMode = UtilManager.gson.fromJson(flowModePreferences, FlowMode.class);
-
-            return flowMode.editor.intellij.screenMode.contains("Full Screen") ? true : false;
-        }
-        return false;
     }
 }

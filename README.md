@@ -1,17 +1,5 @@
 # Code Time
 
-<p>
-  <a href="https://marketplace.visualstudio.com/items?itemName=softwaredotcom.swdc-vscode">
-    <img alt="Code Time in the VS Code Marketplace" src="https://vsmarketplacebadge.apphb.com/version-short/softwaredotcom.swdc-vscode.svg?style=flat-square&color=00b4ee&label=marketplace">
-  </a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=softwaredotcom.swdc-vscode">
-    <img alt="Code Time Installs" src="https://vsmarketplacebadge.apphb.com/installs-short/softwaredotcom.swdc-vscode.svg?style=flat-square&color=00b4ee">
-  </a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=softwaredotcom.swdc-vscode">
-    <img alt="Code Time Rating" src="https://vsmarketplacebadge.apphb.com/rating-short/softwaredotcom.swdc-vscode.svg?style=flat-square&color=00b4ee">
-  </a>
-</p>
-
 <p><a href="https://www.software.com"><img alt="Software.com" src="https://assets.software.com/readme/software-logo-light.png" width="100px"></a></p>
 
 [Code Time](https://www.software.com/code-time) is an open source plugin for automatic programming metrics and time tracking in Visual Studio Code. Join our community of over 150,000 developers who use Code Time to reclaim time for focused, uninterrupted coding. Protect valuable code time and stay in flow.

@@ -11,23 +11,18 @@ import com.swdc.netbeans.plugin.managers.AuthPromptManager;
 import com.swdc.netbeans.plugin.managers.FlowManager;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import java.awt.Color;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 import org.apache.commons.lang.StringUtils;
-import org.openide.awt.HtmlBrowser;
 import swdc.java.ops.manager.ConfigManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.SlackManager;
 import swdc.java.ops.manager.UtilManager;
 import swdc.java.ops.model.ConfigSettings;
-import swdc.java.ops.model.FileChangeInfo;
 import swdc.java.ops.model.IntegrationConnection;
 import swdc.java.ops.snowplow.events.UIInteractionType;
 
@@ -96,6 +91,8 @@ public class TreeHelper {
 
     private static final SimpleDateFormat formatDay = new SimpleDateFormat("EEE");
     
+    private static boolean togglingSlackFolder = false;
+    
     public static List<MetricTreeNode> buildSignupNodes() {
         List<MetricTreeNode> list = new ArrayList<>();
         String name = FileUtilManager.getItem("name");
@@ -129,8 +126,6 @@ public class TreeHelper {
     public static List<MetricTreeNode> buildMenuNodes() {
         List<MetricTreeNode> list = new ArrayList<>();
         
-        list.add(new MetricTreeNode("Configure settings", "profile.png", CONFIGURE_SETTINGS_ID));
-        
         String toggleText = "Hide status bar metrics";
         if (!StatusBarManager.isShowingStatusBarMetrics()) {
             toggleText = "Show status bar metrics";
@@ -144,8 +139,12 @@ public class TreeHelper {
         return list;
     }
     
+    public static MetricTreeNode buildSettingsButton() {
+        return new MetricTreeNode("Settings", "profile.png", CONFIGURE_SETTINGS_ID);
+    }
+    
     public static MetricTreeNode buildSummaryButton() {
-        return new MetricTreeNode("View dashboard", "dashboard.png", VIEW_SUMMARY_ID);
+        return new MetricTreeNode("View summary", "dashboard.png", VIEW_SUMMARY_ID);
     }
     
     public static MetricTreeNode buildViewWebDashboardButton() {
@@ -203,26 +202,6 @@ public class TreeHelper {
     
     public static MetricTreeNode getAddSlackWorkspaceNode() {
         return new MetricTreeNode("Add workspace", "add.png", ADD_WORKSPACE_ID);
-    }
-    
-
-    private static void launchFileClick(MetricTreeNode selectedNode) {
-        if (selectedNode != null) {
-            if (selectedNode.getData() != null && selectedNode.getData() instanceof FileChangeInfo) {
-                String fsPath = ((FileChangeInfo) selectedNode.getData()).fsPath;
-                SoftwareUtil.launchFile(fsPath);
-            } else if (selectedNode.getPath() != null && selectedNode.getData() instanceof String && String.valueOf(selectedNode.getData()).contains("http")) {
-                // launch the commit url
-                String url = String.valueOf(selectedNode.getData());
-
-                try {
-                    URL launchUrl = new URL(url);
-                    HtmlBrowser.URLDisplayer.getDefault().showURL(launchUrl);
-                } catch (MalformedURLException ex) {
-                    LOG.log(Level.WARNING, "Failed to launch the url: {0}, error: {1}", new Object[]{url, ex.getMessage()});
-                }
-            }
-        }
     }
     
     public static void handleClickEvent(MetricTreeNode node) {
@@ -288,6 +267,16 @@ public class TreeHelper {
                 SwingUtilities.invokeLater(() -> {
                     UtilManager.launchUrl(SoftwareUtil.APP_URL + "/reports");
                 });
+                break;
+            case SLACK_WORKSPACES_NODE_ID:
+                if (!togglingSlackFolder) {
+                    SwingUtilities.invokeLater(() -> {
+                        togglingSlackFolder = true;
+                        // expand/collapse
+                        CodeTimeTreeTopComponent.expandCollapse(node.getId());
+                        togglingSlackFolder = false;
+                    });
+                }
                 break;
         }
     }

@@ -9,20 +9,14 @@ import com.swdc.netbeans.plugin.managers.AsyncManager;
 import com.swdc.netbeans.plugin.managers.FileManager;
 import com.swdc.netbeans.plugin.managers.KeystrokeManager;
 import com.swdc.netbeans.plugin.managers.NetbeansProject;
-import com.swdc.netbeans.plugin.managers.SessionDataManager;
 import com.swdc.netbeans.plugin.managers.SessionStatusUpdateManager;
 import com.swdc.netbeans.plugin.managers.SoftwareEventManager;
 import com.swdc.netbeans.plugin.managers.SoftwareSessionManager;
-import com.swdc.netbeans.plugin.managers.StatusBarManager;
 import com.swdc.netbeans.plugin.managers.ThemeModeInfoManager;
-import com.swdc.netbeans.plugin.managers.WallClockManager;
 import com.swdc.netbeans.plugin.managers.WebsocketMessageManager;
-import com.swdc.netbeans.plugin.metricstree.CodeTimeTreeTopComponent;
 import com.swdc.netbeans.plugin.models.KeystrokeCountUtil;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -51,13 +45,10 @@ public class Software extends ModuleInstall implements Runnable {
 
     public static final Logger LOG = Logger.getLogger("Software");
 
-    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     private final int ONE_MINUTE_SECONDS = 60;
     private final int ONE_HOUR_SECONDS = ONE_MINUTE_SECONDS * 60;
     private static final int FOCUS_STATE_INTERVAL_SECONDS = 5;
 
-    private static int retry_counter = 0;
     private static final long check_online_interval_ms = 1000 * 60 * 10;
     
     private UserStateChangeObserver userStateChangeObserver;

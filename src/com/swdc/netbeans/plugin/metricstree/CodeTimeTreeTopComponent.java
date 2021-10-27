@@ -5,10 +5,7 @@
  */
 package com.swdc.netbeans.plugin.metricstree;
 
-import com.swdc.netbeans.plugin.SoftwareUtil;
 import com.swdc.netbeans.plugin.managers.StatusBarManager;
-import static com.swdc.netbeans.plugin.metricstree.TreeHelper.buildSlackWorkspacesNode;
-import static com.swdc.netbeans.plugin.metricstree.TreeHelper.getFlowModeNode;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -265,6 +262,7 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         
         root.add(new MetricTreeNode(true /*isSeparator*/));
         
+        root.add(TreeHelper.buildSettingsButton());
         root.add(TreeHelper.buildSummaryButton());
         root.add(TreeHelper.buildProjectReportsButton());
         root.add(TreeHelper.buildViewWebDashboardButton());
