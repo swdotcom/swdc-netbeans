@@ -8,6 +8,12 @@
     <name>Code Time</name>
     <url>https://github.com/swdotcom/swdc-netbeans</url>
     <description>Code Time is an open source plugin for automatic programming metrics and time tracking in Visual Studio Code. Join our community of over 150,000 developers who use Code Time to reclaim time for focused, uninterrupted coding.</description>
+    <scm>
+        <connection>scm:git:https://github.com/swdotcom/swdc-netbeans.git</connection>
+        <developerConnection>scm:git:https://github.com/swdotcom/swdc-netbeans.git</developerConnection>
+        <url>https://github.com/swdotcom/swdc-netbeans/tree/${project.scm.tag}</url>
+        <tag>main</tag>
+    </scm>
     <build>
         <plugins>
             <plugin>
