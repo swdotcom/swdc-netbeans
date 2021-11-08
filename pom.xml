@@ -5,6 +5,9 @@
     <artifactId>netbeans-codetime</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>nbm</packaging>
+    <name>Code Time</name>
+    <url>https://github.com/swdotcom/swdc-netbeans</url>
+    <description>Code Time is an open source plugin for automatic programming metrics and time tracking in Visual Studio Code. Join our community of over 150,000 developers who use Code Time to reclaim time for focused, uninterrupted coding.</description>
     <build>
         <plugins>
             <plugin>
@@ -103,5 +106,4 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <name>Code Time</name>
 </project>
