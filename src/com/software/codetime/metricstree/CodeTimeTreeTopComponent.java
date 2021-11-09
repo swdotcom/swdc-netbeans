@@ -41,7 +41,7 @@ import swdc.java.ops.manager.SlackManager;
 )
 @TopComponent.Description(
         preferredID = "CodeTimeTreeWindowTopComponent",
-        iconBase = "com/swdc/netbeans/assets/paw.png",
+        iconBase = "com/software/codetime/assets/paw.png",
         persistenceType = TopComponent.PERSISTENCE_ALWAYS
 )
 @TopComponent.Registration(mode = "explorer", openAtStartup = false)
@@ -226,8 +226,8 @@ public final class CodeTimeTreeTopComponent extends TopComponent {
         DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer)tree.getCellRenderer();
         renderer.setClosedIcon(null);
         renderer.setOpenIcon(null);
-        Icon closeIcon = new ImageIcon(ImageUtilities.loadImage("com/swdc/netbeans/assets/collapsed.png"));
-        Icon openIcon = new ImageIcon(ImageUtilities.loadImage("com/swdc/netbeans/assets/expanded.png"));
+        Icon closeIcon = new ImageIcon(ImageUtilities.loadImage("com/software/codetime/assets/collapsed.png"));
+        Icon openIcon = new ImageIcon(ImageUtilities.loadImage("com/software/codetime/assets/expanded.png"));
         UIManager.put("Tree.openIcon", openIcon);
         UIManager.put("Tree.closedIcon", closeIcon);
 

@@ -32,7 +32,7 @@ public class AuthPromptManager {
 
     private static void initiateAuthFlow(String title, String message) {
         String[] options = new String[]{ "Google", "GitHub", "Email" };
-        Icon icon = new ImageIcon(ImageUtilities.loadImage("com/swdc/netbeans/assets/paw-grey.png"));
+        Icon icon = new ImageIcon(ImageUtilities.loadImage("com/software/codetime/assets/paw-grey.png"));
         String input = (String) JOptionPane.showInputDialog(
                 null,
                 message,

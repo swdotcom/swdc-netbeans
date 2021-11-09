@@ -49,11 +49,11 @@ public class IconTreeCellRenderer extends DefaultTreeCellRenderer {
     }
     
     public ImageIcon createImageIcon(String iconName, String description) {
-        URL imgURL = getClass().getResource("/com/swdc/netbeans/assets/" + iconName);
+        URL imgURL = getClass().getResource("/com/software/codetime/assets/" + iconName);
         if (imgURL != null) {
             return new ImageIcon(imgURL, description);
         } else {
-            System.err.println("Couldn't find file: /com/swdc/netbeans/assets/" + iconName);
+            System.err.println("Couldn't find file: /com/software/codetime/assets/" + iconName);
             return null;
         }
     }

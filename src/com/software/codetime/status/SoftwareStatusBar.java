@@ -38,9 +38,9 @@ public class SoftwareStatusBar implements StatusLineElementProvider {
     private static boolean registeredMouseClick = false;
     
     public static enum StatusBarType {
-        PAW("com/swdc/netbeans/assets/paw-grey.png"),
-        ROCKET("com/swdc/netbeans/assets/rocket.png"),
-        OFF("com/swdc/netbeans/assets/status-clock.png");
+        PAW("com/software/codetime/assets/paw-grey.png"),
+        ROCKET("com/software/codetime/assets/rocket.png"),
+        OFF("com/software/codetime/assets/status-clock.png");
 
         private Icon icon;
 
