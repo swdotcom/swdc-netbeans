@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.software</groupId>
     <artifactId>netbeans-codetime</artifactId>
-    <version>2.3.5-SNAPSHOT</version>
+    <version>2.3.5</version>
     <packaging>nbm</packaging>
     <name>${project.groupId}:${project.artifactId}</name>
     <url>https://github.com/swdotcom/swdc-netbeans</url>
@@ -24,7 +24,7 @@
         <connection>scm:git:https://github.com/swdotcom/swdc-netbeans.git</connection>
         <developerConnection>scm:git:https://github.com/swdotcom/swdc-netbeans.git</developerConnection>
         <url>https://github.com/swdotcom/swdc-netbeans/tree/${project.scm.tag}</url>
-        <tag>main</tag>
+        <tag>netbeans-codetime-2.3.5</tag>
     </scm>
     <developers>
         <developer>
