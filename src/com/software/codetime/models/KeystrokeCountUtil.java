@@ -14,7 +14,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.netbeans.api.project.Project;
 import swdc.java.ops.manager.EventTrackerManager;
 import swdc.java.ops.manager.FileUtilManager;

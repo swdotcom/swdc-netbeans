@@ -8,7 +8,7 @@ package com.software.codetime.managers;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.openide.util.ImageUtilities;
 import swdc.java.ops.snowplow.events.UIInteractionType;
 

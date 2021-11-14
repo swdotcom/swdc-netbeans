@@ -23,7 +23,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.netbeans.api.editor.EditorRegistry;
 import org.openide.modules.ModuleInstall;
 import org.openide.windows.OnShowing;

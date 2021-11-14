@@ -15,7 +15,7 @@ import javax.swing.event.DocumentEvent.ElementChange;
 import javax.swing.event.DocumentEvent.EventType;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.lib.editor.util.swing.DocumentUtilities;
 import org.netbeans.modules.parsing.api.Source;
