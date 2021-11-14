@@ -130,37 +130,37 @@
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-api-annotations-common</artifactId>
-            <version>RELEASE125</version>
+            <version>RELEASE90</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util</artifactId>
-            <version>RELEASE125</version>
+            <version>RELEASE90</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-api-intent</artifactId>
-            <version>RELEASE125</version>
+            <version>RELEASE90</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-api-io</artifactId>
-            <version>RELEASE125</version>
+            <version>RELEASE90</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-lookup</artifactId>
-            <version>RELEASE125</version>
+            <version>RELEASE90</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-modules</artifactId>
-            <version>RELEASE125</version>
+            <version>RELEASE90</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-ui</artifactId>
-            <version>RELEASE125</version>
+            <version>RELEASE90</version>
         </dependency>
         <dependency>
             <groupId>commons-logging</groupId>
